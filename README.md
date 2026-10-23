@@ -30,7 +30,7 @@ of the original relate), [`docs/BIBLE.md`](docs/BIBLE.md) for the rebuild's brie
 
 ## Status
 
-Reconstruction-complete, implementation not yet started. Every story is planned, in dependency order (`tickets story list --repo
+Reconstruction-complete; the engine-free foundations (U.OVW-US-A1) are in: `Assets/Unity.Overworld/Core` (pure C#, `noEngineReferences`: players, commands, events, the fixed 60 Hz `Game` step and general world types), `Runtime`, `Editor` and `Tests/EditMode`, one-way references into Core. Run Core's tests outside Unity with `.un-core-tests.ps1` (`Tests/Core.Tests`). Every story is planned, in dependency order (`tickets story list --repo
 Unity.Overworld`):
 
 - Engine-free Core, data files, asset catalogue

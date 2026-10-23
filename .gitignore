@@ -21,3 +21,8 @@
 *.log
 __pycache__/
 /.utmp/
+
+# The Core test project is source, not generated
+!Tests/**/*.csproj
+Tests/**/bin/
+Tests/**/obj/
