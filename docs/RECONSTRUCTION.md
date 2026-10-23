@@ -66,8 +66,8 @@ Every file of both trees was compared by content (not just name), plus the ZIP a
    the source, and holds a different, larger, data-driven world design: `Area`, `Area_Enemies`, `Area_Npcs`, `Area_Props`,
    `Enemy`, `Enemy_Class`, `Enemy_Images`, `Enemy_Motion`, `Enemy_State`, `Event`, `Npc`, `Props`, `Scene`, `Script`, `Terrain`.
    No compiled code reads any of those tables, and the engine could not run against this file at all (it queries `Pickup` and `Items`, which the root file lacks).
-   The inference (flagged as inference): the owner kept designing the world's data in March 2007, during the Visual
-   Studio 2005 upgrade (`UpgradeLog.XML`, 2007-04-06), without a matching engine rewrite. This is the data and asset
+   The inference (flagged as inference): the owner kept designing the world's data in March 2007, around the first Visual
+   Studio upgrade (`UpgradeLog.XML`, 2007-04-06; the second, `UpgradeLog2.XML` of 2008-10-06, produced the Visual Basic 2008 Express project), without a matching engine rewrite. This is the data and asset
    content "only one copy's engine could not use", and the rebuild takes it (section 19).
 4. **`hero.mdb` (2004-10-12, 528,384 bytes)** is older than the source (Oct 2004 against Feb 2006 onward). Its code
    reference, `heroDB`, is commented out in `Root.vb`. It is the original *Overhead* project's hero database: a hero
@@ -772,7 +772,7 @@ Defects (the BIBLE says what the rebuild does about each): frame-rate-dependent 
 The rebuild takes the union of the two copies and of the code's era and the data's era:
 
 1. **Behaviour** comes from the compiled source (sections 2 to 15), the shipped game.
-2. **Content the shipped game used**: the 372 pickups, 4 quests and 2 subquests, 2 weapons, 3 heroes, 6 walls, 4 props, tent, 5 books, 53 area tiles, all the loaded art and the loaded audio.
+2. **Content the shipped game used**: the 372 pickups, 4 quests and 2 subquests, 2 weapons, 3 heroes, 6 walls, 4 props, tent, 5 books, 45 area tiles, all the loaded art and the loaded audio.
 3. **Content the data and assets carry beyond the code** (root `world.mdb`, `hero.mdb`, unreferenced art and sound): the Grasslands and Lowlands areas with their scenes, terrain, props, NPCs, enemies and events; Alexander and the four weapons; the Belmont and girl sprite sets; the enemy and NPC sprite sets;
    the unused sounds; Colesium Vol I; the older database's three starter items, events and scripts. These are built as the later layers of the build order, flagged in the BIBLE as decisions beyond the original wherever the original gave data but no behaviour (combat, enemy AI, NPC behaviour, equipment).
 4. **Dead and superseded code** (orphans, section 18) is not rebuilt as behaviour, but every identifier and number in it is recorded here so the owner can promote any of it later.

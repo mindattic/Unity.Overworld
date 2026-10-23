@@ -64,7 +64,7 @@ Tests/
   `currHero` becomes a per-player selection in state, so a second player is a data change, not a rewrite.
 - **A fixed 60 Hz step.** The original moved, scrolled, rained and drifted per rendered frame and only animated and kept time by the clock. The rebuild
   runs the simulation at a fixed 60 Hz and converts every per-frame constant to per-tick, so the game plays at the speed the owner remembers
-  on a 60 Hz display regardless of machine; animation frame rates and the clock stay in seconds. Presentation interpolates.
+  on a 60 Hz display regardless of machine; animation frame rates and the clock stay in seconds. Presentation interpolates. Core's tick is driven by its own accumulator, independent of `FixedUpdate`.
 - **Content is data, validated on load.** Every table in RECONSTRUCTION 8, 10, 11, 12.4 and 16 becomes a file under `Content/`; a loader validates references (item textures
   exist, scripts parse, quests reference real objectives) and fails loudly. All tuning numbers (speeds, regen rates, ranges, costs, colours, volumes) live in one
   settings registry and surface in the options screen where the original had none.
@@ -103,7 +103,7 @@ Each is a place where the original is silent, broken or ambiguous. They are deci
 | Combat (12.4) | No damage, enemy or attack code | Defined in story A29: a hit's damage is the weapon rating scaled by its slashing/piercing/blunt split against the target's class; durability drops one per hit; enemies have the health, speed, range, state and motion the data gives. Every number is a tuning value in the registry |
 | Enemy AI states (16.2) | Passive, Aggressive, Afraid, Defensive as names | Passive ignores the party; Aggressive pursues within range; Defensive holds until hurt or approached within half its range; Afraid retreats; speeds from the data |
 | NPC states (16.2) | "stand" and "pursue" as names | Stand idles facing the party; pursue follows the leader at the NPC's data speed without attacking |
-| Items in later areas | Only area 0 data existed for pickups | Pickups stay in the original world (the 53 tiles); the Grasslands area (story A25) carries the 2007 props, NPCs and enemies |
+| Items in later areas | Only area 0 data existed for pickups | Pickups stay in the original world (the 45 loaded tiles); the Grasslands area (story A25) carries the 2007 props, NPCs and enemies |
 
 ## Open questions (flag when a ticket hits one)
 
