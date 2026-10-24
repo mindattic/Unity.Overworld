@@ -31,6 +31,12 @@ namespace MindAttic.Overworld.Core
         /// <summary>Where this object sits, for messages ("pickups.json.pickups[3]").</summary>
         public string Path => path;
 
+        /// <summary>The JSON object this reader walks (null when it is missing): <see cref="WorldFixes"/> rewrites database rows with it.</summary>
+        internal JsonValue Node => node;
+
+        /// <summary>The raw value of <paramref name="key"/>, which must be of <paramref name="kind"/>; null (and reported) otherwise.</summary>
+        internal JsonValue Raw(string key, JsonKind kind, string what) => Take(key, kind, what);
+
         /// <summary>True when the key is present (an optional member).</summary>
         public bool Has(string key) => node != null && node.Get(key) != null;
 

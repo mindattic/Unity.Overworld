@@ -1,0 +1,60 @@
+{
+  "_source": "U.OVW-T38: what the 2007 root world.mdb needs to be played. No code of the original ever read it, so nothing had found what is broken in it. world-2007.json stays the faithful export; these fixes are applied when the playable world is read. Each id is a row of docs/BIBLE.md's fixed-defects table.",
+  "fixes": [
+    {"id": "W2", "why": "Scene 11 'Grasslands Sky 8' is in area 0, which the 2007 database has no Area row for (0 was the 2006 database's Foothills of Phar; a copied row kept its old area). Its name says Grasslands.", "changes": [
+      {"table": "Scene", "where": {"sceneID": 11}, "set": {"areaID": 1}}
+    ]},
+    {"id": "W3", "why": "Scene 11 at x 8 covers half of Scene 9 (Grasslands Sky 4, x 7 to 9), the same plain sky picture at the same depth, so the two fight over every pixel. Moved to x 9 it continues the sky row Scene 9 starts.", "changes": [
+      {"table": "Scene", "where": {"sceneID": 11}, "set": {"sceneX": 9}}
+    ]},
+    {"id": "W4", "why": "Scene 5's picture new.png (the 1x5 strip with a see-through sky so the Mountain behind shows) is 441,816 zero bytes in the shipped Overworld folder: not a picture. The same-sized intact file survives in the sibling Fish 2 project.", "changes": [
+    ]},
+    {"id": "W5", "why": "Every picture is named with backslashes and a leading backslash, and most with a lower-case extension the file does not have (orchard_N.PNG, gate.PNG, mountain.PNG, new.PNG); Windows forgave both, a case-sensitive asset key does not. Each is now the file's exact relative path.", "changes": [
+      {"table": "Scene", "where": {"sceneID": 1}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x1.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 2}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x2.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 3}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x3.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 4}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x4.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 5}, "set": {"sceneIMAGE": "gfx/area/West of Town/new.PNG"}},
+      {"table": "Scene", "where": {"sceneID": 6}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x6.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 7}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x7.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 8}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x8.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 9}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_0x4.jpg"}},
+      {"table": "Scene", "where": {"sceneID": 10}, "set": {"sceneIMAGE": "gfx/area/West of Town/mountain.PNG"}},
+      {"table": "Scene", "where": {"sceneID": 11}, "set": {"sceneIMAGE": "gfx/area/West of Town/bgLandscape2_0x4.jpg"}},
+      {"table": "Props", "where": {"propID": 1}, "set": {"propIMAGE": "gfx/prop/tree/orchard_1.PNG"}},
+      {"table": "Props", "where": {"propID": 2}, "set": {"propIMAGE": "gfx/prop/tree/orchard_2.PNG"}},
+      {"table": "Props", "where": {"propID": 3}, "set": {"propIMAGE": "gfx/prop/tree/orchard_3.PNG"}},
+      {"table": "Props", "where": {"propID": 4}, "set": {"propIMAGE": "gfx/prop/tree/orchard_4.PNG"}},
+      {"table": "Props", "where": {"propID": 5}, "set": {"propIMAGE": "gfx/prop/tree/orchard_5.PNG"}},
+      {"table": "Props", "where": {"propID": 6}, "set": {"propIMAGE": "gfx/prop/tree/orchard_6.PNG"}},
+      {"table": "Props", "where": {"propID": 7}, "set": {"propIMAGE": "gfx/prop/tree/orchard_7.PNG"}},
+      {"table": "Props", "where": {"propID": 8}, "set": {"propIMAGE": "gfx/prop/structure/stonehenge.png"}},
+      {"table": "Props", "where": {"propID": 9}, "set": {"propIMAGE": "gfx/prop/structure/gate.PNG"}},
+      {"table": "Npc", "where": {"npcID": 1}, "set": {"npcDIR": "gfx/npc/woman/"}},
+      {"table": "Npc", "where": {"npcID": 2}, "set": {"npcDIR": "gfx/npc/magitek/"}}
+    ]},
+    {"id": "W6", "why": "NPC 1 is spelled 'Peasent Woman'.", "changes": [
+      {"table": "Npc", "where": {"npcID": 1}, "set": {"npcNAME": "Peasant Woman"}}
+    ]},
+    {"id": "W7", "why": "The database has no start: no area to begin in and nowhere for the party to stand. The game begins at the west end of the Grasslands, the party on the first ground line in the 2006 heroes' order and spacing (Chrono, Belmont 0.3 to his right, Flagg 0.3 to his left).", "changes": [
+    ]},
+    {"id": "W8", "why": "Area 2 'Lowlands' has a name and nothing else: no picture, no ground, so a party sent there would fall through an empty screen. It gets a stand-in until the owner supplies its content: one strip, the original 1x5 landscape (bgLandscape2_1x5.jpg, the picture new.png displaced and nothing else uses), and a ground line across it at the Grasslands' own ground height.", "changes": [
+      {"table": "Scene", "add": {"areaID": 2, "sceneID": 12, "sceneNAME": "Lowlands 1", "sceneIMAGE": "gfx/area/West of Town/bgLandscape2_1x5.jpg", "sceneX": -1, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667}},
+      {"table": "Terrain", "add": {"areaID": 2, "terrainID": 10, "terrainX1": -1, "terrainY1": -0.3, "terrainX2": 1, "terrainY2": -0.3}}
+    ]},
+    {"id": "W9", "why": "Nothing links the two areas: the database has no exit table and no event moves the party, so the Lowlands could never be reached. The Grasslands' east end (its pictures stop at x 15, though ground line 7 runs on to 16) leads to the Lowlands' west end and back.", "changes": [
+    ]}
+  ],
+  "start": {"fix": "W7", "area": 1, "heroes": [
+    {"hero": 0, "x": -0.4, "y": -0.3},
+    {"hero": 1, "x": -0.1, "y": -0.3},
+    {"hero": 2, "x": -0.7, "y": -0.3}
+  ]},
+  "exits": [
+    {"fix": "W9", "area": 1, "name": "East to the Lowlands", "x": 15, "y": 0, "left": -0.2, "right": 0, "top": -0.1, "bottom": -0.6, "toArea": 2, "toX": -0.6, "toY": -0.3},
+    {"fix": "W9", "area": 2, "name": "West to the Grasslands", "x": -1, "y": 0, "left": 0, "right": 0.2, "top": -0.1, "bottom": -0.6, "toArea": 1, "toX": 14.5, "toY": -0.43}
+  ],
+  "assetSources": [
+    {"fix": "W4", "path": "gfx/area/West of Town/new.PNG", "from": "Fish 2/bin/gfx/area/West of Town/new.PNG", "why": "The Overworld copy (and the Overhead RPG copy) is all zero bytes; Fish 2's is the same size and a valid 640 x 480 PNG."}
+  ]
+}

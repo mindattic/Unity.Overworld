@@ -10,6 +10,9 @@ namespace MindAttic.Overworld.Core
         public string File { get; internal set; }
         public WorldKind Kind { get; internal set; }
         public string Note { get; internal set; }
+
+        /// <summary>The fixes file the world is played with (null: the world is only a record).</summary>
+        public string Fixes { get; internal set; }
     }
 
     /// <summary>
@@ -18,8 +21,9 @@ namespace MindAttic.Overworld.Core
     /// one reader; it throws a <see cref="ContentException"/> listing every problem, each with file, key and line.
     /// <para>
     /// The owner chose the 2007 root world.mdb as the game's world. Both databases are loaded; <see cref="PlayableWorld"/>
-    /// is the one the manifest names to play and <see cref="ReferenceWorld"/> the one kept as a reference record, so
-    /// switching what is played is one manifest value.
+    /// is the one the manifest names to play, read with its fixes file (U.OVW-T38) and checked by
+    /// <see cref="WorldPlayability"/>; <see cref="ReferenceWorld"/> is the one kept as a reference record, and
+    /// <see cref="Worlds"/> holds every edition exactly as its database held it.
     /// </para>
     /// </summary>
     public sealed class ContentRegistry
@@ -90,6 +94,7 @@ namespace MindAttic.Overworld.Core
                     File = r.Text("file"),
                     Kind = r.Choice<WorldKind>("kind"),
                     Note = r.Text("note"),
+                    Fixes = r.Has("fixes") ? r.Text("fixes") : null,
                 };
                 r.Done();
                 if (entries.Exists(e => e.Edition == entry.Edition)) r.Fail("edition", "\"" + entry.Edition + "\" is listed twice");
@@ -101,9 +106,20 @@ namespace MindAttic.Overworld.Core
             registry.WorldEntries = entries;
             registry.Worlds = worlds;
             registry.ReferenceWorld = registry.World(referenceEdition);
-            registry.PlayableWorld = registry.World(playableEdition);
             if (registry.ReferenceWorld == null) errors.Add(ManifestFile + ": 'referenceWorld' \"" + referenceEdition + "\" is not one of the listed worlds");
-            if (registry.PlayableWorld == null) errors.Add(ManifestFile + ": 'playableWorld' \"" + playableEdition + "\" is not one of the listed worlds");
+
+            // The world played is the chosen edition read again with its fixes; Worlds keeps every edition as the original held it.
+            var playableEntry = entries.Find(e => e.Edition == playableEdition);
+            if (playableEntry == null)
+                errors.Add(ManifestFile + ": 'playableWorld' \"" + playableEdition + "\" is not one of the listed worlds");
+            else if (playableEntry.Fixes == null)
+                registry.PlayableWorld = registry.World(playableEdition);
+            else
+            {
+                var fixes = WorldFixes.Read(source, playableEntry.Fixes, errors);
+                if (fixes != null)
+                    registry.PlayableWorld = WorldData.Read(source, playableEntry.File, playableEntry.Edition, playableEntry.Kind, errors, fixes);
+            }
 
             registry.HeroDatabase = HeroDatabase.Read(source, manifest.Text("heroDatabase"), errors);
             var pickupsFile = manifest.Text("pickups");
@@ -111,6 +127,7 @@ namespace MindAttic.Overworld.Core
             registry.Quests = QuestData.Read(source, manifest.Text("quests"), errors);
             registry.Weapons = WeaponData.Read(source, manifest.Text("weapons"), errors);
             registry.Heroes = HeroData.Read(source, manifest.Text("heroes"), registry.Weapons, errors);
+            if (registry.PlayableWorld != null) WorldPlayability.Check(registry.PlayableWorld, registry.Heroes, errors);
             registry.Walls = WallData.Read(source, manifest.Text("walls"), errors);
             registry.Props = PropData.Read(source, manifest.Text("props"), errors);
             registry.Books = BookData.Read(source, manifest.Text("books"), errors);
@@ -123,6 +140,10 @@ namespace MindAttic.Overworld.Core
                     if (p.Script.Contains("CHANGE BOOK TO ITEM") && registry.Books.Find(p.Name) == null)
                         errors.Add(pickupsFile + ": pickup " + p.Index + " (" + p.Name + ") opens a book of its own name, and there is no such book");
             }
+
+            // The playable world is the same export read a second time; a problem in a row no fix touches would otherwise be named twice.
+            var unique = new HashSet<string>();
+            errors.RemoveAll(e => !unique.Add(e));
 
             var warnings = new List<string>();
             foreach (var w in worlds) warnings.AddRange(w.Warnings);

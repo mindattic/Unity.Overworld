@@ -699,13 +699,196 @@ namespace MindAttic.Overworld.Tests
         }
 
         [Test]
-        public void SwitchingThePlayableWorldIsOneManifestValue()
+        public void ThePlayableWorldMustBeOneOfTheListedWorldsAndPlayable()
         {
+            // The 2006 database has no scenes, ground, start or exits, so it can be kept as a record but not played.
             var source = Patched(ContentRegistry.ManifestFile, t => t.Replace("\"playableWorld\": \"2007\"", "\"playableWorld\": \"2006\""));
-            var registry = ContentRegistry.Load(source);
-            Assert.AreEqual("2006", registry.PlayableWorld.Edition);
+            StringAssert.Contains("world-2006.json: the 2006 world cannot be the playable world", Rejected(source).Errors.Single());
             var bad = Patched(ContentRegistry.ManifestFile, t => t.Replace("\"playableWorld\": \"2007\"", "\"playableWorld\": \"2008\""));
             StringAssert.Contains("'playableWorld' \"2008\" is not one of the listed worlds", Rejected(bad).Errors.Single());
+        }
+
+        // ---- U.OVW-T38: the 2007 world as the game plays it ---------------------------------------------------
+
+        const string FixesFile = "world-2007-fixes.json";
+
+        [Test]
+        public void ThePlayableWorldIsThe2007DesignReadWithItsFixesWhileTheRecordStaysAsTheOriginalHeldIt()
+        {
+            var play = Registry.PlayableWorld;
+            var record = Registry.World("2007");
+            Assert.AreNotSame(record, play);
+            Assert.AreEqual(("2007", WorldKind.Root), (play.Edition, play.Kind));
+            Assert.AreEqual(FixesFile, play.Fixes.File);
+            Assert.IsNull(record.Fixes);
+            Assert.IsEmpty(play.Warnings);
+
+            // W2, W3: the stray sky strip joins the Grasslands and continues the sky row instead of covering Scene 9.
+            var sky8 = play.Scenes.Single(s => s.Id == 11);
+            Assert.AreEqual((1, 9f), (sky8.AreaId, sky8.X));
+            Assert.AreEqual((0, 8f), (record.Scenes.Single(s => s.Id == 11).AreaId, record.Scenes.Single(s => s.Id == 11).X));
+
+            // W5: every picture is its file's exact relative path.
+            Assert.AreEqual("gfx/area/West of Town/new.PNG", play.Scenes.Single(s => s.Id == 5).Image);
+            Assert.AreEqual("gfx/area/West of Town/mountain.PNG", play.Scenes.Single(s => s.Id == 10).Image);
+            Assert.AreEqual("gfx/prop/structure/gate.PNG", play.FindPropArt(9).Image);
+            Assert.AreEqual("gfx/npc/magitek/", play.Npcs[1].Directory);
+            Assert.IsTrue(play.Scenes.Concat(record.Scenes).All(s => s.Image.Length > 0));
+            Assert.IsFalse(play.Scenes.Select(s => s.Image).Concat(play.PropArt.Select(p => p.Image)).Concat(play.Npcs.Select(n => n.Directory)).Any(p => p.Contains('\\')));
+            Assert.AreEqual(@"\gfx\area\West of Town\new.png", record.Scenes.Single(s => s.Id == 5).Image);
+
+            // W6: the spelling.
+            Assert.AreEqual("Peasant Woman", play.Npcs[0].Name);
+            Assert.AreEqual("Peasent Woman", record.Npcs[0].Name);
+
+            // W8: the Lowlands have a picture and ground.
+            var lowlands = play.Scenes.Single(s => s.AreaId == 2);
+            Assert.AreEqual((12, "gfx/area/West of Town/bgLandscape2_1x5.jpg", -1f, 2f), (lowlands.Id, lowlands.Image, lowlands.X, lowlands.Width));
+            Assert.AreEqual(1, play.Terrain.Count(t => t.AreaId == 2));
+            Assert.AreEqual((11, 9), (record.Scenes.Count, record.Terrain.Count));
+            Assert.AreEqual((12, 10), (play.Scenes.Count, play.Terrain.Count));
+
+            // Everything the fixes do not touch is read exactly as the record has it.
+            Assert.AreEqual(record.AreaProps.Count, play.AreaProps.Count);
+            Assert.AreEqual(record.Events.Select(e => (e.Id, e.X, e.ScriptId)), play.Events.Select(e => (e.Id, e.X, e.ScriptId)));
+            Assert.AreEqual(record.Enemies.Select(e => e.Name), play.Enemies.Select(e => e.Name));
+        }
+
+        [Test]
+        public void ANewGameStartsAtTheWestEndOfTheGrasslandsWithThePartyOnTheGround()
+        {
+            var play = Registry.PlayableWorld;
+            Assert.AreEqual("W7", play.Start.Fix);
+            Assert.AreEqual("Grasslands", play.FindArea(play.Start.AreaId).Name);
+            Assert.AreEqual(new[] { (0, -0.4f), (1, -0.1f), (2, -0.7f) }, play.Start.Heroes.Select(h => (h.HeroId, h.X)).ToArray());
+            // The 2006 heroes' order and spacing along x: Belmont 0.3 right of Chrono, Flagg 0.3 left.
+            foreach (var h in play.Start.Heroes)
+            {
+                Assert.AreEqual(Registry.Heroes.Heroes[h.HeroId].Start.X, h.X - play.Start.Heroes[0].X, 1e-5f);
+                Assert.IsTrue(WorldPlayability.OnGround(play, play.Start.AreaId, h.X, h.Y), "hero " + h.HeroId);
+            }
+        }
+
+        [Test]
+        public void TheGrasslandsAndLowlandsAreLinkedBothWays()
+        {
+            var exits = Registry.PlayableWorld.Exits;
+            Assert.AreEqual(2, exits.Count);
+            var east = exits.Single(e => e.AreaId == 1);
+            var west = exits.Single(e => e.AreaId == 2);
+            Assert.AreEqual((2, -0.6f, -0.3f), (east.ToAreaId, east.ToX, east.ToY));
+            Assert.AreEqual((1, 14.5f, -0.43f), (west.ToAreaId, west.ToX, west.ToY));
+            // Standing at the Grasslands' east end, on ground line 7, is inside the exit; arriving is not.
+            Assert.IsTrue(east.Contains(14.9f, -0.43f));
+            Assert.IsFalse(east.Contains(west.ToX, west.ToY));
+            Assert.IsFalse(west.Contains(east.ToX, east.ToY));
+        }
+
+        [Test]
+        public void EveryFixIsARowOfTheBiblesFixedDefectsTable()
+        {
+            var bible = File.ReadAllText(Path.Combine(ContentDirectory(), "..", "..", "..", "docs", "BIBLE.md"));
+            var table = bible.Substring(bible.IndexOf("## Fixed defects", StringComparison.Ordinal));
+            foreach (var fix in Registry.PlayableWorld.Fixes.Fixes)
+                StringAssert.Contains("| " + fix.Id + " |", table, "docs/BIBLE.md's fixed-defects table has no row for " + fix.Id);
+        }
+
+        [Test]
+        public void EveryPictureThePlayableWorldNamesIsAnIntactFileOfTheOriginal()
+        {
+            // The originals are read-only source material on the owner's machine; elsewhere this check cannot run.
+            var parent = Environment.GetEnvironmentVariable("OVERWORLD_ORIGINALS") ?? @"R:\Projects\_PRE_2022\_PRE_2021\_PRE_2020\_PRE_2017";
+            var root = Path.Combine(parent, "Overworld");
+            if (!Directory.Exists(root)) Assert.Ignore("The original Overworld folder is not at " + root);
+
+            // Each path segment must match the disk's own spelling, case included.
+            string Exact(string baseDir, string relative)
+            {
+                var current = baseDir;
+                foreach (var part in relative.TrimEnd('/').Split('/'))
+                {
+                    var match = Directory.GetFileSystemEntries(current).Select(Path.GetFileName).FirstOrDefault(n => string.Equals(n, part, StringComparison.Ordinal));
+                    if (match == null) return null;
+                    current = Path.Combine(current, match);
+                }
+
+                return current;
+            }
+
+            var play = Registry.PlayableWorld;
+            var sources = play.Fixes.AssetSources.ToDictionary(a => a.Path, a => a.From);
+            var pictures = play.Scenes.Select(s => s.Image).Concat(play.PropArt.Select(p => p.Image)).Distinct().ToList();
+            foreach (var picture in pictures)
+            {
+                var file = sources.TryGetValue(picture, out var from) ? Exact(parent, from) : Exact(root, picture);
+                Assert.IsNotNull(file, picture + " is not in the original (with that exact spelling)");
+                var head = File.ReadAllBytes(file).Take(8).ToArray();
+                var png = head.SequenceEqual(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
+                var jpg = head[0] == 0xFF && head[1] == 0xD8;
+                Assert.IsTrue(png || jpg, picture + " (" + file + ") is not a PNG or JPEG");
+            }
+
+            foreach (var npc in play.Npcs)
+            {
+                var dir = Exact(root, npc.Directory);
+                Assert.IsNotNull(dir, npc.Directory);
+                Assert.AreEqual(11, Directory.GetFiles(dir, "npc_*.PNG").Length, npc.Directory);
+            }
+
+            // The fix is needed: the shipped new.PNG is all zero bytes.
+            Assert.IsTrue(File.ReadAllBytes(Exact(root, "gfx/area/West of Town/new.PNG")).All(b => b == 0));
+        }
+
+        [Test]
+        public void UndoingAFixIsCaughtByThePlayableWorldsRules()
+        {
+            // W2 undone: Scene 11 back in area 0.
+            var w2 = Rejected(Patched(FixesFile, t => t.Replace("\"set\": {\"areaID\": 1}", "\"set\": {\"areaID\": 0}"))).Errors;
+            Assert.IsTrue(w2.Any(e => e.Contains("Scene 11") && e.Contains("area 0") && e.Contains("not allowed in the world the game plays")), string.Join("\n", w2));
+
+            // W3 undone: the two sky strips overlap.
+            var w3 = Rejected(Patched(FixesFile, t => t.Replace("\"set\": {\"sceneX\": 9}", "\"set\": {\"sceneX\": 8}"))).Errors;
+            StringAssert.Contains("Scene 9 (Grasslands Sky 4) and Scene 11 (Grasslands Sky 8) draw over each other at the same depth", w3.Single());
+
+            // W5 undone for one picture.
+            var w5 = Rejected(Patched(FixesFile, t => t.Replace("\"gfx/prop/structure/gate.PNG\"", "\"\\\\gfx\\\\prop\\\\structure\\\\gate.png\""))).Errors;
+            StringAssert.Contains("Prop 9 (Gateway) names the picture", w5.Single());
+
+            // W8 undone: the Lowlands empty again.
+            var w8 = Rejected(Patched(FixesFile, t => t.Replace("\"table\": \"Scene\", \"add\"", "\"table\": \"Scene\", \"_add\""))).Errors;
+            Assert.IsTrue(w8.Any(e => e.Contains("area 2 (Lowlands) has no scene to show")), string.Join("\n", w8));
+
+            // W9 undone: no way to the Lowlands.
+            var w9 = Rejected(Patched(FixesFile, t => t.Replace("\"area\": 1, \"name\": \"East to the Lowlands\"", "\"area\": 2, \"name\": \"East to the Lowlands\""))).Errors;
+            Assert.IsTrue(w9.Any(e => e.Contains("area 2 (Lowlands) cannot be reached from the start")), string.Join("\n", w9));
+        }
+
+        [Test]
+        public void ABrokenStartOrExitIsNamed()
+        {
+            var air = Rejected(Patched(FixesFile, t => t.Replace("{\"hero\": 1, \"x\": -0.1, \"y\": -0.3}", "{\"hero\": 1, \"x\": -0.1, \"y\": 0.2}"))).Errors;
+            StringAssert.Contains("world-2007-fixes.json.start: hero 1 starts at (-0.1, 0.2), which is not on a ground line of area 1", air.Single());
+
+            var twice = Rejected(Patched(FixesFile, t => t.Replace("{\"hero\": 2, \"x\": -0.7", "{\"hero\": 1, \"x\": -0.7"))).Errors;
+            Assert.AreEqual(2, twice.Count, string.Join("\n", twice));
+            Assert.IsTrue(twice.Any(e => e.Contains("hero 1 (Belmont) must be placed once (is placed 2 times)")), string.Join("\n", twice));
+            Assert.IsTrue(twice.Any(e => e.Contains("hero 2 (Flagg) must be placed once (is placed 0 times)")), string.Join("\n", twice));
+
+            var bounce = Rejected(Patched(FixesFile, t => t.Replace("\"toX\": -0.6", "\"toX\": -0.9"))).Errors;
+            StringAssert.Contains("lands the party inside the exit \"West to the Grasslands\"", bounce.Single());
+        }
+
+        [Test]
+        public void AFixThatMatchesNoRowOrNamesNoColumnIsReported()
+        {
+            var none = Rejected(Patched(FixesFile, t => t.Replace("\"where\": {\"npcID\": 1}, \"set\": {\"npcNAME\"", "\"where\": {\"npcID\": 7}, \"set\": {\"npcNAME\""))).Errors;
+            StringAssert.Contains("fix W6's 'where' matches 0 rows of Npc (it must match exactly one)", none.Single());
+
+            var column = Rejected(Patched(FixesFile, t => t.Replace("\"set\": {\"npcNAME\"", "\"set\": {\"npcTITLE\""))).Errors;
+            StringAssert.Contains("fix W6's 'set' names the column 'npcTITLE', which Npc does not have", column.Single());
+
+            var cited = Rejected(Patched(FixesFile, t => t.Replace("\"start\": {\"fix\": \"W7\"", "\"start\": {\"fix\": \"W70\""))).Errors;
+            StringAssert.Contains("'start' cites the fix \"W70\", which is not in 'fixes'", cited.Single());
         }
     }
 }

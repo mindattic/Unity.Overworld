@@ -3,10 +3,10 @@ codex: 1
 project: Unity.Overworld
 layer: bible
 status: living
-updated: 2026-10-23
+updated: 2026-10-24
 ---
 
-# Overworld — rebuild bible
+# Overworld â€” rebuild bible
 
 The brief for the Unity rebuild. `docs/RECONSTRUCTION.md` is the evidence of what the original did (read it first; section numbers
 below refer to it). This file says what we are building: the original's gameplay kept exactly, its code replaced by modern,
@@ -52,7 +52,9 @@ Assets/Overworld/
   Content/     validated data      JSON the Core loads: pickups, quests, books, walls, props, areas, scenes, terrain, NPCs, enemies, heroes, weapons
                (lives at Assets/StreamingAssets/Content: content.json names every file; both world.mdb databases and hero.mdb are
                exported there by tools/export-mdb.ps1, the books by tools/export-books.ps1; Core's ContentRegistry loads and validates them,
-               naming every problem by file, key and line. world-2007.json is the playable world, world-2006.json a reference record.)
+               naming every problem by file, key and line. world-2007.json is the playable world, world-2006.json a reference record.
+               The 2007 export stays exactly as the database held it; world-2007-fixes.json holds the corrections, the start and the
+               exits, applied when the playable world is read, and WorldPlayability checks the result every load: see Fixed defects.)
   Art/ Audio/  the original assets, imported verbatim and catalogued
 Tests/
   Overworld.Core.Tests   NUnit, plain `dotnet test`, no Unity: rules, scripts, data validation, the asset-catalogue diff
@@ -107,12 +109,40 @@ Each is a place where the original is silent, broken or ambiguous. They are deci
 | Enemy AI states (16.2) | Passive, Aggressive, Afraid, Defensive as names | Passive ignores the party; Aggressive pursues within range; Defensive holds until hurt or approached within half its range; Afraid retreats; speeds from the data |
 | NPC states (16.2) | "stand" and "pursue" as names | Stand idles facing the party; pursue follows the leader at the NPC's data speed without attacking |
 | Items in later areas | Only area 0 data existed for pickups | Pickups stay in the original world (the 45 loaded tiles); the Grasslands area (story A25) carries the 2007 props, NPCs and enemies |
+| The world played (owner 2026-10-23) | The engine loaded the 2006 `data\world.mdb` (and used none of it); the 2007 root `world.mdb` was never read by any code | The 2007 world is the world the game starts in and plays, with the fixes below; the 2006 database is a reference record only. A new game begins in the Grasslands (U.OVW-T38) |
+
+## Fixed defects
+
+The 2007 world was never loaded by any code of the original, so nothing had ever found what in it does not work. U.OVW-T38 checked every
+table, row, reference and picture of it against the original's files and fixed what is broken. Each data fix is an entry of
+`Assets/StreamingAssets/Content/world-2007-fixes.json` with the same id (a Core test fails if a fix has no row here); `world-2007.json` itself
+stays the faithful export, and `WorldPlayability` re-checks every rule below on every load, so undoing a fix fails loudly.
+
+| ID | Defect in the 2007 world | Fix |
+|---|---|---|
+| W1 | The original engine could not open it at all: `getArea` queries `Pickup` and `Items`, which it lacks, and nothing reads its `Scene`, `Terrain`, `Props`, `Npc` or `Enemy` tables. Three columns hold numbers as text (`Area_Npcs.areaID`, `Enemy.enemyID`, `Enemy.enemyMAXHP`) | Core reads its own 15-table schema (U.OVW-T6) and the text columns as whole numbers, rejecting text that is not one. No data change |
+| W2 | Scene 11 "Grasslands Sky 8" is in area 0, which has no Area row (0 is the 2006 database's Foothills of Phar; the copied row kept its area) | Moved to area 1, the Grasslands its name gives. The record keeps it as a warning; the played world allows no dangling area |
+| W3 | Scene 11 at x 8 covers half of Scene 9 (Grasslands Sky 4, x 7 to 9): the same sky picture at the same depth, so they flicker against each other | Moved to x 9, continuing the sky row. No two pictures of an area may overlap at one depth |
+| W4 | Scene 5's picture `new.png` (the 1x5 strip whose sky is see-through so the Mountain behind shows) is 441,816 zero bytes in the shipped folder (and in the Overhead RPG copy): it is not a picture | The asset import takes the intact file of the same size from the sibling project `Fish 2\bin\gfx\area\West of Town\new.PNG` (`assetSources`) |
+| W5 | Every picture path has backslashes and a leading backslash, and 10 name an extension in the wrong case (`orchard_N.png` for `.PNG`, `gate.png`, `mountain.png`, `new.png`); only Windows' forgiving file system made them resolve | Each is the file's exact relative path (`gfx/prop/tree/orchard_1.PNG`); NPC folders end with `/`. A Core test checks every one against the original folder, byte signature included |
+| W6 | NPC 1 is spelled "Peasent Woman" | "Peasant Woman" |
+| W7 | No start: no area to begin in, nowhere for the party to stand | Area 1 (Grasslands), the party on ground line 1 at x -0.4 (Chrono), -0.1 (Belmont), -0.7 (Flagg): the 2006 heroes' order and 0.3 spacing reused, the point given is under each hero's feet |
+| W8 | Area 2 "Lowlands" is a name only: no picture, no ground | A stand-in until the owner supplies content: one strip using the spare original 1x5 landscape (`bgLandscape2_1x5.jpg`, the picture `new.png` displaced) at x -1 to 1, and a ground line across it at the Grasslands' height (-0.3) |
+| W9 | Nothing links the areas: no exit table and no event that moves the party, so the Lowlands could never be reached | Two exits: the Grasslands' east end (x 14.8 to 15, where its pictures stop; ground line 7 runs on to 16) to the Lowlands at x -0.6, and the Lowlands' west end (x -1 to -0.8) back to the Grasslands at x 14.5. Every area must be reachable from the start and lead back to it |
+
+Checked and not changed, because they work as the 2007 design meant: the events and their scripts (Poison Box, Healing Box, and Entering Dark
+Woods, whose "Night" script is the 2006 "Make Night" with the same effect, the interpreter upper-casing it); the props, including the Gateway at
+z -0.5, a deliberate foreground piece (the 2005 sibling engine `Battle 2` places `gate.png` at the same depth); the half-height sizes (see
+RECONSTRUCTION 16.2); the ramp and ledge of ground lines 8 and 9; the five enemies with no placement and no `Enemy_Images` rows (nothing
+references missing art; their art and placement are story A28's). Nothing else of the 2006 database was needed: its three events, scripts and
+starter items have no 2007 counterpart they would repair.
 
 ## Open questions (flag when a ticket hits one)
 
-- Which of the two areas systems wins when both apply: the 2006 tile world (A1 to F8) and the 2007 Grasslands/Lowlands scenes. The plan is both: the tile world is the
-  default "overworld", Grasslands and Lowlands are reachable areas. A ticket that needs to choose raises it.
-- Whether "Lowlands" (area 2) has any scenes: the data has none; it is built as an empty reachable area until the owner supplies content.
+- Where the shipped 2006 tile world (A1 to F8, with its pickups, quests, walls, props and tent) sits now that a new game begins in the 2007
+  Grasslands (U.OVW-T38): the 2007 database has no area for it and no exit to it. Linking it in (as an area, perhaps under its 2006 name
+  Foothills of Phar) is the owner's call; until then it is built as before and reached by the stories that build it.
+- What the Lowlands hold: the data gives none; W8's single strip is a stand-in until the owner supplies content.
 - What the Skill ring entry offers beyond the Flame spell seam (story A32).
 
 ## Laws

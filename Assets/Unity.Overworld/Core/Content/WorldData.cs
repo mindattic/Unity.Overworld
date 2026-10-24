@@ -204,6 +204,15 @@ namespace MindAttic.Overworld.Core
 
         public List<string> Warnings { get; } = new List<string>();
 
+        /// <summary>The corrections this world was read with (null for a faithful record of the original).</summary>
+        public WorldFixes Fixes { get; internal set; }
+
+        /// <summary>Where a new game begins (only the playable world has one; the original databases never did).</summary>
+        public WorldStart Start { get; internal set; }
+
+        /// <summary>The ways between areas (the original databases had none).</summary>
+        public List<ExitRecord> Exits { get; } = new List<ExitRecord>();
+
         public AreaRecord FindArea(int id) => Areas.Find(a => a.Id == id);
         public ScriptRecord FindScript(int id) => Scripts.Find(s => s.Id == id);
         public PropArtRecord FindPropArt(int id) => PropArt.Find(p => p.Id == id);
@@ -237,20 +246,36 @@ namespace MindAttic.Overworld.Core
             "Terrain: areaID Int32, terrainID Int32, terrainX1 Single, terrainY1 Single, terrainX2 Single, terrainY2 Single",
         };
 
-        /// <summary>Reads, schema-checks and cross-checks one world database export.</summary>
-        internal static WorldData Read(IContentSource source, string file, string edition, WorldKind kind, List<string> errors)
+        /// <summary>
+        /// Reads, schema-checks and cross-checks one world database export. With <paramref name="fixes"/>, the typed records
+        /// are read from the rows as fixed (the export and <see cref="Database"/> stay as the original held them) and the
+        /// world carries the fixes' start and exits.
+        /// </summary>
+        internal static WorldData Read(IContentSource source, string file, string edition, WorldKind kind, List<string> errors, WorldFixes fixes = null)
         {
             var db = MdbDatabase.Read(source, file, kind == WorldKind.Engine ? EngineSchema : RootSchema, errors);
             if (db == null) return null;
-            var world = new WorldData { Edition = edition, Kind = kind, Database = db };
+            var world = new WorldData { Edition = edition, Kind = kind, Database = db, Fixes = fixes };
+            Dictionary<string, List<ContentReader>> rows;
+            if (fixes != null)
+            {
+                rows = fixes.Apply(db, errors);
+                world.Start = fixes.Start;
+                world.Exits.AddRange(fixes.Exits);
+            }
+            else
+            {
+                rows = new Dictionary<string, List<ContentReader>>();
+                foreach (var t in db.Tables) rows[t.Name] = t.RowReaders;
+            }
 
-            foreach (var r in Rows(db, "Area"))
+            foreach (var r in Rows(rows, "Area"))
             {
                 world.Areas.Add(new AreaRecord { Id = r.Integer("areaID"), Name = r.Text("areaNAME") });
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Script"))
+            foreach (var r in Rows(rows, "Script"))
             {
                 world.Scripts.Add(new ScriptRecord
                 {
@@ -262,7 +287,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Event"))
+            foreach (var r in Rows(rows, "Event"))
             {
                 var e = new EventRecord { AreaId = r.Integer("areaID"), Id = r.Integer("eventID"), Name = r.Text("eventNAME") };
                 if (kind == WorldKind.Root)
@@ -281,13 +306,13 @@ namespace MindAttic.Overworld.Core
                 world.Events.Add(e);
             }
 
-            foreach (var r in Rows(db, "Item_Textures"))
+            foreach (var r in Rows(rows, "Item_Textures"))
             {
                 world.ItemTextures.Add(new ItemTextureRecord { Id = r.Integer("textureID"), Name = r.Text("textureNAME"), File = r.Text("textureFILE") });
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Items"))
+            foreach (var r in Rows(rows, "Items"))
             {
                 world.Items.Add(new ItemRecord
                 {
@@ -304,7 +329,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Pickup"))
+            foreach (var r in Rows(rows, "Pickup"))
             {
                 world.Pickups.Add(new PickupRecord
                 {
@@ -317,7 +342,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Scene"))
+            foreach (var r in Rows(rows, "Scene"))
             {
                 world.Scenes.Add(new SceneRecord
                 {
@@ -334,7 +359,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Terrain"))
+            foreach (var r in Rows(rows, "Terrain"))
             {
                 world.Terrain.Add(new TerrainRecord
                 {
@@ -348,7 +373,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Props"))
+            foreach (var r in Rows(rows, "Props"))
             {
                 world.PropArt.Add(new PropArtRecord
                 {
@@ -361,7 +386,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Area_Props"))
+            foreach (var r in Rows(rows, "Area_Props"))
             {
                 world.AreaProps.Add(new AreaPropRecord
                 {
@@ -376,7 +401,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Npc"))
+            foreach (var r in Rows(rows, "Npc"))
             {
                 world.Npcs.Add(new NpcRecord
                 {
@@ -389,7 +414,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Area_Npcs"))
+            foreach (var r in Rows(rows, "Area_Npcs"))
             {
                 world.AreaNpcs.Add(new AreaNpcRecord
                 {
@@ -402,11 +427,11 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Enemy_Class")) { world.EnemyClasses.Add(r.Text("enemyCLASS")); r.Done(); }
-            foreach (var r in Rows(db, "Enemy_Motion")) { world.EnemyMotions.Add(r.Text("enemyMOTION")); r.Done(); }
-            foreach (var r in Rows(db, "Enemy_State")) { world.EnemyStates.Add(r.Text("enemySTATE")); r.Done(); }
+            foreach (var r in Rows(rows, "Enemy_Class")) { world.EnemyClasses.Add(r.Text("enemyCLASS")); r.Done(); }
+            foreach (var r in Rows(rows, "Enemy_Motion")) { world.EnemyMotions.Add(r.Text("enemyMOTION")); r.Done(); }
+            foreach (var r in Rows(rows, "Enemy_State")) { world.EnemyStates.Add(r.Text("enemySTATE")); r.Done(); }
 
-            foreach (var r in Rows(db, "Enemy"))
+            foreach (var r in Rows(rows, "Enemy"))
             {
                 world.Enemies.Add(new EnemyRecord
                 {
@@ -422,7 +447,7 @@ namespace MindAttic.Overworld.Core
                 r.Done();
             }
 
-            foreach (var r in Rows(db, "Area_Enemies"))
+            foreach (var r in Rows(rows, "Area_Enemies"))
             {
                 world.AreaEnemies.Add(new AreaEnemyRecord
                 {
@@ -437,7 +462,7 @@ namespace MindAttic.Overworld.Core
 
             // Enemy_Images is read as raw rows only (the table is empty in the original); a row would still be checked
             // against its nine columns by the unknown/missing key rules.
-            foreach (var r in Rows(db, "Enemy_Images"))
+            foreach (var r in Rows(rows, "Enemy_Images"))
             {
                 foreach (var c in db.Table("Enemy_Images").Columns) r.Text(c.Key, allowEmpty: true);
                 r.Done();
@@ -447,10 +472,9 @@ namespace MindAttic.Overworld.Core
             return world;
         }
 
-        static List<ContentReader> Rows(MdbDatabase db, string table)
+        static List<ContentReader> Rows(Dictionary<string, List<ContentReader>> rows, string table)
         {
-            var t = db.Table(table);
-            return t != null ? t.RowReaders : new List<ContentReader>();
+            return rows.TryGetValue(table, out var list) ? list : new List<ContentReader>();
         }
 
         void CrossCheck(string file, List<string> errors)
@@ -462,6 +486,8 @@ namespace MindAttic.Overworld.Core
             UniqueIds(file, "Enemy", Enemies, e => e.Id, errors);
             UniqueIds(file, "Items", Items, i => i.Id, errors);
             UniqueIds(file, "Item_Textures", ItemTextures, t => t.Id, errors);
+            UniqueIds(file, "Scene", Scenes, s => s.Id, errors);
+            UniqueIds(file, "Terrain", Terrain, t => t.Id, errors);
 
             foreach (var e in Events)
             {

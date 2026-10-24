@@ -691,7 +691,17 @@ The compiled engine loads these tables and uses none of them (its pickups, scrip
 | 1 | 10 | Mountain | mountain.png | 6 | 0 | 0.03 | 3 | 1.222222 |
 | 0 | 11 | Grasslands Sky 8 | bgLandscape2_0x4.jpg | 8 | 1.333333 | 0 | 2 | 0.6666667 |
 
-(Scene 11's area 0 matches no area row; the 640 x 480 landscape images are drawn as 2 wide by 0.667 tall, i.e. 3:1. The 1x5 slot was replaced by `new.png`; `bgLandscape2_1x5.jpg` and `.PNG` also exist.)
+(Scene 11's area 0 matches no area row, and at x 8 it covers half of Scene 9, the same picture at the same depth. The 1x5 slot was replaced by `new.png`; `bgLandscape2_1x5.jpg` and `.PNG` also exist.
+**`new.PNG` in the shipped folder is 441,816 zero bytes** (so is the copy in `My Game Creations\Overhead RPG`); the intact file of the same size, a 640 x 480 PNG whose sky is magenta (see-through) so the Mountain behind it shows, is in the sibling project `Fish 2\bin\gfx\area\West of Town\`.
+Paths are written with backslashes and lower-case extensions (`orchard_N.png`, `gate.png`, `mountain.png`, `new.png`) for files whose extension is upper-case on disk.)
+
+**Sizes are half-heights.** The 2007 tables give a picture's y as its vertical centre and its height as half the drawn height: the 2005 sibling engine in the same family,
+`Battle 2` (whose `Database.getArea` reads `Area`, `Event`, `Script` and `Terrain` tables of this design's shape), builds every quad with `setupVertex(w, h)` spanning x 0 to w and y -h to +h.
+Read that way the numbers fit their art: a 640 x 480 strip drawn 2 x 1.333 (the ground strips span y -0.667 to 0.667 and the sky strips at y 1.333 sit exactly on top of them),
+a 48 x 48 NPC 0.144 x 0.144 (the hero's size), Stonehenge (521 x 124) 1.4 x 0.36. The same sibling places `gate.png` at z -0.5, as Area_Props does for the first Gateway.
+The ground lines, the scenes and the NPCs' y near -0.2 make the 2007 design a side-on world (the party walks along ground lines, as the orphan `Hero.vb` and `Terrain.vb` intended),
+not the shipped engine's top-down tile grid. There is no start position, no exit or link between the two areas, and area 2 (Lowlands) has no scene, terrain or anything else.
+What the rebuild fixes of all this is the BIBLE's fixed-defects table (U.OVW-T38).
 
 `Terrain` (areaID, id, x1, y1, x2, y2), all area 1: 1 (-1,-0.3)-(5.5,-0.3); 2 (5.5,-0.3)-(6,-0.5); 3 (6,-0.5)-(8.5,-0.5); 4 (8.5,-0.5)-(10,-0.2); 5 (10,-0.2)-(11,-0.2); 6 (11,-0.2)-(12,-0.43); 7 (12,-0.43)-(16,-0.43); 8 (0.25,-0.25)-(1,0.05); 9 (1,0.05)-(1.25,0.05).
 (The orphan `Terrain.vb` and the unused `getIntersectY` describe how they were meant to be used: the ground line a hero stands on.)
@@ -702,7 +712,7 @@ The compiled engine loads these tables and uses none of them (its pickups, scrip
 (7, 11, -0.4, -0.04, 0.9, 0.3); (8, -0.7, -0.5, -0.03, 1.4, 0.18); (1, 7.5, -0.3, -0.05, 1.4, 0.35); (5, 10, -0.45, -0.07, 1.2, 0.3); (6, 14, -0.36, -0.04, 1, 0.3); (9, 3, -0.3, -0.5, 0.5, 0.12); (3, 6.2, -0.45, -0.07, 1.5, 0.15);
 (4, 10.5, -0.45, -0.04, 0.7, 0.32); (9, 5, -0.4, -0.05, 0.5, 0.12).
 
-`Npc` (id, name, width, height, art): 1 Peasent Woman 0.144 x 0.072 `\gfx\npc\woman\`; 2 Magitek Armor 0.144 x 0.072 `\gfx\npc\magitek\`. `Area_Npcs` (area 1): npc 1 at (1,-0.2) state "stand"; npc 2 at (4,-0.2) state "pursue".
+`Npc` (id, name, width, height, art): 1 Peasent Woman (sic) 0.144 x 0.072 `\gfx\npc\woman\`; 2 Magitek Armor 0.144 x 0.072 `\gfx\npc\magitek\`. `Area_Npcs` (area 1): npc 1 at (1,-0.2) state "stand"; npc 2 at (4,-0.2) state "pursue".
 
 `Enemy` (id, name, max HP, move speed, range, state, motion, class): 1 Werelynx 6, 0.004, 0.8, Defensive, Walking, Animal; 2 Botherfly 3, 0.006, 1.4, Aggressive, Flying, Insect; 3 Blue Slime 2, 0.003, 0.4, Passive, Walking, Paranormal;
 4 Red Slime 5, 0.004, 0.7, Defensive, Walking, Paranormal; 5 Toadie 4, 0.05, 0.4, Aggressive, Hopping, Reptile. `Enemy_Class`: Paranormal, Animal, Reptile, Insect, Mechanical. `Enemy_Motion`: Walking, Flying, Hopping, Teleporting, Stationary, Swimming.
@@ -731,7 +741,7 @@ Counts are files. "Loaded" means a compiled routine opens it. Where a file is in
 | `world.mdb`, `hero.mdb`, `data\world.mdb` | 3 | Section 16 |
 | `data\books\*` | 52 | Five books, pages as in section 11; all loaded |
 | `gfx\area\*.png` (A1..F8, B4z, base, base2x, bigrunescape, flowers, grass, rune, rune2x) | 53 | 45 tiles loaded by computed name (A1-A8, B1-B9, C1-C7, D1-D7, E1-E7, F1-F6, F8); `B4z` and the seven `base` / `flowers` / `grass` / `rune` files are not loaded |
-| `gfx\area\West of Town\*` | 14 | Used by the root `world.mdb` Scene table (not by code); `mountain.JPG`, `mountain_long.PNG` (1280 x 480) and two duplicate 1x5 files are spare. `gfx\area\New Folder` is empty |
+| `gfx\area\West of Town\*` | 14 | Used by the root `world.mdb` Scene table (not by code); `mountain.JPG`, `mountain_long.PNG` (1280 x 480) and two duplicate 1x5 files are spare; `new.PNG` is all zero bytes (an intact copy is in `Fish 2`). `gfx\area\New Folder` is empty |
 | `gfx\clouds\cloud1..4` | 4 | 1 and 2 used; 3 and 4 loaded, unused |
 | `gfx\balloon.png` | 1 | Used (first four clouds) |
 | `gfx\cursor\*` | 19 | arrow, box, cross, retreat, group, blank, 4 scroll arrows, zoom, hand, item_cursor, swap_cursor, eye loaded; arrow2, arrow3, hand2, scroll_downright unused |

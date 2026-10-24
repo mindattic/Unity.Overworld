@@ -4,7 +4,7 @@
   "playableWorld": "2007",
   "worlds": [
     {"edition": "2006", "file": "world-2006.json", "kind": "Engine", "note": "data/world.mdb, read by the engine's getArea and used by none of it; kept as a reference record"},
-    {"edition": "2007", "file": "world-2007.json", "kind": "Root", "note": "the root world.mdb, the owner's chosen world (U.OVW-T38 makes it the world played)"}
+    {"edition": "2007", "file": "world-2007.json", "kind": "Root", "note": "the root world.mdb, the owner's chosen world, played with the fixes in world-2007-fixes.json (U.OVW-T38)", "fixes": "world-2007-fixes.json"}
   ],
   "heroDatabase": "hero.json",
   "pickups": "pickups.json",
