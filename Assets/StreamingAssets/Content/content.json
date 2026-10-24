@@ -1,0 +1,17 @@
+{
+  "_source": "The manifest the Core loader reads first: which file holds what. Every file named here must exist.",
+  "referenceWorld": "2006",
+  "playableWorld": "2007",
+  "worlds": [
+    {"edition": "2006", "file": "world-2006.json", "kind": "Engine", "note": "data/world.mdb, read by the engine's getArea and used by none of it; kept as a reference record"},
+    {"edition": "2007", "file": "world-2007.json", "kind": "Root", "note": "the root world.mdb, the owner's chosen world (U.OVW-T38 makes it the world played)"}
+  ],
+  "heroDatabase": "hero.json",
+  "pickups": "pickups.json",
+  "quests": "quests.json",
+  "weapons": "weapons.json",
+  "heroes": "heroes.json",
+  "walls": "walls.json",
+  "props": "props.json",
+  "books": "books.json"
+}

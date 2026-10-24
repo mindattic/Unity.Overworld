@@ -1,0 +1,12 @@
+{
+  "_source": "overhead 2/Prop.vb loadProp (maxProps 3) and Tent.vb loadTent, RECONSTRUCTION 3.4 and 3.6. A prop is a bottom quad (trunk) and a top quad (canopy): the top is placed at (x - width, y + height + heroSize).",
+  "heroSize": 0.144,
+  "textures": ["tree_bottom_1", "tree_top_1", "wall_medium", "tent_128"],
+  "props": [
+    {"id": 0, "at": [1, 1], "z": 0, "width": 0.144, "height": 0.072, "bottomHeight": 0.072, "bottomTexture": "tree_bottom_1", "topTexture": "tree_top_1"},
+    {"id": 1, "at": [2, 1], "z": 0, "width": 0.144, "height": 0.072, "bottomHeight": 0.072, "bottomTexture": "tree_bottom_1", "topTexture": "tree_top_1"},
+    {"id": 2, "at": [1.5, 1], "z": 0, "width": 0.144, "height": 0.072, "bottomHeight": 0.072, "bottomTexture": "tree_bottom_1", "topTexture": "tree_top_1"},
+    {"id": 3, "at": [1, 1.064], "z": 0, "width": 1, "height": 0.5, "bottomHeight": 0.072, "bottomTexture": "wall_medium", "topTexture": "tree_top_1"}
+  ],
+  "tent": {"at": [-0.7, -0.04], "size": 0.3, "texture": "tent_128"}
+}

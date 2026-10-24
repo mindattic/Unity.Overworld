@@ -1,0 +1,11 @@
+{
+  "_source": "overhead 2/Walls.vb loadwall (maxwall 5), RECONSTRUCTION 3.5. The slope and intercepts are derived by the loader the way the source derived them.",
+  "walls": [
+    {"from": [1, 0], "to": [1, 1]},
+    {"from": [1, 1], "to": [2, 1]},
+    {"from": [2, 1], "to": [2.5, 2]},
+    {"from": [2.5, 2], "to": [3, 2]},
+    {"from": [3, 2], "to": [3.5, 1.5]},
+    {"from": [3.5, 1.5], "to": [4, 2]}
+  ]
+}

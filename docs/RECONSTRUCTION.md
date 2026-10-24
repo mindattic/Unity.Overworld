@@ -544,10 +544,10 @@ writes "name : scriptName" at (100,100) and runs the script each frame.
 | Colesium Vol I | 10 | 941 | none (no pickup, reachable only with N or the CHANGE BOOK script) | A gladiator tale: Kain, champion of the Empire's Coliseum |
 | Dragon Almanac | 12 | 899 | 109 | Dragons as the lost link between dinosaurs and birds; the Draconis family, 127 species |
 | Grimoire de'Alchemiste | 8 | 302 | 105 | Alchemy as the fusing of science with magic; Ascension; the last page is a dedication "To Anna, My best student and lover -M" |
-| Matt's Book | 6 | 1 | 371 | Placeholder text "sdfsdfsdfdsfsdfdsfsdf" in the first page, the rest empty |
+| Matt's Book | 6 | 1 | 371 | Placeholder keyboard-mash text ("sdfsdfsdfdsf" on page 1, "sdfdsfsdf" on page 6, which read together are the one word counted), pages 2 to 5 empty |
 | Poetry Book | 16 | 1007 | 110 | A table of contents (Awakening III, One Way Thought V, Why? VII, Shifted Perspectives X, People XI, Along the coast of castaways XII) and poems (page 2 is blank) |
 
-The text files are ASCII with a few Windows-1252 characters (curly apostrophes). They are kept verbatim as content data.
+The text files are ASCII with a few UTF-8 curly apostrophes (U+2019, in the Dragon Almanac). They are kept verbatim as content data.
 
 ## 12. Battle mode and the ring menu
 
@@ -664,7 +664,7 @@ Read by `theDatabase.getArea` into a DataSet with relations AreaEvents, EventScr
 `Item_Textures` (id, name, file): 0 Health Root `C:\tex.bmp`; 1 Moon Berry `C:\tex2.bmp`; 2 Mandrake `C:\tex3.bmp`.
 
 `Items` (itemID, texureID, name, script, effect, description, weight, type, amount): 0 Health Root `CHANGE HERO HP +10`, "+10 HP", "Common healing root", 0.1, OneTime, 1;
-1 Moon Berry `CHANGE HERO AI LAYDOWN`, effect text holds `CHANGE TIME HOUR 22 | CHANGE INVENTORY OPEN FALSE | Induces a coma-like sleep until nightfall` (the pipe fields shifted by the column split), "Mild sedative fruit", 0.2, OneTime, 1;
+1 Moon Berry `CHANGE HERO AI LAYDOWN | CHANGE TIME HOUR 22 | CHANGE INVENTORY OPEN FALSE`, "Induces a coma-like sleep until nightfall", "Mild sedative fruit", 0.2, OneTime, 1;
 2 Mandrake `CHANGE HERO STATUS POISONED`, "Poison", "Very poisonous plant", 0.1, OneTime, 1.
 
 `Pickup` (areaID, itemID, x, y, z): (0, 0, -0.2, 0.01, 0); (0, 1, 0.3, 0.4, 0); (0, 2, 0, 0, 0).

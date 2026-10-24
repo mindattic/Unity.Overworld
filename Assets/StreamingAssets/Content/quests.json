@@ -1,0 +1,27 @@
+{
+  "_source": "overhead 2/Quests.vb loadQuests and loadSubquests, RECONSTRUCTION 10. Every objective is a MoveTo (the only type the source evaluates); range applies to both axes.",
+  "quests": [
+    {"id": 0, "text": "Farmer Brinn wants you to check the crops", "exp": 1000, "status": "Active", "startScript": "", "endScript": "", "objectives": [
+      {"type": "MoveTo", "at": [0, 0.3], "range": 0.1, "exp": 100, "text": "Check North Field", "startScript": "", "endScript": ""},
+      {"type": "MoveTo", "at": [0, -0.3], "range": 0.1, "exp": 150, "text": "Check South Field", "startScript": "", "endScript": ""}
+    ]},
+    {"id": 1, "text": "Check the other crops", "exp": 2000, "status": "Inactive", "startScript": "", "endScript": "", "objectives": [
+      {"type": "MoveTo", "at": [0, 0], "range": 0.1, "exp": 200, "text": "Check Center Field", "startScript": "", "endScript": ""}
+    ]},
+    {"id": 2, "text": "Last Quest", "exp": 2500, "status": "Inactive", "startScript": "", "endScript": "", "objectives": [
+      {"type": "MoveTo", "at": [-0.3, 0], "range": 0.05, "exp": 320, "text": "Go West, my boy!", "startScript": "", "endScript": ""},
+      {"type": "MoveTo", "at": [0.3, 0], "range": 0.05, "exp": 300, "text": "go East, my boy!", "startScript": "", "endScript": "CHANGE TIME HOUR 18"}
+    ]},
+    {"id": 3, "text": "Go westernly now", "exp": 3500, "status": "Inactive", "startScript": "", "endScript": "", "objectives": [
+      {"type": "MoveTo", "at": [-5, 0], "range": 0.1, "exp": 400, "text": "Very Far West", "startScript": "", "endScript": ""}
+    ]}
+  ],
+  "subquests": [
+    {"id": 0, "text": "Check out the weird cirle", "exp": 350, "status": "Active", "startScript": "", "endScript": "", "objectives": [
+      {"type": "MoveTo", "at": [0, -1], "range": 0.05, "exp": 200, "text": "Go Way south", "startScript": "", "endScript": ""}
+    ]},
+    {"id": 1, "text": "Walk up to 3", "exp": 1500, "status": "Active", "startScript": "", "endScript": "", "objectives": [
+      {"type": "MoveTo", "at": [0, 3], "range": 0.05, "exp": 1200, "text": "Go very far north", "startScript": "", "endScript": ""}
+    ]}
+  ]
+}

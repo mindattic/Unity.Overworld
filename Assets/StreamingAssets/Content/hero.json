@@ -1,0 +1,55 @@
+{
+  "_source": "Overworld/hero.mdb (2004) [hero.mdb, written 2004-10-12]",
+  "tables": {
+    "Armor": {
+      "columns": [{"name": "heroID", "type": "Int32"}, {"name": "headID", "type": "Int32"}, {"name": "bodyID", "type": "Int32"}, {"name": "armsID", "type": "Int32"}, {"name": "feetID", "type": "Int32"}],
+      "rows": [
+      ]
+    },
+    "Armor_Arms": {
+      "columns": [{"name": "armsID", "type": "Int32"}, {"name": "armsNAME", "type": "String"}, {"name": "armsDEF", "type": "Int32"}, {"name": "armsRND", "type": "Int32"}, {"name": "armsDUR", "type": "Int32"}, {"name": "armsMAXDUR", "type": "Int32"}, {"name": "armsDESC", "type": "String"}],
+      "rows": [
+      ]
+    },
+    "Armor_Body": {
+      "columns": [{"name": "bodyID", "type": "Int32"}, {"name": "bodyNAME", "type": "String"}, {"name": "bodyDEF", "type": "Int32"}, {"name": "bodyRND", "type": "Int32"}, {"name": "bodyDUR", "type": "Int32"}, {"name": "bodyMAXDUR", "type": "Int32"}, {"name": "bodyDESC", "type": "String"}],
+      "rows": [
+      ]
+    },
+    "Armor_Feet": {
+      "columns": [{"name": "feetID", "type": "Int32"}, {"name": "feetNAME", "type": "String"}, {"name": "feetDEF", "type": "Int32"}, {"name": "feetRND", "type": "Int32"}, {"name": "feetDUR", "type": "Int32"}, {"name": "feetMAXDUR", "type": "Int32"}, {"name": "feetDESC", "type": "String"}],
+      "rows": [
+      ]
+    },
+    "Armor_Head": {
+      "columns": [{"name": "headID", "type": "Int32"}, {"name": "headNAME", "type": "String"}, {"name": "headDEF", "type": "Int32"}, {"name": "headRND", "type": "Int32"}, {"name": "headDUR", "type": "Int32"}, {"name": "headMAXDUR", "type": "Int32"}, {"name": "headDESC", "type": "String"}],
+      "rows": [
+      ]
+    },
+    "Hero": {
+      "columns": [{"name": "heroID", "type": "Int32"}, {"name": "heroNAME", "type": "String"}, {"name": "heroHP", "type": "Int32"}, {"name": "heroMAXHP", "type": "Int32"}, {"name": "heroSTR", "type": "Int32"}, {"name": "heroAGI", "type": "Int32"}, {"name": "heroINT", "type": "Int32"}, {"name": "heroSPD", "type": "Int32"}, {"name": "weapID", "type": "Int32"}, {"name": "relicID", "type": "Int32"}],
+      "rows": [
+        {"heroID": 1, "heroNAME": "Alexander", "heroHP": 50, "heroMAXHP": 50, "heroSTR": 1, "heroAGI": 2, "heroINT": 0, "heroSPD": 2, "weapID": 1, "relicID": 1}
+      ]
+    },
+    "Relic": {
+      "columns": [{"name": "relicID", "type": "String"}, {"name": "relicNAME", "type": "String"}, {"name": "relicDESC", "type": "String"}, {"name": "relicSTR_MOD", "type": "String"}, {"name": "relicINT_MOD", "type": "String"}, {"name": "relicSPD_MOD", "type": "String"}, {"name": "relicAGI_MOD", "type": "String"}],
+      "rows": [
+      ]
+    },
+    "Weapon": {
+      "columns": [{"name": "weapID", "type": "Int32"}, {"name": "weapNAME", "type": "String"}, {"name": "weapPWR", "type": "Int32"}, {"name": "weapRND", "type": "Int32"}, {"name": "classID", "type": "Int32"}, {"name": "weapDUR", "type": "Int32"}, {"name": "weapMAXDUR", "type": "Int32"}, {"name": "weapDIR", "type": "String"}],
+      "rows": [
+        {"weapID": 4, "weapNAME": "Axe", "weapPWR": 4, "weapRND": 3, "classID": 2, "weapDUR": 24, "weapMAXDUR": 0, "weapDIR": "\\gfx\\weapon\\axe\\"},
+        {"weapID": 1, "weapNAME": "Steel Sword", "weapPWR": 1, "weapRND": 1, "classID": 1, "weapDUR": 10, "weapMAXDUR": 10, "weapDIR": "\\gfx\\weapon\\steelsword\\"},
+        {"weapID": 2, "weapNAME": "Katana", "weapPWR": 2, "weapRND": 1, "classID": 1, "weapDUR": 13, "weapMAXDUR": 0, "weapDIR": "\\gfx\\weapon\\katana\\"},
+        {"weapID": 3, "weapNAME": "Broad Sword", "weapPWR": 3, "weapRND": 2, "classID": 1, "weapDUR": 24, "weapMAXDUR": 0, "weapDIR": "\\gfx\\weapon\\broadsword\\"}
+      ]
+    },
+    "Weapon_class": {
+      "columns": [{"name": "classID", "type": "Int32"}, {"name": "classNAME", "type": "String"}],
+      "rows": [
+      ]
+    }
+  }
+}

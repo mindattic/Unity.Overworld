@@ -1,0 +1,156 @@
+{
+  "_source": "Overworld/world.mdb, the later design (2007), the game's world [world.mdb, written 2007-03-08]",
+  "tables": {
+    "Area": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "areaNAME", "type": "String"}],
+      "rows": [
+        {"areaID": 1, "areaNAME": "Grasslands"},
+        {"areaID": 2, "areaNAME": "Lowlands"}
+      ]
+    },
+    "Area_Enemies": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "enemyID", "type": "Int32"}, {"name": "enemyX", "type": "Single"}, {"name": "enemyY", "type": "Single"}, {"name": "enemyZ", "type": "Single"}],
+      "rows": [
+      ]
+    },
+    "Area_Npcs": {
+      "columns": [{"name": "areaID", "type": "String"}, {"name": "npcID", "type": "Int32"}, {"name": "npcX", "type": "Single"}, {"name": "npcY", "type": "Single"}, {"name": "npcSTATE", "type": "String"}],
+      "rows": [
+        {"areaID": "1", "npcID": 1, "npcX": 1, "npcY": -0.2, "npcSTATE": "stand"},
+        {"areaID": "1", "npcID": 2, "npcX": 4, "npcY": -0.2, "npcSTATE": "pursue"}
+      ]
+    },
+    "Area_Props": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "propID", "type": "Int32"}, {"name": "propX", "type": "Single"}, {"name": "propY", "type": "Single"}, {"name": "propZ", "type": "Single"}, {"name": "propWIDTH", "type": "Single"}, {"name": "propHEIGHT", "type": "Single"}],
+      "rows": [
+        {"areaID": 1, "propID": 1, "propX": 1, "propY": -0.35, "propZ": -0.05, "propWIDTH": 1, "propHEIGHT": 0.25},
+        {"areaID": 1, "propID": 2, "propX": 2.5, "propY": -0.45, "propZ": -0.05, "propWIDTH": 1, "propHEIGHT": 0.15},
+        {"areaID": 1, "propID": 3, "propX": 4, "propY": -0.45, "propZ": -0.07, "propWIDTH": 1.5, "propHEIGHT": 0.15},
+        {"areaID": 1, "propID": 4, "propX": 5.6, "propY": -0.3, "propZ": -0.06, "propWIDTH": 0.7, "propHEIGHT": 0.32},
+        {"areaID": 1, "propID": 5, "propX": 7, "propY": -0.25, "propZ": -0.06, "propWIDTH": 1, "propHEIGHT": 0.3},
+        {"areaID": 1, "propID": 6, "propX": 9.2, "propY": -0.25, "propZ": -0.05, "propWIDTH": 0.8, "propHEIGHT": 0.4},
+        {"areaID": 1, "propID": 7, "propX": 11, "propY": -0.4, "propZ": -0.04, "propWIDTH": 0.9, "propHEIGHT": 0.3},
+        {"areaID": 1, "propID": 8, "propX": -0.7, "propY": -0.5, "propZ": -0.03, "propWIDTH": 1.4, "propHEIGHT": 0.18},
+        {"areaID": 1, "propID": 1, "propX": 7.5, "propY": -0.3, "propZ": -0.05, "propWIDTH": 1.4, "propHEIGHT": 0.35},
+        {"areaID": 1, "propID": 5, "propX": 10, "propY": -0.45, "propZ": -0.07, "propWIDTH": 1.2, "propHEIGHT": 0.3},
+        {"areaID": 1, "propID": 6, "propX": 14, "propY": -0.36, "propZ": -0.04, "propWIDTH": 1, "propHEIGHT": 0.3},
+        {"areaID": 1, "propID": 9, "propX": 3, "propY": -0.3, "propZ": -0.5, "propWIDTH": 0.5, "propHEIGHT": 0.12},
+        {"areaID": 1, "propID": 3, "propX": 6.2, "propY": -0.45, "propZ": -0.07, "propWIDTH": 1.5, "propHEIGHT": 0.15},
+        {"areaID": 1, "propID": 4, "propX": 10.5, "propY": -0.45, "propZ": -0.04, "propWIDTH": 0.7, "propHEIGHT": 0.32},
+        {"areaID": 1, "propID": 9, "propX": 5, "propY": -0.4, "propZ": -0.05, "propWIDTH": 0.5, "propHEIGHT": 0.12}
+      ]
+    },
+    "Enemy": {
+      "columns": [{"name": "enemyID", "type": "String"}, {"name": "enemyNAME", "type": "String"}, {"name": "enemyMAXHP", "type": "String"}, {"name": "enemyMOVE_SPD", "type": "Single"}, {"name": "enemyRANGE", "type": "Single"}, {"name": "enemySTATE", "type": "String"}, {"name": "enemyMOTION", "type": "String"}, {"name": "enemyCLASS", "type": "String"}],
+      "rows": [
+        {"enemyID": "1", "enemyNAME": "Werelynx", "enemyMAXHP": "6", "enemyMOVE_SPD": 0.004, "enemyRANGE": 0.8, "enemySTATE": "Defensive", "enemyMOTION": "Walking", "enemyCLASS": "Animal"},
+        {"enemyID": "2", "enemyNAME": "Botherfly", "enemyMAXHP": "3", "enemyMOVE_SPD": 0.006, "enemyRANGE": 1.4, "enemySTATE": "Aggressive", "enemyMOTION": "Flying", "enemyCLASS": "Insect"},
+        {"enemyID": "3", "enemyNAME": "Blue Slime", "enemyMAXHP": "2", "enemyMOVE_SPD": 0.003, "enemyRANGE": 0.4, "enemySTATE": "Passive", "enemyMOTION": "Walking", "enemyCLASS": "Paranormal"},
+        {"enemyID": "4", "enemyNAME": "Red Slime", "enemyMAXHP": "5", "enemyMOVE_SPD": 0.004, "enemyRANGE": 0.7, "enemySTATE": "Defensive", "enemyMOTION": "Walking", "enemyCLASS": "Paranormal"},
+        {"enemyID": "5", "enemyNAME": "Toadie", "enemyMAXHP": "4", "enemyMOVE_SPD": 0.05, "enemyRANGE": 0.4, "enemySTATE": "Aggressive", "enemyMOTION": "Hopping", "enemyCLASS": "Reptile"}
+      ]
+    },
+    "Enemy_Class": {
+      "columns": [{"name": "enemyCLASS", "type": "String"}],
+      "rows": [
+        {"enemyCLASS": "Paranormal"},
+        {"enemyCLASS": "Animal"},
+        {"enemyCLASS": "Reptile"},
+        {"enemyCLASS": "Insect"},
+        {"enemyCLASS": "Mechanical"}
+      ]
+    },
+    "Enemy_Images": {
+      "columns": [{"name": "enemyID", "type": "String"}, {"name": "enemySTAND_LEFT", "type": "String"}, {"name": "enemySTAND_RIGHT", "type": "String"}, {"name": "enemyWALK_LEFT", "type": "String"}, {"name": "enemyWALK_RIGHT", "type": "String"}, {"name": "enemyATTACK_LEFT", "type": "String"}, {"name": "enemyATTACK_RIGHT", "type": "String"}, {"name": "enemyHURT_LEFT", "type": "String"}, {"name": "enemyHURT_RIGHT", "type": "String"}],
+      "rows": [
+      ]
+    },
+    "Enemy_Motion": {
+      "columns": [{"name": "enemyMOTION", "type": "String"}],
+      "rows": [
+        {"enemyMOTION": "Walking"},
+        {"enemyMOTION": "Flying"},
+        {"enemyMOTION": "Hopping"},
+        {"enemyMOTION": "Teleporting"},
+        {"enemyMOTION": "Stationary"},
+        {"enemyMOTION": "Swimming"}
+      ]
+    },
+    "Enemy_State": {
+      "columns": [{"name": "enemySTATE", "type": "String"}],
+      "rows": [
+        {"enemySTATE": "Passive"},
+        {"enemySTATE": "Aggressive"},
+        {"enemySTATE": "Afraid"},
+        {"enemySTATE": "Defensive"}
+      ]
+    },
+    "Event": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "eventID", "type": "Int32"}, {"name": "eventNAME", "type": "String"}, {"name": "eventX", "type": "Single"}, {"name": "eventY", "type": "Single"}, {"name": "eventLEFT", "type": "Single"}, {"name": "eventRIGHT", "type": "Single"}, {"name": "eventTOP", "type": "Single"}, {"name": "eventBOTTOM", "type": "Single"}, {"name": "scriptID", "type": "Int32"}],
+      "rows": [
+        {"areaID": 1, "eventID": 1, "eventNAME": "Poison Box", "eventX": 3, "eventY": 0, "eventLEFT": -0.25, "eventRIGHT": 0.25, "eventTOP": -0.1, "eventBOTTOM": -0.45, "scriptID": 1},
+        {"areaID": 1, "eventID": 2, "eventNAME": "Healing Box", "eventX": 2, "eventY": 0, "eventLEFT": -0.25, "eventRIGHT": 0.25, "eventTOP": -0.1, "eventBOTTOM": -0.45, "scriptID": 2},
+        {"areaID": 1, "eventID": 3, "eventNAME": "Entering Dark Woods", "eventX": 4, "eventY": 0, "eventLEFT": -0.25, "eventRIGHT": 0, "eventTOP": -0.1, "eventBOTTOM": -0.45, "scriptID": 3}
+      ]
+    },
+    "Npc": {
+      "columns": [{"name": "npcID", "type": "Int32"}, {"name": "npcNAME", "type": "String"}, {"name": "npcWIDTH", "type": "Single"}, {"name": "npcHEIGHT", "type": "Single"}, {"name": "npcDIR", "type": "String"}],
+      "rows": [
+        {"npcID": 1, "npcNAME": "Peasent Woman", "npcWIDTH": 0.144, "npcHEIGHT": 0.072, "npcDIR": "\\gfx\\npc\\woman\\"},
+        {"npcID": 2, "npcNAME": "Magitek Armor", "npcWIDTH": 0.144, "npcHEIGHT": 0.072, "npcDIR": "\\gfx\\npc\\magitek\\"}
+      ]
+    },
+    "Props": {
+      "columns": [{"name": "propID", "type": "Int32"}, {"name": "propNAME", "type": "String"}, {"name": "propIMAGE", "type": "String"}, {"name": "propIMAGE_WIDTH", "type": "Int32"}, {"name": "propIMAGE_HEIGHT", "type": "Int32"}],
+      "rows": [
+        {"propID": 1, "propNAME": "Orchard Tree 1", "propIMAGE": "\\gfx\\prop\\tree\\orchard_1.png", "propIMAGE_WIDTH": 360, "propIMAGE_HEIGHT": 193},
+        {"propID": 2, "propNAME": "Orchard Tree 2", "propIMAGE": "\\gfx\\prop\\tree\\orchard_2.png", "propIMAGE_WIDTH": 306, "propIMAGE_HEIGHT": 112},
+        {"propID": 3, "propNAME": "Orchard Tree 3", "propIMAGE": "\\gfx\\prop\\tree\\orchard_3.png", "propIMAGE_WIDTH": 481, "propIMAGE_HEIGHT": 117},
+        {"propID": 4, "propNAME": "Orchard Tree 4", "propIMAGE": "\\gfx\\prop\\tree\\orchard_4.png", "propIMAGE_WIDTH": 237, "propIMAGE_HEIGHT": 214},
+        {"propID": 5, "propNAME": "Orchard Tree 5", "propIMAGE": "\\gfx\\prop\\tree\\orchard_5.png", "propIMAGE_WIDTH": 268, "propIMAGE_HEIGHT": 185},
+        {"propID": 6, "propNAME": "Orchard Tree 6", "propIMAGE": "\\gfx\\prop\\tree\\orchard_6.png", "propIMAGE_WIDTH": 213, "propIMAGE_HEIGHT": 248},
+        {"propID": 7, "propNAME": "Orchard Tree 7", "propIMAGE": "\\gfx\\prop\\tree\\orchard_7.png", "propIMAGE_WIDTH": 218, "propIMAGE_HEIGHT": 177},
+        {"propID": 8, "propNAME": "Stonehenge", "propIMAGE": "\\gfx\\prop\\structure\\stonehenge.png", "propIMAGE_WIDTH": 521, "propIMAGE_HEIGHT": 124},
+        {"propID": 9, "propNAME": "Gateway", "propIMAGE": "\\gfx\\prop\\structure\\gate.png", "propIMAGE_WIDTH": 147, "propIMAGE_HEIGHT": 102}
+      ]
+    },
+    "Scene": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "sceneID", "type": "Int32"}, {"name": "sceneNAME", "type": "String"}, {"name": "sceneIMAGE", "type": "String"}, {"name": "sceneX", "type": "Single"}, {"name": "sceneY", "type": "Single"}, {"name": "sceneZ", "type": "Single"}, {"name": "sceneWIDTH", "type": "Single"}, {"name": "sceneHEIGHT", "type": "Single"}],
+      "rows": [
+        {"areaID": 1, "sceneID": 1, "sceneNAME": "Grasslands 1", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_1x1.jpg", "sceneX": -1, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 2, "sceneNAME": "Grasslands 2", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_1x2.jpg", "sceneX": 1, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 3, "sceneNAME": "Grasslands 3", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_1x3.jpg", "sceneX": 3, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 4, "sceneNAME": "Grasslands 4", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_1x4.jpg", "sceneX": 5, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 5, "sceneNAME": "Grasslands 5", "sceneIMAGE": "\\gfx\\area\\West of Town\\new.png", "sceneX": 7, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 6, "sceneNAME": "Grasslands 6", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_1x6.jpg", "sceneX": 9, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 7, "sceneNAME": "Grasslands 7", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_1x7.jpg", "sceneX": 11, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 8, "sceneNAME": "Grasslands 8", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_1x8.jpg", "sceneX": 13, "sceneY": 0, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 9, "sceneNAME": "Grasslands Sky 4", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_0x4.jpg", "sceneX": 7, "sceneY": 1.3333334, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667},
+        {"areaID": 1, "sceneID": 10, "sceneNAME": "Mountain", "sceneIMAGE": "\\gfx\\area\\West of Town\\mountain.png", "sceneX": 6, "sceneY": 0, "sceneZ": 0.03, "sceneWIDTH": 3, "sceneHEIGHT": 1.2222222},
+        {"areaID": 0, "sceneID": 11, "sceneNAME": "Grasslands Sky 8", "sceneIMAGE": "\\gfx\\area\\West of Town\\bgLandscape2_0x4.jpg", "sceneX": 8, "sceneY": 1.3333334, "sceneZ": 0, "sceneWIDTH": 2, "sceneHEIGHT": 0.6666667}
+      ]
+    },
+    "Script": {
+      "columns": [{"name": "scriptID", "type": "Int32"}, {"name": "scriptNAME", "type": "String"}, {"name": "scriptTEXT", "type": "String"}, {"name": "scriptRATE", "type": "Single"}],
+      "rows": [
+        {"scriptID": 1, "scriptNAME": "Poison", "scriptTEXT": "CHANGE HERO HP -1", "scriptRATE": 0.5},
+        {"scriptID": 2, "scriptNAME": "Heal", "scriptTEXT": "CHANGE HERO HP +1", "scriptRATE": 0.5},
+        {"scriptID": 3, "scriptNAME": "Night", "scriptTEXT": "CHANGE TIME DAYPERIOD Night", "scriptRATE": 0}
+      ]
+    },
+    "Terrain": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "terrainID", "type": "Int32"}, {"name": "terrainX1", "type": "Single"}, {"name": "terrainY1", "type": "Single"}, {"name": "terrainX2", "type": "Single"}, {"name": "terrainY2", "type": "Single"}],
+      "rows": [
+        {"areaID": 1, "terrainID": 1, "terrainX1": -1, "terrainY1": -0.3, "terrainX2": 5.5, "terrainY2": -0.3},
+        {"areaID": 1, "terrainID": 2, "terrainX1": 5.5, "terrainY1": -0.3, "terrainX2": 6, "terrainY2": -0.5},
+        {"areaID": 1, "terrainID": 3, "terrainX1": 6, "terrainY1": -0.5, "terrainX2": 8.5, "terrainY2": -0.5},
+        {"areaID": 1, "terrainID": 4, "terrainX1": 8.5, "terrainY1": -0.5, "terrainX2": 10, "terrainY2": -0.2},
+        {"areaID": 1, "terrainID": 5, "terrainX1": 10, "terrainY1": -0.2, "terrainX2": 11, "terrainY2": -0.2},
+        {"areaID": 1, "terrainID": 6, "terrainX1": 11, "terrainY1": -0.2, "terrainX2": 12, "terrainY2": -0.43},
+        {"areaID": 1, "terrainID": 7, "terrainX1": 12, "terrainY1": -0.43, "terrainX2": 16, "terrainY2": -0.43},
+        {"areaID": 1, "terrainID": 8, "terrainX1": 0.25, "terrainY1": -0.25, "terrainX2": 1, "terrainY2": 0.05},
+        {"areaID": 1, "terrainID": 9, "terrainX1": 1, "terrainY1": 0.05, "terrainX2": 1.25, "terrainY2": 0.05}
+      ]
+    }
+  }
+}

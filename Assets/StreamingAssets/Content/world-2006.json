@@ -1,0 +1,52 @@
+{
+  "_source": "Overworld/data/world.mdb, the engine's database (2006), kept as a reference record [world.mdb, written 2006-02-21]",
+  "tables": {
+    "Area": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "areaNAME", "type": "String"}],
+      "rows": [
+        {"areaID": 0, "areaNAME": "Foothills of Phar"},
+        {"areaID": 1, "areaNAME": "The Badlands"}
+      ]
+    },
+    "Event": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "eventID", "type": "Int32"}, {"name": "eventNAME", "type": "String"}, {"name": "eventLEFT", "type": "Single"}, {"name": "eventRIGHT", "type": "Single"}, {"name": "eventTOP", "type": "Single"}, {"name": "eventBOTTOM", "type": "Single"}, {"name": "scriptID", "type": "Int32"}],
+      "rows": [
+        {"areaID": 1, "eventID": 2, "eventNAME": "Test", "eventLEFT": -1, "eventRIGHT": -0.5, "eventTOP": 0.5, "eventBOTTOM": 0, "scriptID": 2},
+        {"areaID": 0, "eventID": 0, "eventNAME": "Dark Woods", "eventLEFT": 0.5, "eventRIGHT": 1, "eventTOP": 0.5, "eventBOTTOM": 0, "scriptID": 0},
+        {"areaID": 0, "eventID": 1, "eventNAME": "Cinematic", "eventLEFT": 1.05, "eventRIGHT": 2, "eventTOP": 0.5, "eventBOTTOM": 0, "scriptID": 1}
+      ]
+    },
+    "Item_Textures": {
+      "columns": [{"name": "textureID", "type": "Int32"}, {"name": "textureNAME", "type": "String"}, {"name": "textureFILE", "type": "String"}],
+      "rows": [
+        {"textureID": 0, "textureNAME": "Health Root", "textureFILE": "C:\\tex.bmp"},
+        {"textureID": 1, "textureNAME": "Moon Berry", "textureFILE": "C:\\tex2.bmp"},
+        {"textureID": 2, "textureNAME": "Mandrake", "textureFILE": "C:\\tex3.bmp"}
+      ]
+    },
+    "Items": {
+      "columns": [{"name": "itemID", "type": "Int32"}, {"name": "texureID", "type": "Int32"}, {"name": "itemName", "type": "String"}, {"name": "itemScript", "type": "String"}, {"name": "itemEffect", "type": "String"}, {"name": "itemDescription", "type": "String"}, {"name": "itemWeight", "type": "Single"}, {"name": "itemType", "type": "String"}, {"name": "itemAmount", "type": "Int32"}],
+      "rows": [
+        {"itemID": 0, "texureID": 0, "itemName": "Health Root", "itemScript": "CHANGE HERO HP +10", "itemEffect": "+10 HP", "itemDescription": "Common healing root", "itemWeight": 0.1, "itemType": "OneTime", "itemAmount": 1},
+        {"itemID": 1, "texureID": 1, "itemName": "Moon Berry", "itemScript": "CHANGE HERO AI LAYDOWN | CHANGE TIME HOUR 22 | CHANGE INVENTORY OPEN FALSE", "itemEffect": "Induces a coma-like sleep until nightfall", "itemDescription": "Mild sedative fruit", "itemWeight": 0.2, "itemType": "OneTime", "itemAmount": 1},
+        {"itemID": 2, "texureID": 2, "itemName": "Mandrake", "itemScript": "CHANGE HERO STATUS POISONED", "itemEffect": "Poison", "itemDescription": "Very poisonous plant", "itemWeight": 0.1, "itemType": "OneTime", "itemAmount": 1}
+      ]
+    },
+    "Pickup": {
+      "columns": [{"name": "areaID", "type": "Int32"}, {"name": "itemID", "type": "Int32"}, {"name": "X", "type": "Single"}, {"name": "Y", "type": "Single"}, {"name": "Z", "type": "Single"}],
+      "rows": [
+        {"areaID": 0, "itemID": 0, "X": -0.2, "Y": 0.01, "Z": 0},
+        {"areaID": 0, "itemID": 1, "X": 0.3, "Y": 0.4, "Z": 0},
+        {"areaID": 0, "itemID": 2, "X": 0, "Y": 0, "Z": 0}
+      ]
+    },
+    "Script": {
+      "columns": [{"name": "scriptID", "type": "Int32"}, {"name": "scriptNAME", "type": "String"}, {"name": "scriptTEXT", "type": "String"}, {"name": "scriptRATE", "type": "Single"}],
+      "rows": [
+        {"scriptID": 2, "scriptNAME": "Name Ryan", "scriptTEXT": "CHANGE HERO NAME RYAN", "scriptRATE": 0},
+        {"scriptID": 0, "scriptNAME": "Make Night", "scriptTEXT": "CHANGE TIME DAYPERIOD NIGHT", "scriptRATE": 0},
+        {"scriptID": 1, "scriptNAME": "Pan Right", "scriptTEXT": "CHANGE CAM X +0.001", "scriptRATE": 0}
+      ]
+    }
+  }
+}

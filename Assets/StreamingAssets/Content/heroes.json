@@ -1,0 +1,19 @@
+{
+  "_source": "overhead 2/Engine.vb initHero and Heroes.vb loadHero, RECONSTRUCTION 4.1. All three heroes use the Chrono art set. Animation rates are seconds; speeds are world units per frame.",
+  "heroSize": 0.144,
+  "spriteSet": "chrono",
+  "common": {
+    "health": 31, "maxHealth": 50, "mana": 12, "maxMana": 20, "stamina": 60, "maxStamina": 60,
+    "strength": 7, "agility": 5, "intelligence": 5,
+    "facing": "Right", "mode": "Adventure",
+    "walkSpeed": 0.003, "runSpeed": 0.006, "haltSpeed": 0.0004,
+    "standRate": 0.6, "walkRate": 0.13, "runRate": 0.1, "kneelRate": 0.15, "regenRate": 2, "battleRate": 0.1, "drawRate": 0.05,
+    "walkFrames": 5, "runFrames": 5, "drawFrames": 5, "battleFrames": 5, "faceFrames": 0, "haltFrames": 0, "kneelFrames": 0,
+    "moveDistancePerAgility": 0.05
+  },
+  "heroes": [
+    {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},
+    {"id": 1, "name": "Belmont", "start": [0.3, -0.05], "weapon": "Steel Sword", "state": "Standing", "walkRate": 0.1, "walkSpeed": 0.005, "runSpeed": 0.01},
+    {"id": 2, "name": "Flagg", "start": [-0.3, 0.1], "weapon": "Steel Sword", "state": "Standing"}
+  ]
+}

@@ -50,6 +50,9 @@ Assets/Overworld/
   Runtime/     Overworld.Runtime   MonoBehaviours and presentation: camera, sprites, HUD, input, audio, UI Toolkit screens; references Core only
   Editor/      Overworld.Editor    editor-only builders and importers (scene, atlas and catalogue generators); references Core and Runtime
   Content/     validated data      JSON the Core loads: pickups, quests, books, walls, props, areas, scenes, terrain, NPCs, enemies, heroes, weapons
+               (lives at Assets/StreamingAssets/Content: content.json names every file; both world.mdb databases and hero.mdb are
+               exported there by tools/export-mdb.ps1, the books by tools/export-books.ps1; Core's ContentRegistry loads and validates them,
+               naming every problem by file, key and line. world-2007.json is the playable world, world-2006.json a reference record.)
   Art/ Audio/  the original assets, imported verbatim and catalogued
 Tests/
   Overworld.Core.Tests   NUnit, plain `dotnet test`, no Unity: rules, scripts, data validation, the asset-catalogue diff

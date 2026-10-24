@@ -1,0 +1,9 @@
+{
+  "_source": "overhead 2/Weapons.vb loadWeapon, RECONSTRUCTION 12.4. Each weapon has four 6-frame sprite sets (left, right, draw-left, draw-right) in its sprite folder under gfx/weapon. vbNewLine is written as \\n.",
+  "maxWeapons": 100,
+  "spriteFrames": 6,
+  "weapons": [
+    {"name": "Steel Sword", "description": "A fine sword forged from steel\nwith a leather grip", "rating": 8, "slashing": 0.5, "piercing": 0.15, "blunt": 0, "durability": 28, "maxDurability": 30, "skillRequired": 2, "type": "Sword", "weight": 6, "range": 0.09, "sprites": "steelsword"},
+    {"name": "Fine Axe", "description": "A fine axe for chopping", "rating": 12, "slashing": 0.4, "piercing": 0, "blunt": 0.9, "durability": 41, "maxDurability": 50, "skillRequired": 1, "type": "Axe", "weight": 10, "range": 0.08, "sprites": "axe"}
+  ]
+}
