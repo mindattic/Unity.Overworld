@@ -181,7 +181,9 @@ namespace MindAttic.Overworld.Core
         {
             var value = Take(key, JsonKind.String, "a name");
             if (value == null) return default;
-            if (Enum.TryParse<T>(value.Text, false, out var parsed) && Enum.IsDefined(typeof(T), parsed)) return parsed;
+            // Enum.TryParse also accepts numeric text ("0"), comma lists ("Sword, Axe") and padded names, none of
+            // which are "one of T's names, written as in the code"; only an exact, single name matches.
+            if (Array.IndexOf(Enum.GetNames(typeof(T)), value.Text) >= 0 && Enum.TryParse<T>(value.Text, false, out var parsed)) return parsed;
             Fail(key, "must be one of " + string.Join(", ", Enum.GetNames(typeof(T))) + " (is \"" + value.Text + "\")");
             return default;
         }

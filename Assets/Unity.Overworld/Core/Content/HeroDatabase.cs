@@ -57,6 +57,12 @@ namespace MindAttic.Overworld.Core
             "Weapon_class: classID Int32, classNAME String",
         };
 
+        /// <summary>Tables that are empty in the original and have no typed reader above.</summary>
+        static readonly string[] EmptyTables =
+        {
+            "Armor", "Armor_Head", "Armor_Body", "Armor_Arms", "Armor_Feet", "Relic", "Weapon_class",
+        };
+
         internal static HeroDatabase Read(IContentSource source, string file, List<string> errors)
         {
             var db = MdbDatabase.Read(source, file, Schema, errors);
@@ -112,6 +118,16 @@ namespace MindAttic.Overworld.Core
                 if (!seenWeapons.Contains(h.WeaponId)) errors.Add(file + ": Hero " + h.Id + " (" + h.Name + ") wields weapon " + h.WeaponId + ", which does not exist");
                 if ((db.Table("Relic")?.RowCount ?? 0) == 0)
                     result.Warnings.Add(file + ": Hero " + h.Id + " (" + h.Name + ") has relic " + h.RelicId + ", but Relic is empty");
+            }
+
+            // Armor, Armor_Head, Armor_Body, Armor_Arms, Armor_Feet, Relic and Weapon_class are empty in the
+            // original and have no typed reader, so nothing above ever reads their rows. A re-export that drifted
+            // and filled one in must still fail loudly rather than load silently.
+            foreach (var tableName in EmptyTables)
+            {
+                var rowCount = db.Table(tableName)?.RowCount ?? 0;
+                if (rowCount > 0)
+                    errors.Add(file + ": " + tableName + " has " + rowCount + " row(s), but the original's table was empty; add a typed reader for it");
             }
 
             return result;

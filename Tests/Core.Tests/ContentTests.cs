@@ -241,6 +241,17 @@ namespace MindAttic.Overworld.Tests
         }
 
         [Test]
+        public void ARowInATableTheOriginalLeftEmptyIsReported()
+        {
+            var source = Patched("hero.json", t => t.Replace(
+                "{\"name\": \"classID\", \"type\": \"Int32\"}, {\"name\": \"classNAME\", \"type\": \"String\"}],\n      \"rows\": [\n      ]",
+                "{\"name\": \"classID\", \"type\": \"Int32\"}, {\"name\": \"classNAME\", \"type\": \"String\"}],\n      \"rows\": [\n        {\"classID\": 1, \"classNAME\": \"Blade\"}\n      ]"));
+            var error = Rejected(source).Errors.Single();
+            StringAssert.Contains("hero.json: Weapon_class has 1 row(s)", error);
+            StringAssert.Contains("the original's table was empty", error);
+        }
+
+        [Test]
         public void TheOriginalsDanglingReferencesAreKeptAsWarningsNotRejected()
         {
             var warnings = Registry.Warnings;
@@ -629,7 +640,19 @@ namespace MindAttic.Overworld.Tests
         public void AGapInThePickupIndicesIsReported()
         {
             var source = Patched("pickups.json", t => t.Replace("{\"from\": 106,", "{\"from\": 107,"));
-            Assert.IsTrue(Rejected(source).Errors.Any(e => e.Contains("pickups.json.pickups") && e.Contains("defined twice")));
+            var errors = Rejected(source).Errors;
+            Assert.IsTrue(errors.Any(e => e.Contains("pickups.json.pickups") && e.Contains("defined twice")), string.Join("\n", errors));
+            Assert.IsTrue(errors.Any(e => e.Contains("indices must run without gaps (expected 106, found 107)")), string.Join("\n", errors));
+        }
+
+        [Test]
+        public void AnEnumValueThatIsNotOneOfItsNamesIsReported()
+        {
+            // Enum.TryParse alone would accept "0" as SingleItem's numeric value; Choice<T> must require the name.
+            var source = Patched("pickups.json", t => t.Replace("\"type\": \"SingleItem\", \"value\": 1, \"growSeconds\": 2}", "\"type\": \"0\", \"value\": 1, \"growSeconds\": 2}"));
+            var error = Rejected(source).Errors.Single();
+            StringAssert.Contains("'type' must be one of", error);
+            StringAssert.Contains("(is \"0\")", error);
         }
 
         [Test]
