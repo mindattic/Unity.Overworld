@@ -166,6 +166,9 @@ namespace MindAttic.Overworld.Core
             return Begin(tick, player, hero, hour);
         }
 
+        /// <summary>CHANGE LIGHT AMBIENT: the device ambient is set (it rises back to white from there unless a sleep is under way).</summary>
+        internal void SetAmbient(LightColour ambient) => Ambient = ambient;
+
         SleepStarted Begin(Game game, PlayerId player, Hero hero, int? wakeHour) => Begin(game.Tick, player, hero, wakeHour);
 
         SleepStarted Begin(long tick, PlayerId player, Hero hero, int? wakeHour)

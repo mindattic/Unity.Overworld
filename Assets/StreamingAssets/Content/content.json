@@ -16,5 +16,6 @@
   "books": "books.json",
   "view": "view.json",
   "time": "time.json",
-  "hud": "hud.json"
+  "hud": "hud.json",
+  "scripts": "scripts.json"
 }

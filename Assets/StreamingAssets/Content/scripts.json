@@ -1,0 +1,81 @@
+{
+  "_source": "overhead 2/Script.vb (Execute, divideScript, isArithmetic, the cmd* handlers, checkScripts, checkScripter) and frmMain.vb OnKeyDown's scripter mode, RECONSTRUCTION 9. The language's words (CHANGE, HERO, HP, ...) are the interpreter's grammar; this file holds its numbers, tables, texts and the console's keys.",
+  "console": {
+    "_note": "checkScripter: while the console is open, every 0.5 s of play the I-beam flips; on it writes '/ > ' & theScript & '|', off '\\ > ' & theScript & ' ', at (55, 75) in fontArial, alpha 255, in scriptColor (128, 255, 128) until CHANGE SCRIPT COLOR changes it. {0} is the line typed.",
+    "x": 55, "y": 75, "font": "fontArial",
+    "colour": [128, 255, 128],
+    "blinkSeconds": 0.5,
+    "beamOn": "/ > {0}|",
+    "beamOff": "\\ > {0} ",
+    "_keys": "frmMain.OnKeyDown, by the WinForms key name it tested (e.KeyCode). Closed, Oemtilde opens the console and Insert opens it with the last script. Open: 'close' keys shut it, 'recall' puts the last script back, 'clear' (Delete) empties the line, 'erase' (Back) takes off its last character, 'run' (Enter) runs the line, remembers it as the last and shuts the console; 'ignore' keys type nothing; the shortcut key types 'CHANGE ' on an empty line and 'CHANGE CAMERA ' after 'CHANGE '; a key of 'keys' types its text ('shifted' with Shift held); any other key types its own name (A to Z are their letters).",
+    "open": "Oemtilde",
+    "recall": "Insert",
+    "close": ["Escape", "F11", "Oemtilde"],
+    "clear": "Delete",
+    "erase": "Back",
+    "run": "Enter",
+    "ignore": ["None", "Up", "Down", "Left", "Right", "Tab", "LControlKey", "RControlKey", "Control", "ControlKey", "ShiftKey", "Shift", "LShiftKey", "RShiftKey"],
+    "shortcut": {"key": "C", "steps": [{"from": "", "to": "CHANGE "}, {"from": "CHANGE ", "to": "CHANGE CAMERA "}]},
+    "keys": [
+      {"key": "Space", "text": " "},
+      {"key": "OemSemicolon", "text": ":"},
+      {"key": "OemPipe", "text": "|"},
+      {"key": "OemPeriod", "text": "."},
+      {"key": "OemBackslash", "text": "/"},
+      {"key": "OemQuestion", "text": "?"},
+      {"key": "Oemplus", "text": "+", "shifted": "="},
+      {"key": "OemMinus", "text": "-"},
+      {"key": "Oemcomma", "text": ","},
+      {"key": "OemQuotes", "text": "\""},
+      {"key": "D0", "text": "0"},
+      {"key": "D1", "text": "1"},
+      {"key": "D2", "text": "2"},
+      {"key": "D3", "text": "3"},
+      {"key": "D4", "text": "4"},
+      {"key": "D5", "text": "5"},
+      {"key": "D6", "text": "6"},
+      {"key": "D7", "text": "7"},
+      {"key": "D8", "text": "8"},
+      {"key": "D9", "text": "9"}
+    ]
+  },
+  "messages": {
+    "_note": "Execute: a command that set scriptError writes 'Script failed to execute.' once the script ends; an exception (a number that is not one, a missing coordinate) stops the script and writes 'Script failed to run.'; both through addMessage in fontArial white.",
+    "failed": "Script failed to execute.",
+    "crashed": "Script failed to run.",
+    "font": "fontArial",
+    "colour": [255, 255, 255]
+  },
+  "colours": [
+    {"_note": "cmdChangeScript COLOR: System.Drawing's Color.Red, Green (0, 128, 0), Blue and Magenta (FUSCHIA the same).", "name": "RED", "colour": [255, 0, 0]},
+    {"name": "GREEN", "colour": [0, 128, 0]},
+    {"name": "BLUE", "colour": [0, 0, 255]},
+    {"name": "MAGENTA", "colour": [255, 0, 255]},
+    {"name": "FUSCHIA", "colour": [255, 0, 255]}
+  ],
+  "dayPeriods": [
+    {"_note": "cmdChangeTime DAYPERIOD: setHour to this hour, without checkDayperiod or setDayColor (the period and light follow on the clock's next minute).", "name": "MORNING", "hour": 5},
+    {"name": "NIGHT", "hour": 22},
+    {"name": "DAY", "hour": 12},
+    {"name": "DUSK", "hour": 19},
+    {"name": "EVENING", "hour": 19},
+    {"name": "NOON", "hour": 12},
+    {"name": "DAWN", "hour": 4},
+    {"name": "SUNRISE", "hour": 4},
+    {"name": "SUNSET", "hour": 20},
+    {"name": "LIGHT", "hour": 12},
+    {"name": "DARK", "hour": 22}
+  ],
+  "run": [
+    {"_note": "cmdRunScript: the hard-coded scripts RUN calls by name.", "name": "NIGHT", "script": "CHANGE TIME DAYPERIOD NIGHT"}
+  ],
+  "camera": {
+    "_note": "cmdChangeCamera POS HERO: the camera to (hero.X + heroSize / xDivisor, hero.Y - heroSize / yDivisor) of the current hero.",
+    "xDivisor": 2,
+    "yDivisor": 3
+  },
+  "move": {
+    "_note": "checkScripts: a MOVE HERO TO script ends once the hero is within 'arrive' of its target on both axes (A_near_B).",
+    "arrive": 0.05
+  }
+}

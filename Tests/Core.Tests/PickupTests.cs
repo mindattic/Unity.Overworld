@@ -45,6 +45,7 @@ namespace MindAttic.Overworld.Tests
             // checkItemsInRange and checkItemPickup ran after getInput and before updateHero: the pickups step first.
             pickups = new Pickups(Registry.Pickups, party, null, new Random(7)).Install(game);
             party.Install(game);
+            pickups.Scripts = new ScriptInterpreter(Registry.Scripts, party, pickups.Inventory);
             Assert.IsTrue(game.Submit(new JoinGame(PlayerId.One)).Accepted);
             chrono = party.Heroes[0];
             raised = new List<IGameEvent>();
@@ -212,14 +213,22 @@ namespace MindAttic.Overworld.Tests
         public void TheCurrencyScriptAddsOrAssigns()
         {
             var events = new List<IGameEvent>();
-            var scripts = new CurrencyScripts(pickups.Inventory);
+            var scripts = pickups.Scripts;
             Assert.IsTrue(scripts.Run(game, PlayerId.One, 0, "CHANGE HERO GOLD +25", 0, events));
             Assert.IsTrue(scripts.Run(game, PlayerId.One, 0, "change hero money -5", 0, events));
             Assert.AreEqual(20, pickups.Inventory.Gold);
             Assert.IsTrue(scripts.Run(game, PlayerId.One, 0, "CHANGE HERO GOLD =7 | CHANGE HERO GOLD +1", 0, events));
             Assert.AreEqual(8, pickups.Inventory.Gold);
-            Assert.IsFalse(scripts.Run(game, PlayerId.One, 0, "CHANGE HERO HP +10", 0, events));
+            Assert.IsFalse(scripts.Run(game, PlayerId.One, 0, "CHANGE HERO GOLD lots", 0, events), "not a number: Script failed to run.");
             Assert.AreEqual(8, pickups.Inventory.Gold);
+
+            // Without a runner a UseOnPickup item's script cannot run at all.
+            pickups.Scripts = null;
+            ReachFor(112);
+            Assert.IsTrue(game.Submit(new PickUp(PlayerId.One)).Accepted);
+            game.Step();
+            Assert.AreEqual(8, pickups.Inventory.Gold);
+            Assert.AreEqual(1, raised.OfType<ScriptFailed>().Count());
         }
 
         [Test]

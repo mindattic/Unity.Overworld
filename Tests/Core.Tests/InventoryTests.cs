@@ -41,7 +41,7 @@ namespace MindAttic.Overworld.Tests
         InventoryControl control;
         SleepCycle sleep;
         WorldClock clock;
-        ItemScripts scripts;
+        ScriptInterpreter scripts;
         List<IGameEvent> raised;
         PackView view;
 
@@ -57,7 +57,7 @@ namespace MindAttic.Overworld.Tests
             clock = new WorldClock(Registry.Time, Registry.Heroes.Locomotion.GameSpeed, messages);
             sleep = new SleepCycle(party, clock).Install(game);
             clock.Install(game);
-            scripts = new ItemScripts(party, pickups.Inventory, sleep) { Control = control };
+            scripts = new ScriptInterpreter(Registry.Scripts, party, pickups.Inventory) { Sleep = sleep, Clock = clock, Pack = control, Messages = messages };
             control.Scripts = scripts;
             pickups.Scripts = scripts;
             Assert.IsTrue(game.Submit(new JoinGame(PlayerId.One)).Accepted);
@@ -386,23 +386,30 @@ namespace MindAttic.Overworld.Tests
         }
 
         [Test]
-        public void AReusableItemSurvivesItsUseAndAScriptThatCannotRunYetLeavesTheItem()
+        public void AReusableItemSurvivesItsUseAndAScriptThatFailsLeavesTheItem()
         {
             Give(Grimoire);
             Give(RustySword);
             Open();
             Press(Enter);
-            Assert.AreEqual(2, Pack.Items.Count, "the book's commands come with the book story; it is not used up");
-            Assert.AreEqual(1, raised.OfType<ScriptFailed>().Count());
-            Assert.IsEmpty(raised.OfType<ItemUsed>());
-
-            // With a runner that runs every script, the Reusable book stays and the Equipable sword is used up.
-            control.Scripts = new Everything();
-            Press(Enter);
-            Assert.AreEqual(1, Pack.Items[0].Amount);
+            Assert.AreEqual(2, Pack.Items.Count, "the book is Reusable: it is not used up");
             Assert.IsFalse(raised.OfType<ItemUsed>().Single().Consumed);
+            var book = scripts.For(PlayerId.One).Book;
+            Assert.AreEqual(("Grimoire de'Alchemiste", true, "BROWN", "CORSIVA8", BookNumbering.RomanNumeral), (book.Title, book.Show, book.Cover, book.Font, book.Numbering),
+                "its CHANGE BOOK commands are recorded for the book story (A16)");
+
+            // Solo, the sword is used on the leader at once: its CHANGE HERO WEAPON has no handler yet, so "Script failed to
+            // execute." shows and the sword stays.
             Submit(new ToggleTeam(PlayerId.One));
             Submit(new MoveInventoryCursor(PlayerId.One, 1));
+            Press(Enter);
+            Assert.AreEqual(1, raised.OfType<ScriptFailed>().Count());
+            Assert.IsFalse(raised.OfType<ScriptFailed>().Single().Crashed);
+            Assert.AreEqual(1, raised.OfType<ItemUsed>().Count());
+            Assert.AreEqual(2, Pack.Items.Count);
+
+            // With a runner that runs every script, the Equipable sword is used up.
+            control.Scripts = new Everything();
             Press(Enter);
             CollectionAssert.AreEqual(new[] { "Grimoire de'Alchemiste" }, Names);
         }
@@ -512,7 +519,7 @@ namespace MindAttic.Overworld.Tests
             control = new InventoryControl(pickups, panel, Registry.Hud.QuickBar, camera).Install(game);
             party.Install(game);
             camera.Install(game);
-            control.Scripts = new ItemScripts(party, pickups.Inventory) { Control = control };
+            control.Scripts = new ScriptInterpreter(Registry.Scripts, party, pickups.Inventory) { Pack = control };
             Submit(new JoinGame(PlayerId.One));
             Submit(new ToggleTeam(PlayerId.One));
             view = control.For(PlayerId.One);

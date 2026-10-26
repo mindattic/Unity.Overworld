@@ -214,6 +214,9 @@ namespace MindAttic.Overworld.Core
             Light = Period.Colour;
         }
 
+        /// <summary>CHANGE LIGHT RED / GREEN / BLUE: the light is set (each minute then steps it toward the period's colour again).</summary>
+        internal void SetLight(LightColour light) => Light = light;
+
         CommandResult HandleRatio(Game game, SetTimeRatio c)
         {
             if (!(c.SecondsPerMinute >= 0f) || float.IsInfinity(c.SecondsPerMinute))

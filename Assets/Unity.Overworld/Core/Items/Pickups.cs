@@ -167,59 +167,6 @@ namespace MindAttic.Overworld.Core
         public int Previous { get; }
     }
 
-    /// <summary>A script did not run ("Script failed to execute."): nothing understood it.</summary>
-    public sealed class ScriptFailed : IGameEvent
-    {
-        public ScriptFailed(long tick, PlayerId player, string script) { Tick = tick; Player = player; Script = script; }
-        public long Tick { get; }
-        public PlayerId Player { get; }
-        public string Script { get; }
-    }
-
-    /// <summary>Runs an item's script for a player on a hero; false when it could not.</summary>
-    public interface IScriptRunner
-    {
-        bool Run(Game game, PlayerId player, int hero, string script, long tick, ICollection<IGameEvent> events);
-    }
-
-    /// <summary>
-    /// The part of the script language the pickups need before the script story (A14) brings the interpreter: <c>CHANGE
-    /// HERO GOLD</c> (or <c>MONEY</c>) with a +/- amount (added) or a number (assigned, a leading = stripped), the only
-    /// command a UseOnPickup item's script holds (Script.vb, RECONSTRUCTION 9.2). Anything else is not run.
-    /// </summary>
-    public sealed class CurrencyScripts : IScriptRunner
-    {
-        public CurrencyScripts(Inventory inventory) { Inventory = inventory ?? throw new ArgumentNullException(nameof(inventory)); }
-
-        public Inventory Inventory { get; }
-
-        public bool Run(Game game, PlayerId player, int hero, string script, long tick, ICollection<IGameEvent> events)
-        {
-            if (string.IsNullOrEmpty(script)) return false;
-            var parts = script.ToUpperInvariant().Split(new[] { " | " }, StringSplitOptions.None);
-            var changes = new List<(bool Add, int Amount)>();
-            foreach (var part in parts)
-            {
-                var words = part.Trim().Split(' ');
-                if (words.Length != 4 || words[0] != "CHANGE" || words[1] != "HERO" || (words[2] != "GOLD" && words[2] != "MONEY")) return false;
-                var parameter = words[3];
-                var add = parameter.StartsWith("+", StringComparison.Ordinal) || parameter.StartsWith("-", StringComparison.Ordinal);
-                if (parameter.StartsWith("=", StringComparison.Ordinal)) parameter = parameter.Substring(1);
-                if (!int.TryParse(parameter, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var amount)) return false;
-                changes.Add((add, amount));
-            }
-
-            foreach (var (add, amount) in changes)
-            {
-                var before = Inventory.Gold;
-                Inventory.Gold = add ? before + amount : amount;
-                events.Add(new GoldChanged(tick, player, Inventory.Gold, before));
-            }
-
-            return true;
-        }
-    }
-
     /// <summary>
     /// The world's pickups (U.OVW-US-A12; Items.vb and Cursor.checkCursorOverItem, RECONSTRUCTION 8.1 and 8.2): the
     /// original's 372 and the restored Nitro Bean at their places (the gold and satchels scattered by the seeded random),
@@ -261,7 +208,6 @@ namespace MindAttic.Overworld.Core
             Party = party ?? throw new ArgumentNullException(nameof(party));
             if (data.Reach == null || data.Hover == null || data.Label == null) throw new ArgumentException("The pickup data has no reach, hover or label.", nameof(data));
             Inventory = inventory ?? new Inventory();
-            Scripts = new CurrencyScripts(Inventory);
             var rng = random ?? new Random();
             this.random = rng;
             var positions = data.ResolvePositions(rng.NextDouble);
@@ -273,7 +219,7 @@ namespace MindAttic.Overworld.Core
         public Party Party { get; }
         public Inventory Inventory { get; }
 
-        /// <summary>Runs a UseOnPickup item's script (the gold's CHANGE HERO GOLD until the script story's interpreter replaces it).</summary>
+        /// <summary>Runs a UseOnPickup item's script (the gold's CHANGE HERO GOLD): the <see cref="ScriptInterpreter"/>. Null: none runs.</summary>
         public IScriptRunner Scripts { get; set; }
 
         /// <summary>Every pickup, by index.</summary>
@@ -541,8 +487,9 @@ namespace MindAttic.Overworld.Core
             p.LastGrowTime = now;
             if (p.Definition.Type == ItemType.UseOnPickup)
             {
-                if (Scripts == null || !Scripts.Run(game, player, hero.Index, p.Definition.Script, tick, events))
-                    events.Add(new ScriptFailed(tick, player, p.Definition.Script));
+                // The runner reports its own failure; without one the script cannot run at all.
+                if (Scripts == null) events.Add(new ScriptFailed(tick, player, p.Definition.Script));
+                else Scripts.Run(game, player, hero.Index, p.Definition.Script, tick, events);
                 events.Add(new PickupCollected(tick, player, hero.Index, index, p.Name, true, null));
                 return;
             }

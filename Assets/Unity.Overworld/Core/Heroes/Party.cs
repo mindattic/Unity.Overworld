@@ -85,11 +85,26 @@ namespace MindAttic.Overworld.Core
                 return CommandResult.Reject("There is no hero " + command.Hero + " in the party.");
             if (float.IsNaN(command.X) || float.IsNaN(command.Y) || float.IsInfinity(command.X) || float.IsInfinity(command.Y))
                 return CommandResult.Reject("A hero is placed at a finite point.");
-            var hero = heroes[command.Hero];
-            hero.X = hero.PreviousX = command.X;
-            hero.Y = hero.PreviousY = command.Y;
-            return CommandResult.Accept(new HeroPlaced(game.Tick, hero.Index, hero.X, hero.Y));
+            return CommandResult.Accept(Place(command.Hero, command.X, command.Y, game.Tick));
         }
+
+        /// <summary>CHANGE HERO X / Y: hero <paramref name="index"/> is placed at (x, y), drawn there at once. The hero and point must be valid.</summary>
+        internal HeroPlaced Place(int index, float x, float y, long tick)
+        {
+            var hero = heroes[index];
+            hero.X = hero.PreviousX = x;
+            hero.Y = hero.PreviousY = y;
+            return new HeroPlaced(tick, hero.Index, hero.X, hero.Y);
+        }
+
+        /// <summary>
+        /// While true for a player (its script console is open or one of its scripts runs; RECONSTRUCTION 9.3), the party
+        /// ignores what that player holds, as the original stopped reading game input: its leader keeps whatever a script
+        /// set it doing. Null: never.
+        /// </summary>
+        public Func<PlayerId, bool> InputLocked { get; set; }
+
+        bool Locked(PlayerId player) => InputLocked != null && InputLocked(player);
 
         /// <summary>
         /// actionRest: not in battle mode, the leader stops running, then a standing hero kneels, a kneeling one lies down
@@ -238,8 +253,8 @@ namespace MindAttic.Overworld.Core
         /// <summary>The hero <paramref name="player"/> leads.</summary>
         public Hero Leader(PlayerId player) => heroes[LeaderOf(player)];
 
-        /// <summary>What <paramref name="player"/> is holding now.</summary>
-        public MoveInput InputOf(PlayerId player) => inputs.TryGetValue(player, out var input) ? input : default;
+        /// <summary>What <paramref name="player"/> is holding now (nothing while its input is locked).</summary>
+        public MoveInput InputOf(PlayerId player) => !Locked(player) && inputs.TryGetValue(player, out var input) ? input : default;
 
         CommandResult HandleInput(Game game, SetMoveInput command)
         {
@@ -287,6 +302,8 @@ namespace MindAttic.Overworld.Core
             var moveHeld = new bool[heroes.Count];
             foreach (var player in game.Players)
             {
+                // getInput was not called while the console was open or a script ran (not even its KeysUp).
+                if (Locked(player)) continue;
                 var input = InputOf(player);
                 var hero = Leader(player);
                 var focus = Focus != null ? Focus(player) : InputFocus.World;

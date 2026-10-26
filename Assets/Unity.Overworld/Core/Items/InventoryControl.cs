@@ -286,7 +286,7 @@ namespace MindAttic.Overworld.Core
     /// </para>
     /// <para>
     /// Using runs the item's script (<see cref="Scripts"/>) with HERO the target, then one of it leaves the pack unless it
-    /// is Reusable; a script nothing can run yet is refused (<see cref="ScriptFailed"/>) and the item stays. Dropping puts
+    /// is Reusable; a script that fails (<see cref="ScriptFailed"/>) leaves the item in the pack. Dropping puts
     /// one of the cursor's stack into the world by the leader (<see cref="Pickups.Drop"/>), where it can be picked up again.
     /// The weight carried burdens the heroes (<see cref="Party.Pack"/>).
     /// </para>
@@ -674,7 +674,7 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>
         /// checkUseItem: the cursor's item's script runs on the target; unless the item is Reusable one of it leaves the
-        /// pack. A script that cannot run yet (its commands come with the script story, A14) is refused and the item stays.
+        /// pack. A script that fails (the Rusty Sword's WEAPON, until the weapon story) is reported by the runner and the item stays.
         /// (Battle mode's stamina cost and return to the ring menu come with the battle story, A18.)
         /// </summary>
         void ApplyUse(Game game, PlayerId player, long tick, ICollection<IGameEvent> events)
@@ -683,11 +683,14 @@ namespace MindAttic.Overworld.Core
             if (Inventory.Items.Count == 0) return;
             var slot = v.Cursor;
             var stack = Inventory.Items[slot];
-            if (Scripts == null || !Scripts.Run(game, player, v.Target, stack.Script, tick, events))
+            // The runner reports its own failure (ScriptFailed and the message); without one the script cannot run at all.
+            if (Scripts == null)
             {
                 events.Add(new ScriptFailed(tick, player, stack.Script));
                 return;
             }
+
+            if (!Scripts.Run(game, player, v.Target, stack.Script, tick, events)) return;
 
             // The script may have changed the pack (the stack is found again by itself, not by its slot).
             var consumed = stack.Type != ItemType.Reusable;
