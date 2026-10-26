@@ -17,6 +17,7 @@ namespace MindAttic.Overworld.Runtime
     /// team's beside it, in the inverse of the clock's light as renderStatus did) and draws the health, mana and stamina
     /// bars at the bottom left (U.OVW-US-A10), and the rest prompt while that leader lies down (U.OVW-US-A11).
     /// </summary>
+    [DefaultExecutionOrder(100)] // after the world presenter has placed the camera, so the pickup names sit on their pickups
     public sealed class HudPresenter : MonoBehaviour
     {
         /// <summary>Over the team button and the world: the panel draws after the cameras.</summary>
@@ -140,6 +141,8 @@ namespace MindAttic.Overworld.Runtime
             var root = Document.rootVisualElement;
             root.Clear();
             root.pickingMode = PickingMode.Ignore;
+            // The pickup names are 3D text in the world: under everything the HUD draws.
+            labelLayer = NewLayer(root, "pickup labels");
             // The status box and bars come before the clock's lines, as renderStatus wrote them before the bars and messages.
             statusLayer = new VisualElement { name = "status", pickingMode = PickingMode.Ignore };
             statusLayer.style.position = Position.Absolute;
@@ -155,12 +158,195 @@ namespace MindAttic.Overworld.Runtime
             messageLayer.style.left = 0;
             messageLayer.style.top = 0;
             root.Add(messageLayer);
+            examineLayer = NewLayer(root, "examine");
             messageLabels.Clear();
             statusLabels.Clear();
             bars.Clear();
         }
 
+        // ---- pickups (U.OVW-US-A12): the name labels over the world and the examine box ---------------------------
+
+        VisualElement labelLayer;
+        VisualElement examineLayer;
+        readonly Label[] examineLines = new Label[5];
+
+        /// <summary>The pickups whose labels and examine box are shown (null until <see cref="ShowPickups"/>).</summary>
+        public Pickups Pickups { get; private set; }
+
+        /// <summary>The view whose cursor finds the pickup under it, and whose examine mode opens the box.</summary>
+        public Viewpoint Viewpoint { get; private set; }
+
+        /// <summary>The world drawn: its camera places the labels and its light colours them.</summary>
+        public WorldViewPresenter World { get; private set; }
+
+        /// <summary>The selected pickup's name and marker (showItemName), and the hovered one's (checkCursorOverItem).</summary>
+        public Label SelectedName { get; private set; }
+
+        public Label SelectedMarker { get; private set; }
+        public Label HoverName { get; private set; }
+        public Label HoverMarker { get; private set; }
+
+        /// <summary>The examine box (its picture), shown in examine mode with the cursor over a pickup.</summary>
+        public VisualElement ExamineBox { get; private set; }
+
+        /// <summary>The examine box's icon of the pickup.</summary>
+        public VisualElement ExamineIcon { get; private set; }
+
+        /// <summary>The examine box's name, effect, description, weight and value lines.</summary>
+        public IReadOnlyList<Label> ExamineLines => examineLines;
+
+        /// <summary>The pickup the examine box shows now, or -1.</summary>
+        public int Examined { get; private set; } = -1;
+
+        /// <summary>
+        /// Shows <paramref name="pickups"/> from now on: the name of the selected pickup in reach of the hero
+        /// <see cref="Player"/> leads and of the one under <paramref name="viewpoint"/>'s cursor, as 3D text in
+        /// <paramref name="world"/>'s light over the world (and under the HUD), and in examine mode the examine box.
+        /// </summary>
+        public void ShowPickups(Pickups pickups, Viewpoint viewpoint, WorldViewPresenter world, PlayerId player, TextureLibrary library = null)
+        {
+            Pickups = pickups;
+            Viewpoint = viewpoint;
+            World = world;
+            Player = player;
+            textures = library ?? textures ?? new TextureLibrary();
+            if (SelectedName == null && labelLayer != null)
+            {
+                SelectedMarker = NewWorldLabel("selected marker");
+                SelectedName = NewWorldLabel("selected name");
+                HoverMarker = NewWorldLabel("hover marker");
+                HoverName = NewWorldLabel("hover name");
+            }
+
+            var box = Hud.Examine;
+            if (ExamineBox == null && box != null && examineLayer != null)
+            {
+                ExamineBox = NewPicture(examineLayer, "examine", box.Picture);
+                ExamineIcon = new VisualElement { name = "examine icon", pickingMode = PickingMode.Ignore };
+                ExamineIcon.style.position = Position.Absolute;
+                ExamineIcon.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
+                examineLayer.Add(ExamineIcon);
+                for (var i = 0; i < examineLines.Length; i++)
+                {
+                    var line = NewLabel(examineLayer, "examine line " + i, null);
+                    Style(line, box.Font);
+                    line.style.color = (Color)new Color32(box.Colour.R, box.Colour.G, box.Colour.B, box.Colour.A);
+                    line.style.whiteSpace = WhiteSpace.Pre;
+                    examineLines[i] = line;
+                }
+
+                examineLayer.style.display = DisplayStyle.None;
+            }
+
+            Refresh();
+        }
+
+        Label NewWorldLabel(string name)
+        {
+            var label = NewLabel(labelLayer, name, null);
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.style.translate = new Translate(Length.Percent(-50), Length.Percent(-50));
+            var face = FontFor(Pickups.Data.Label.Font);
+            if (face != null) label.style.unityFontDefinition = FontDefinition.FromFont(face);
+            label.style.display = DisplayStyle.None;
+            return label;
+        }
+
+        void RefreshPickups()
+        {
+            if (Pickups == null || SelectedName == null) return;
+            var selected = Pickups.Selected(Player);
+            var hover = -1;
+            if (Viewpoint != null) hover = Pickups.PickupAt(Viewpoint.Cursor.X, Viewpoint.Cursor.Y);
+            ShowLabel(SelectedName, SelectedMarker, selected);
+            ShowLabel(HoverName, HoverMarker, hover);
+
+            Examined = Viewpoint != null && Viewpoint.Examine ? hover : -1;
+            if (examineLayer == null || Hud.Examine == null) return;
+            if (Examined < 0)
+            {
+                examineLayer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var box = Hud.Examine;
+            var p = Pickups.All[Examined];
+            var scale = HorizontalScale;
+            ExamineBox.style.left = box.X * scale;
+            ExamineBox.style.top = box.Y;
+            ExamineBox.style.width = box.Width * scale;
+            ExamineBox.style.height = box.Height;
+            ExamineIcon.style.left = (box.X + box.Icon.X) * scale;
+            ExamineIcon.style.top = box.Y + box.Icon.Y;
+            ExamineIcon.style.width = box.IconSize * scale;
+            ExamineIcon.style.height = box.IconSize;
+            var icon = textures.Load(p.File);
+            ExamineIcon.style.backgroundImage = icon != null ? new StyleBackground(icon) : new StyleBackground(StyleKeyword.None);
+            var lines = box.Lines(p.Definition);
+            var points = box.Points;
+            for (var i = 0; i < examineLines.Length; i++)
+            {
+                examineLines[i].text = lines[i];
+                Place(examineLines[i], box.X + points[i].X, box.Y + points[i].Y);
+            }
+
+            examineLayer.style.display = DisplayStyle.Flex;
+        }
+
+        /// <summary>
+        /// renderText's two lines over pickup <paramref name="index"/>: the marker and the name, each centred on its point
+        /// above the pickup at the height its scale gives the font, in the world's light; hidden for -1 or off screen.
+        /// </summary>
+        void ShowLabel(Label name, Label marker, int index)
+        {
+            if (index < 0 || World == null || World.Camera == null)
+            {
+                name.style.display = DisplayStyle.None;
+                marker.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var p = Pickups.All[index];
+            var l = Pickups.Data.Label;
+            var colour = World.Tint;
+            colour.a = 1f;
+            PlaceWorldLabel(marker, l.Marker, p.X + l.MarkerOffset.X, p.Y + l.MarkerOffset.Y, l.EmHeight(l.MarkerScale), colour);
+            PlaceWorldLabel(name, p.Name, p.X + l.NameOffset.X, p.Y + l.NameOffset.Y, l.EmHeight(l.NameScale), colour);
+        }
+
+        void PlaceWorldLabel(Label label, string text, float x, float y, float em, Color colour)
+        {
+            var cam = World.Camera;
+            var at = cam.WorldToViewportPoint(new Vector3(x, y, 0f));
+            var top = cam.WorldToViewportPoint(new Vector3(x, y + em, 0f));
+            if (at.z <= 0f || float.IsNaN(at.x) || float.IsNaN(at.y))
+            {
+                label.style.display = DisplayStyle.None;
+                return;
+            }
+
+            // The view to the panel's units: the panel is the reference screen's height tall and as wide as the window's aspect.
+            var height = Hud.ScreenHeight;
+            var width = Hud.ScreenWidth * HorizontalScale;
+            label.text = text;
+            label.style.left = at.x * width;
+            label.style.top = (1f - at.y) * height;
+            label.style.fontSize = Mathf.Max(1f, Mathf.Abs(top.y - at.y) * height);
+            label.style.color = colour;
+            label.style.display = DisplayStyle.Flex;
+        }
+
         void LateUpdate() => Refresh();
+
+        static VisualElement NewLayer(VisualElement root, string name)
+        {
+            var layer = new VisualElement { name = name, pickingMode = PickingMode.Ignore };
+            layer.style.position = Position.Absolute;
+            layer.style.left = 0;
+            layer.style.top = 0;
+            root.Add(layer);
+            return layer;
+        }
 
         /// <summary>
         /// Panel units per pixel of the 640 x 480 screen across: the panel is the screen's height in units (it scales with
@@ -189,6 +375,7 @@ namespace MindAttic.Overworld.Runtime
 
             RefreshVitals();
             RefreshRest();
+            RefreshPickups();
 
             var shown = Messages != null ? Messages.Shown : (IReadOnlyList<ShownMessage>)Array.Empty<ShownMessage>();
             for (var i = 0; i < shown.Count; i++)

@@ -32,6 +32,12 @@ namespace MindAttic.Overworld.Runtime
     /// prompt), or lays the leader down and sleeps that many hours (1 to 24), at once or after that many seconds;
     /// <c>-overworld-sleep-until &lt;hour[,seconds]&gt;</c> lays the leader down and sleeps until that hour (0 to 23) as the
     /// Moon Berry (22) and Morningstar (5) do;
+    /// <c>-overworld-seed &lt;n&gt;</c> seeds the scatter of the random gold and satchels (the original's was the clock's);
+    /// <c>-overworld-place &lt;x,y&gt;</c> puts the leader at (x, y); <c>-overworld-reach &lt;pickup[,seconds]&gt;</c> puts the
+    /// leader so that pickup (its index, 0 to 372) is in reach and selects it, showing its name;
+    /// <c>-overworld-pickup &lt;pickup[,seconds]&gt;</c> does the same and then holds the pick-up button (the leader kneels
+    /// and takes it); <c>-overworld-examine-pickup &lt;pickup[,seconds]&gt;</c> turns examine mode on with the world cursor
+    /// over that pickup, opening the examine box;
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -54,6 +60,11 @@ namespace MindAttic.Overworld.Runtime
         public const string VitalsArgument = "-overworld-vitals";
         public const string RestArgument = "-overworld-rest";
         public const string SleepUntilArgument = "-overworld-sleep-until";
+        public const string PlaceArgument = "-overworld-place";
+        public const string ReachArgument = "-overworld-reach";
+        public const string PickUpArgument = "-overworld-pickup";
+        public const string ExaminePickupArgument = "-overworld-examine-pickup";
+        public const string SeedArgument = "-overworld-seed";
 
         public ContentRegistry Content { get; private set; }
         public GameHost Host { get; private set; }
@@ -67,6 +78,7 @@ namespace MindAttic.Overworld.Runtime
         public MessageBoard Messages { get; private set; }
         public HudPresenter Hud { get; private set; }
         public SleepCycle Sleep { get; private set; }
+        public Pickups Pickups { get; private set; }
 
         /// <summary>The content folder of this build (or of the project, in the editor).</summary>
         public static string ContentDirectory => Path.Combine(Application.streamingAssetsPath, "Content");
@@ -74,9 +86,19 @@ namespace MindAttic.Overworld.Runtime
         void Start()
         {
             Content = ContentRegistry.Load(new DirectoryContentSource(ContentDirectory));
+            var args = Environment.GetCommandLineArgs();
             var game = new Game();
-            Party = new Party(Content.Heroes, Content.Walls).Install(game);
+            Party = new Party(Content.Heroes, Content.Walls);
+            // checkItemsInRange and checkItemPickup ran after getInput and before updateHero: the pickups step before the
+            // party. The original seeded its scatter from the clock; -overworld-seed fixes it for captures.
+            var seedText = ArgumentAfter(args, SeedArgument);
+            var seed = 0;
+            var seeded = seedText != null && int.TryParse(seedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out seed);
+            if (seedText != null && !seeded) Debug.LogError("Unity.Overworld: " + SeedArgument + " wants a whole number, not '" + seedText + "'.");
+            Pickups = new Pickups(Content.Pickups, Party, null, seeded ? new System.Random(seed) : null).Install(game);
+            Party.Install(game);
             Control = new CameraControl(Content.View, Party).Install(game);
+            Control.WheelFirst = Pickups.UseWheel;
             // renderTime ran before renderMessages, so the clock steps before the board: an announcement shows on its minute.
             Messages = new MessageBoard(Content.Hud);
             Clock = new WorldClock(Content.Time, Content.Heroes.Locomotion.GameSpeed, Messages);
@@ -96,14 +118,15 @@ namespace MindAttic.Overworld.Runtime
             World.ShowCursor(Viewpoint.Cursor);
             World.LightBy(Clock);
             World.DimBy(Sleep);
+            World.ShowPickups(Pickups);
             Hud = HudPresenter.Create(Content.Hud, Clock, Messages);
             Hud.transform.SetParent(transform, false);
             Hud.ShowVitals(Party, PlayerId.One);
+            Hud.ShowPickups(Pickups, Viewpoint, World, PlayerId.One);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
             Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint, Party, Content.View.TeamButton);
             Input.transform.SetParent(transform, false);
 
-            var args = Environment.GetCommandLineArgs();
             var scripted = ScriptedInput(args);
             if (scripted.HasValue)
             {
@@ -118,7 +141,8 @@ namespace MindAttic.Overworld.Runtime
             ApplyScriptedClock(args, game);
             var vitals = ApplyScriptedVitals(args, game);
             var rested = ApplyScriptedRest(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || capture != null) Input.UseDevices = false;
+            var picked = ApplyScriptedPickups(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -452,6 +476,111 @@ namespace MindAttic.Overworld.Runtime
             else Debug.LogError("Unity.Overworld: " + SleepUntilArgument + " was refused: " + result.Reason);
         }
 
+        /// <summary>
+        /// Applies <c>-overworld-place</c>, <c>-overworld-reach</c>, <c>-overworld-pickup</c> and
+        /// <c>-overworld-examine-pickup</c>; true when any was given.
+        /// </summary>
+        bool ApplyScriptedPickups(string[] args, Game game)
+        {
+            var any = false;
+            var place = ArgumentAfter(args, PlaceArgument);
+            if (place != null)
+            {
+                any = true;
+                if (TryPair(place, out var x, out var y))
+                {
+                    var result = game.Submit(new PlaceHero(PlayerId.One, Party.LeaderOf(PlayerId.One), x, y));
+                    if (!result.Accepted) Debug.LogError("Unity.Overworld: " + PlaceArgument + " was refused: " + result.Reason);
+                }
+                else Debug.LogError("Unity.Overworld: " + PlaceArgument + " wants x,y, not '" + place + "'.");
+            }
+
+            foreach (var (name, hold) in new[] { (ReachArgument, false), (PickUpArgument, true) })
+            {
+                var text = ArgumentAfter(args, name);
+                if (text == null) continue;
+                any = true;
+                if (TryPickup(text, Pickups.All.Count, out var index, out var seconds)) StartCoroutine(ReachAfter(game, index, seconds, hold));
+                else Debug.LogError("Unity.Overworld: " + name + " wants a pickup's index (0 to " + (Pickups.All.Count - 1) + ") and optionally the seconds to wait, not '" + text + "'.");
+            }
+
+            var examine = ArgumentAfter(args, ExaminePickupArgument);
+            if (examine != null)
+            {
+                any = true;
+                if (TryPickup(examine, Pickups.All.Count, out var index, out var seconds)) StartCoroutine(ExamineAfter(game, index, seconds));
+                else Debug.LogError("Unity.Overworld: " + ExaminePickupArgument + " wants a pickup's index and optionally the seconds to wait, not '" + examine + "'.");
+            }
+
+            return any;
+        }
+
+        /// <summary>Reads <c>index[,seconds]</c>, the index a pickup's (0 to <paramref name="count"/> - 1).</summary>
+        public static bool TryPickup(string text, int count, out int index, out float seconds)
+        {
+            index = -1;
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            if (parts.Length == 2 && !(float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f)) return false;
+            return int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out index) && index >= 0 && index < count;
+        }
+
+        static IEnumerator NextTick(Game game)
+        {
+            var tick = game.Tick;
+            while (game.Tick == tick) yield return null;
+        }
+
+        /// <summary>
+        /// Places the leader so pickup <paramref name="index"/> is in reach (its reach point on the pickup's), selects it
+        /// with the , / . steps and, when <paramref name="hold"/>, holds the pick-up button from then on (it kneels and takes it).
+        /// </summary>
+        IEnumerator ReachAfter(Game game, int index, float seconds, bool hold)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var p = Pickups.All[index];
+            var reach = Pickups.Data.Reach;
+            var item = Pickups.Data.ItemSize;
+            var size = Party.Data.HeroSize;
+            var leader = Party.LeaderOf(PlayerId.One);
+            var placed = game.Submit(new PlaceHero(PlayerId.One, leader,
+                p.X + item * reach.ItemPoint.X - size * reach.HeroPoint.X, p.Y + item * reach.ItemPoint.Y - size * reach.HeroPoint.Y));
+            if (!placed.Accepted)
+            {
+                Debug.LogError("Unity.Overworld: placing the leader by " + p + " was refused: " + placed.Reason);
+                yield break;
+            }
+
+            // Chosen again, as a click on it would, so the camera centres on where it now stands.
+            game.Submit(new SelectHero(PlayerId.One, leader));
+            yield return NextTick(game);
+            for (var i = 0; i < reach.Listed && Pickups.Selected(PlayerId.One) != index; i++) game.Submit(new CyclePickup(PlayerId.One, 1));
+            Debug.Log("Unity.Overworld: scripted reach of " + p + ", in reach [" + string.Join(", ", Pickups.InReach(PlayerId.One)) + "], selected " +
+                      Pickups.Selected(PlayerId.One));
+            if (!hold) yield break;
+            Input.Scripted = (Input.Scripted ?? default(MoveInput)).WithPickUp(true);
+            yield return NextTick(game);
+            Debug.Log("Unity.Overworld: scripted pickup, " + p + "; " + Party.Leader(PlayerId.One) + "; " + DescribePack());
+        }
+
+        /// <summary>Turns examine mode on and puts the world cursor over pickup <paramref name="index"/>.</summary>
+        IEnumerator ExamineAfter(Game game, int index, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            if (!Viewpoint.Examine) game.Submit(new ToggleExamine(PlayerId.One));
+            var p = Pickups.All[index];
+            var h = Pickups.Data.Hover;
+            game.Submit(new PlaceCursor(PlayerId.One, p.X + h.ItemOffset.X - h.CursorOffset.X, p.Y + h.ItemOffset.Y - h.CursorOffset.Y));
+            Debug.Log("Unity.Overworld: scripted examine of " + p + ", under the cursor " + Pickups.PickupAt(Viewpoint.Cursor.X, Viewpoint.Cursor.Y));
+        }
+
+        string DescribePack()
+        {
+            var inv = Pickups.Inventory;
+            return "gold " + inv.Gold + ", weight " + inv.Weight.ToString(CultureInfo.InvariantCulture) + ", pack [" + string.Join(", ", inv.Items) + "]";
+        }
+
         static string Describe(Hero h) => h.Name + " HP " + h.Health + "/" + h.MaxHealth + " MP " + h.Mana + "/" + h.MaxMana + " AP " + h.Stamina + "/" + h.MaxStamina + " " + h.Status;
 
         /// <summary>Reads <c>hour:minute[,seconds]</c>.</summary>
@@ -546,6 +675,16 @@ namespace MindAttic.Overworld.Runtime
                     Debug.Log("Unity.Overworld: camera at (" + cam.X.ToString(CultureInfo.InvariantCulture) + ", " + cam.Y.ToString(CultureInfo.InvariantCulture) +
                               ", " + cam.Z.ToString(CultureInfo.InvariantCulture) + ")" + (Viewpoint.FreeCamera ? " free" : "") + (Viewpoint.Centring ? " centring" : ""));
                     Debug.Log("Unity.Overworld: " + Viewpoint.Cursor + " showing " + Viewpoint.Cursor.File);
+                }
+
+                if (Pickups != null)
+                {
+                    var selected = Pickups.Selected(PlayerId.One);
+                    Debug.Log("Unity.Overworld: pickups in reach [" + string.Join(", ", Pickups.InReach(PlayerId.One)) + "], selected " +
+                              (selected >= 0 ? Pickups.All[selected].ToString() : "none") + "; " + DescribePack() +
+                              (Hud != null && Hud.Examined >= 0 ? "; examining " + Pickups.All[Hud.Examined] : "") +
+                              (Hud != null && Hud.SelectedName != null && Hud.SelectedName.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex
+                                  ? "; label '" + Hud.SelectedName.text + "'" : ""));
                 }
 
                 if (Clock != null)

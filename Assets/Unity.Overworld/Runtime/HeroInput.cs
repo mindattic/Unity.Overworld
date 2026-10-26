@@ -12,7 +12,9 @@ namespace MindAttic.Overworld.Runtime
     /// edge scroll), E (examine), F (free camera), X / Z (isometric) and numpad 4 / 6 / 8 / 2 (strafe). The party controls
     /// (RECONSTRUCTION 4.7, 5.1 and 13): [ and ] (the previous and next hero), ' (team / solo), and the left button (on a
     /// hero, it leads; on the team button, the team toggles). The rest controls (RECONSTRUCTION 6.4): \ (kneel, lie down,
-    /// kneel again) and Enter or the left button while lying down (sleep). Every frame, before the game advances, it sends what the
+    /// kneel again) and Enter or the left button while lying down (sleep). The pickup controls (RECONSTRUCTION 8.2):
+    /// Enter or the left button (off the team button) held is the pick-up button, and , and . choose the previous and
+    /// next item in reach (the wheel does too, through Core, when any is in reach). Every frame, before the game advances, it sends what the
     /// player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/> commands and the key presses and clicks as
     /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>
@@ -21,7 +23,7 @@ namespace MindAttic.Overworld.Runtime
     {
         InputAction left, right, up, down, run, move, point;
         InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
-        InputAction previousHero, nextHero, team, select, rest, confirm;
+        InputAction previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem;
         Vector2? scriptedMouse;
         int scriptedWheelSent;
 
@@ -104,6 +106,8 @@ namespace MindAttic.Overworld.Runtime
             select = Button("Select", "<Mouse>/leftButton");
             rest = Button("Rest", "<Keyboard>/backslash");
             confirm = Button("Confirm", "<Keyboard>/enter", "<Keyboard>/numpadEnter");
+            previousItem = Button("PreviousItem", "<Keyboard>/comma");
+            nextItem = Button("NextItem", "<Keyboard>/period");
         }
 
         static InputAction Button(string name, params string[] bindings)
@@ -133,7 +137,7 @@ namespace MindAttic.Overworld.Runtime
         {
             left, right, up, down, run, move, point,
             motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown,
-            previousHero, nextHero, team, select, rest, confirm,
+            previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem,
         };
 
         void Update()
@@ -157,6 +161,8 @@ namespace MindAttic.Overworld.Runtime
             if (nextHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, 1));
             if (team.WasPressedThisFrame()) Game.Submit(new ToggleTeam(Player));
             if (rest.WasPressedThisFrame()) Game.Submit(new Rest(Player));
+            if (previousItem.WasPressedThisFrame()) Game.Submit(new CyclePickup(Player, -1));
+            if (nextItem.WasPressedThisFrame()) Game.Submit(new CyclePickup(Player, 1));
             Confirm(confirm.WasPressedThisFrame() || select.WasPressedThisFrame());
             Click(select.IsPressed(), select.WasPressedThisFrame());
         }
@@ -211,7 +217,20 @@ namespace MindAttic.Overworld.Runtime
                 else if (Camera != null) cursor = GroundPoint(Camera, point.ReadValue<Vector2>());
             }
 
-            return new MoveInput(left.IsPressed(), right.IsPressed(), up.IsPressed(), down.IsPressed(), run.IsPressed(), held, cursor.x, cursor.y);
+            return new MoveInput(left.IsPressed(), right.IsPressed(), up.IsPressed(), down.IsPressed(), run.IsPressed(), held, cursor.x, cursor.y,
+                PickUpHeld(confirm.IsPressed(), select.IsPressed()));
+        }
+
+        /// <summary>
+        /// actionPickup's buttons: Enter, or the left button unless it is over the team button (overTeam). (A left click on
+        /// a hero both chooses it and kneels it to pick up, as getMouse called actionHeroSelect then actionPickup.)
+        /// </summary>
+        public bool PickUpHeld(bool enter, bool leftButton)
+        {
+            if (enter) return true;
+            if (!leftButton) return false;
+            if (TeamButton != null && Viewpoint != null && TeamButton.Contains(Viewpoint.Cursor.MouseX, Viewpoint.Cursor.MouseY)) return false;
+            return true;
         }
 
         ViewInput ReadView()

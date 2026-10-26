@@ -7,6 +7,11 @@
     "cheese", "apple", "spineynut", "book1", "egg", "cure_plant", "day_berry", "book2", "rune1", "gold5", "satchel", "gold"
   ],
   "inventoryTextures": ["potato", "turnip"],
+  "art": {"_note": "Textures.vb loads every item picture from \\gfx\\items\\<name>.png; the shipped files end in .PNG.", "folder": "gfx/items/", "extension": ".PNG"},
+  "reach": {"_note": "Items.checkItemsInRange: an unpicked pickup is in reach when its point (x + itemSize / 2, y - itemSize / 2) is within 'range' of the leader's (x + heroSize / 2, y - heroSize / 2.5) on both axes; at most 'listed' are listed, in index order.", "range": 0.05, "heroPoint": [0.5, -0.4], "itemPoint": [0.5, -0.5], "listed": 13},
+  "hover": {"_note": "Cursor.checkCursorOverItem: the first unpicked pickup whose (x + 0.025, y) is within 0.03 of the world cursor's (x + 0.03, y - 0.04) on both axes is under the cursor (overItem).", "range": 0.03, "itemOffset": [0.025, 0], "cursorOffset": [0.03, -0.04]},
+  "label": {"_note": "Items.showItemName and checkCursorOverItem: renderText draws '.' at scale 0.02 at (x + 0.025, y + 0.025) and the name at scale 0.007 at (x + 0.025, y + 0.03), both centred, in the world's light. GraphicsFont.Render3DText makes a glyph its texture pixels / 10 units across, from Arial 24 (pixels = points x 96 / 72).", "marker": ".", "markerScale": 0.02, "markerOffset": [0.025, 0.025], "nameScale": 0.007, "nameOffset": [0.025, 0.03], "fontPoints": 24, "families": ["Arial"], "unitsPerPixel": 0.1},
+  "battlePickupStamina": 0.05,
   "pickups": [
     {"from": 0, "name": "Health Root", "texture": "health_root", "at": [0, -0.1], "script": "CHANGE HERO HP +10", "effect": "+10 Health", "description": "Common healing root", "weight": 0.1, "type": "SingleItem", "value": 12, "growSeconds": 12},
     {"from": 1, "name": "Moon Berry", "texture": "night_berry", "at": [-0.4, 0.1], "script": "CHANGE HERO AI LAYDOWN | CHANGE TIME HOUR 22 | CHANGE INVENTORY OPEN FALSE", "effect": "Induces a coma-like sleep until nightfall", "description": "Mild sedative fruit", "weight": 0.2, "type": "GroupItem", "value": 40, "growSeconds": 12},

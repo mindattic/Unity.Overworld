@@ -109,4 +109,37 @@ namespace MindAttic.Overworld.Core
         /// <summary>Chosen with [ or ] (the cursor snaps to the new leader), not by a click.</summary>
         public bool Cycled { get; }
     }
+
+    /// <summary>
+    /// Puts a hero at (<see cref="X"/>, <see cref="Y"/>), as the script's CHANGE HERO X / Y assignments did (RECONSTRUCTION
+    /// 9.2): it is placed, not moved, so it is drawn there at once. Used by the script story (A14) and scripted runs.
+    /// </summary>
+    public sealed class PlaceHero : ICommand
+    {
+        public PlaceHero(PlayerId player, int hero, float x, float y)
+        {
+            Player = player;
+            Hero = hero;
+            X = x;
+            Y = y;
+        }
+
+        public PlayerId Player { get; }
+
+        /// <summary>The hero's place in the party.</summary>
+        public int Hero { get; }
+
+        public float X { get; }
+        public float Y { get; }
+    }
+
+    /// <summary>A hero was placed at (x, y).</summary>
+    public sealed class HeroPlaced : IGameEvent
+    {
+        public HeroPlaced(long tick, int hero, float x, float y) { Tick = tick; Hero = hero; X = x; Y = y; }
+        public long Tick { get; }
+        public int Hero { get; }
+        public float X { get; }
+        public float Y { get; }
+    }
 }

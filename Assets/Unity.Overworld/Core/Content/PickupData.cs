@@ -57,6 +57,54 @@ namespace MindAttic.Overworld.Core
         public bool IsRestored { get; internal set; }
     }
 
+    /// <summary>
+    /// What is in reach of a hero (Items.checkItemsInRange, RECONSTRUCTION 8.2): a pickup's point (its position plus
+    /// <see cref="ItemPoint"/> times the item size) within <see cref="Range"/> of the hero's (its position plus
+    /// <see cref="HeroPoint"/> times the hero size) on both axes; at most <see cref="Listed"/> are listed.
+    /// </summary>
+    public sealed class ReachTuning
+    {
+        public float Range { get; internal set; }
+        public DataPoint HeroPoint { get; internal set; }
+        public DataPoint ItemPoint { get; internal set; }
+        public int Listed { get; internal set; }
+    }
+
+    /// <summary>
+    /// What is under the world cursor (Cursor.checkCursorOverItem): a pickup's position plus <see cref="ItemOffset"/>
+    /// within <see cref="Range"/> of the cursor plus <see cref="CursorOffset"/> on both axes.
+    /// </summary>
+    public sealed class HoverTuning
+    {
+        public float Range { get; internal set; }
+        public DataPoint ItemOffset { get; internal set; }
+        public DataPoint CursorOffset { get; internal set; }
+    }
+
+    /// <summary>
+    /// The name label over a pickup (Items.showItemName, renderText): a marker and the name, each centred at the pickup's
+    /// position plus its offset, in 3D text whose glyphs are <see cref="UnitsPerPixel"/> of their font pixels times the scale.
+    /// </summary>
+    public sealed class PickupLabelTuning
+    {
+        public string Marker { get; internal set; }
+        public float MarkerScale { get; internal set; }
+        public DataPoint MarkerOffset { get; internal set; }
+        public float NameScale { get; internal set; }
+        public DataPoint NameOffset { get; internal set; }
+        public float FontPoints { get; internal set; }
+        public IReadOnlyList<string> Families { get; internal set; }
+        public float UnitsPerPixel { get; internal set; }
+
+        /// <summary>The label's font (Text.vb's font3d, Arial 24) for presentation.</summary>
+        public HudFont Font => font ??= new HudFont { Name = "font3d", Families = Families, Points = FontPoints, Bold = false };
+
+        HudFont font;
+
+        /// <summary>The height of the font's em in world units at <paramref name="scale"/> (a GDI point is 96 / 72 pixels).</summary>
+        public float EmHeight(float scale) => FontPoints * 96f / 72f * UnitsPerPixel * scale;
+    }
+
     /// <summary>All pickups: the original's 372 (0 to 371) plus the restored Nitro Bean (372).</summary>
     public sealed class PickupData
     {
@@ -73,6 +121,27 @@ namespace MindAttic.Overworld.Core
         public RandomArea RandomArea { get; }
         public IReadOnlyList<string> Textures { get; }
         public IReadOnlyList<string> InventoryTextures { get; }
+
+        /// <summary>The folder the item pictures are in ("gfx/items/") and their extension (".PNG").</summary>
+        public string ArtFolder { get; private set; }
+
+        public string ArtExtension { get; private set; }
+
+        public ReachTuning Reach { get; private set; }
+        public HoverTuning Hover { get; private set; }
+        public PickupLabelTuning Label { get; private set; }
+
+        /// <summary>The share of maximum stamina a pickup costs a hero moving in battle (checkItemPickup's 5 percent).</summary>
+        public float BattlePickupStamina { get; private set; }
+
+        /// <summary>The picture file of an item texture name ("egg" is "gfx/items/egg.PNG").</summary>
+        public string File(string texture) => texture == null ? null : ArtFolder + texture + ArtExtension;
+
+        /// <summary>The picture a pickup is drawn with in the world (and in the examine box).</summary>
+        public string WorldFile(PickupDefinition pickup) => File(pickup.Texture);
+
+        /// <summary>The picture a pickup shows in the inventory: its own icon when it has one (potato, turnip), else its world picture.</summary>
+        public string InventoryFile(PickupDefinition pickup) => File(pickup.InventoryTexture ?? pickup.Texture);
 
         /// <summary>Indexed by pickup index; no gaps.</summary>
         public IReadOnlyList<PickupDefinition> Pickups { get; }
@@ -132,6 +201,49 @@ namespace MindAttic.Overworld.Core
             areaReader.Done();
             var textures = root.Texts("textures");
             var inventoryTextures = root.Texts("inventoryTextures");
+
+            var art = root.Section("art");
+            var artFolder = art.Text("folder");
+            var artExtension = art.Text("extension");
+            art.Check(artFolder.StartsWith("gfx/", StringComparison.Ordinal) && artFolder.EndsWith("/", StringComparison.Ordinal), "folder", "must be a folder under gfx/ ending in /");
+            art.Check(artExtension.StartsWith(".", StringComparison.Ordinal), "extension", "must start with a dot");
+            art.Done();
+
+            var reachReader = root.Section("reach");
+            var reach = new ReachTuning
+            {
+                Range = reachReader.Positive("range"),
+                HeroPoint = reachReader.Pair("heroPoint", -1f, 1f),
+                ItemPoint = reachReader.Pair("itemPoint", -1f, 1f),
+                Listed = reachReader.Integer("listed", 1, 1000),
+            };
+            reachReader.Done();
+
+            var hoverReader = root.Section("hover");
+            var hover = new HoverTuning
+            {
+                Range = hoverReader.Positive("range"),
+                ItemOffset = hoverReader.Pair("itemOffset", -1f, 1f),
+                CursorOffset = hoverReader.Pair("cursorOffset", -1f, 1f),
+            };
+            hoverReader.Done();
+
+            var labelReader = root.Section("label");
+            var label = new PickupLabelTuning
+            {
+                Marker = labelReader.Text("marker"),
+                MarkerScale = labelReader.Positive("markerScale"),
+                MarkerOffset = labelReader.Pair("markerOffset", -1f, 1f),
+                NameScale = labelReader.Positive("nameScale"),
+                NameOffset = labelReader.Pair("nameOffset", -1f, 1f),
+                FontPoints = labelReader.Positive("fontPoints"),
+                Families = labelReader.Texts("families"),
+                UnitsPerPixel = labelReader.Positive("unitsPerPixel"),
+            };
+            labelReader.Check(label.Families.Count > 0, "families", "must name at least one face");
+            labelReader.Done();
+
+            var battleStamina = root.Number("battlePickupStamina", 0f, 1f);
 
             var byIndex = new SortedDictionary<int, PickupDefinition>();
             foreach (var r in root.Objects("pickups"))
@@ -221,7 +333,15 @@ namespace MindAttic.Overworld.Core
             }
 
             root.Done();
-            return new PickupData(itemSize, area, textures, inventoryTextures, list.ToArray());
+            return new PickupData(itemSize, area, textures, inventoryTextures, list.ToArray())
+            {
+                ArtFolder = artFolder,
+                ArtExtension = artExtension,
+                Reach = reach,
+                Hover = hover,
+                Label = label,
+                BattlePickupStamina = battleStamina,
+            };
         }
     }
 }

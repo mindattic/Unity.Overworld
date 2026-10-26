@@ -73,8 +73,22 @@ namespace MindAttic.Overworld.Core
             game.Register<CycleLeader>(HandleCycle);
             game.Register<SetHeroVitals>(HandleVitals);
             game.Register<Rest>(HandleRest);
+            game.Register<PlaceHero>(HandlePlace);
             game.AddSystem(this);
             return this;
+        }
+
+        /// <summary>CHANGE HERO X / Y: the hero is placed at the point (and drawn there at once, not eased from where it was).</summary>
+        CommandResult HandlePlace(Game game, PlaceHero command)
+        {
+            if (command.Hero < 0 || command.Hero >= heroes.Count)
+                return CommandResult.Reject("There is no hero " + command.Hero + " in the party.");
+            if (float.IsNaN(command.X) || float.IsNaN(command.Y) || float.IsInfinity(command.X) || float.IsInfinity(command.Y))
+                return CommandResult.Reject("A hero is placed at a finite point.");
+            var hero = heroes[command.Hero];
+            hero.X = hero.PreviousX = command.X;
+            hero.Y = hero.PreviousY = command.Y;
+            return CommandResult.Accept(new HeroPlaced(game.Tick, hero.Index, hero.X, hero.Y));
         }
 
         /// <summary>
@@ -520,11 +534,12 @@ namespace MindAttic.Overworld.Core
             // actionRun: running needs stamina.
             if (input.Run) hero.Running = hero.Stamina > 0;
 
-            // actionLeft / Right / Up / Down, in that order, so the last held arrow sets the facing.
-            if (input.Left) Arrow(hero, Facing.Left);
-            if (input.Right) Arrow(hero, Facing.Right);
-            if (input.Up) Arrow(hero, Facing.Up);
-            if (input.Down) Arrow(hero, Facing.Down);
+            // actionLeft / Right / Up / Down, in that order, so the last held arrow sets the facing; while the pick-up
+            // button is held (bItemPickup) they only mark the direction held.
+            if (input.Left) Arrow(hero, Facing.Left, input.PickUp);
+            if (input.Right) Arrow(hero, Facing.Right, input.PickUp);
+            if (input.Up) Arrow(hero, Facing.Up, input.PickUp);
+            if (input.Down) Arrow(hero, Facing.Down, input.PickUp);
 
             // tryingConflict: opposite arrows together face Down and stand.
             if ((input.Left && input.Right) || (input.Up && input.Down))
@@ -533,9 +548,11 @@ namespace MindAttic.Overworld.Core
                 hero.State = HeroState.Standing;
             }
 
-            if (input.Move) MoveTowardCursor(hero, input.CursorX, input.CursorY);
+            // actionMove waits while the pick-up button is held (getMouse tests the left button first; Enter blocks it).
+            if (input.Move && !input.PickUp) MoveTowardCursor(hero, input.CursorX, input.CursorY);
 
-            // KeysUp: released keys clear their flags; with nothing held the hero stands.
+            // KeysUp: released keys clear their flags; with nothing held (the pick-up button included, and no pickup
+            // under way) the hero stands.
             if (!input.Run) hero.Running = false;
             if (!input.Move)
             {
@@ -545,12 +562,12 @@ namespace MindAttic.Overworld.Core
                 if (!input.Down) hero.MoveDown = false;
             }
 
-            if (!input.AnyArrow && !input.Move && !hero.Kneeling && !hero.Laying &&
+            if (!input.AnyArrow && !input.Move && !input.PickUp && !hero.Kneeling && !hero.Laying && !hero.PickingUp &&
                 hero.State != HeroState.Drawing && hero.State != HeroState.Battle)
                 hero.State = HeroState.Standing;
         }
 
-        static void Arrow(Hero hero, Facing facing)
+        static void Arrow(Hero hero, Facing facing, bool pickUpHeld)
         {
             switch (facing)
             {
@@ -560,7 +577,7 @@ namespace MindAttic.Overworld.Core
                 default: hero.MoveDown = true; break;
             }
 
-            if (hero.Laying) return;
+            if (hero.Laying || pickUpHeld) return;
             hero.Kneeling = false;
             hero.Facing = facing;
 

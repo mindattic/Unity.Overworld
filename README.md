@@ -23,8 +23,12 @@ health; the status box at the top left shows the leader's (and the team's) HP, M
 by the leader's, and an Exhausted, Angry or (green) Poisoned animation plays above a hero below 15 percent stamina, below 5 percent
 health or poisoned. `\` rests: once kneels, again lies down ("Rest for 1 hour?" at the centre; the arrows set 1 to 24 hours),
 again kneels; Enter or a left click while lying down sleeps, fading the world to black, giving every hero an eighth of its maximum
-health, mana and stamina an hour (no stamina while poisoned), moving the clock on and fading back in. The stories that make the
-rest play follow in build order.
+health, mana and stamina an hour (no stamina while poisoned), moving the clock on and fading back in. The original's 372 pickups
+(and the restored Nitro Bean) lie where it put them: the herbs, the potato and turnip fields, the sword, books, rune, food and
+beans, and the gold, five-gold and satchels scattered at random. Walk within reach (0.05) and the selected one's name shows over it; `,` and
+`.` (or the wheel) choose among those in reach; Enter or the left button kneels and picks it up: coins pay out at once, the rest
+go into the party's pack, and picked herbs and crops grow back after their growth time. With E on, the cursor over a pickup
+opens the examine box (name, effect, description, weight and value). The stories that make the rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
 `-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
 hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
@@ -36,7 +40,10 @@ or after that many seconds, so it falls in from z -1; `-overworld-solo` starts w
 do; `-overworld-clock <h:mm>[,<seconds>]` sets the time of day (period and light settled at once) and, given seconds, how many
 real seconds a minute takes (0: a minute every 60 Hz tick, a day in 24 seconds); `-overworld-vitals <hero>:<key=value,...>[;...]`
 sets vitals as CHANGE HERO did (`hp`, `mp`, `ap`, and `poisoned` or `fine`; e.g. `0:ap=5;1:hp=1;2:poisoned`); `-overworld-rest <kneel|lay|hours>[,<seconds>]` kneels, lies down or sleeps that many hours, and
-`-overworld-sleep-until <hour>[,<seconds>]` sleeps until that hour as the Moon Berry (22) and Morningstar (5) do; a scripted run never takes the real mouse.
+`-overworld-sleep-until <hour>[,<seconds>]` sleeps until that hour as the Moon Berry (22) and Morningstar (5) do;
+`-overworld-seed <n>` fixes the random scatter of the gold and satchels; `-overworld-place <x>,<y>` puts the leader there;
+`-overworld-reach <pickup>[,<seconds>]` puts the leader beside that pickup (0 to 372) and selects it, `-overworld-pickup <pickup>[,<seconds>]`
+then holds the pick-up button, and `-overworld-examine-pickup <pickup>[,<seconds>]` opens the examine box over it; a scripted run never takes the real mouse.
 
 ## Why
 

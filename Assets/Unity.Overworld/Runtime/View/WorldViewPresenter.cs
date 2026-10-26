@@ -13,10 +13,14 @@ namespace MindAttic.Overworld.Runtime
     /// </summary>
     public sealed class WorldViewPresenter : MonoBehaviour
     {
-        /// <summary>Sorting orders of the layers: backdrop, then tiles, then the sorted objects from <see cref="ObjectsOrder"/> up.</summary>
+        /// <summary>
+        /// Sorting orders of the layers: backdrop, then tiles, then the pickups in index order from <see cref="PickupsOrder"/>
+        /// (renderItem, layer 1, behind the heroes), then the sorted objects from <see cref="ObjectsOrder"/> up.
+        /// </summary>
         public const int BackdropOrder = -1000;
         public const int TilesOrder = 0;
-        public const int ObjectsOrder = 300;
+        public const int PickupsOrder = 100;
+        public const int ObjectsOrder = 1000;
 
         /// <summary>The world cursor is drawn after everything (renderCursor is the frame's last 3D draw; sorting orders stop at 32767).</summary>
         public const int CursorOrder = 30000;
@@ -111,6 +115,37 @@ namespace MindAttic.Overworld.Runtime
             }
         }
 
+        readonly List<MeshRenderer> pickupRenderers = new List<MeshRenderer>();
+
+        /// <summary>The pickups drawn (null: none).</summary>
+        public Pickups Pickups { get; private set; }
+
+        /// <summary>One quad per pickup, by index; disabled while it is picked up or beyond the render range.</summary>
+        public IReadOnlyList<MeshRenderer> PickupRenderers => pickupRenderers;
+
+        /// <summary>
+        /// Draws <paramref name="pickups"/> from now on (Items.renderItem): each unpicked pickup within the camera's render
+        /// range as an item-size quad of its picture at its place, after the tiles and behind the heroes, in index order.
+        /// </summary>
+        public void ShowPickups(Pickups pickups)
+        {
+            Pickups = pickups;
+            if (pickups != null && pickupRenderers.Count == 0)
+            {
+                var root = new GameObject("Pickups").transform;
+                root.SetParent(transform, false);
+                var size = pickups.Data.ItemSize;
+                foreach (var p in pickups.All)
+                {
+                    var r = NewRenderer("Pickup " + p.Index + " " + p.Name, Quad(size, size / 2f), p.File, PickupsOrder + p.Index, root);
+                    r.transform.localPosition = new Vector3(p.X, p.Y, 0f);
+                    pickupRenderers.Add(r);
+                }
+            }
+
+            Refresh();
+        }
+
         /// <summary>Draws <paramref name="cursor"/> from now on: its picture, at its position plus the draw offset, over everything.</summary>
         public void ShowCursor(WorldCursor cursor)
         {
@@ -201,6 +236,13 @@ namespace MindAttic.Overworld.Runtime
             }
 
             foreach (var t in tiles) t.Value.enabled = View.IsVisible(t.Key) && HasTexture(t.Value);
+
+            if (Pickups != null)
+                for (var i = 0; i < pickupRenderers.Count; i++)
+                {
+                    var p = Pickups.All[i];
+                    pickupRenderers[i].enabled = !p.PickedUp && View.Camera.InRange(p.X, p.Y) && HasTexture(pickupRenderers[i]);
+                }
 
             if (Party != null) Poses = View.Poses(Party, game != null ? game.Alpha : 1f);
 

@@ -82,7 +82,10 @@ namespace MindAttic.Overworld.Core
         /// <summary>When the hero last regenerated, in game seconds (lastRegenCheck).</summary>
         internal double LastRegenTime { get; set; }
 
-        /// <summary>The hero is kneeling to pick something up (no stamina comes back meanwhile); set by the pickup story.</summary>
+        /// <summary>
+        /// The hero is kneeling to pick something up (no stamina comes back meanwhile): set when the pick-up button is
+        /// pressed, cleared when the pickup completes or the button is let go (<see cref="Pickups"/>).
+        /// </summary>
         public bool PickingUp { get; internal set; }
 
         /// <summary>The run key is held and the hero had stamina (or the mouse sent it running this tick).</summary>
@@ -128,7 +131,7 @@ namespace MindAttic.Overworld.Core
     /// </summary>
     public readonly struct MoveInput : IEquatable<MoveInput>
     {
-        public MoveInput(bool left, bool right, bool up, bool down, bool run, bool move, float cursorX, float cursorY)
+        public MoveInput(bool left, bool right, bool up, bool down, bool run, bool move, float cursorX, float cursorY, bool pickUp = false)
         {
             Left = left;
             Right = right;
@@ -138,7 +141,17 @@ namespace MindAttic.Overworld.Core
             Move = move;
             CursorX = cursorX;
             CursorY = cursorY;
+            PickUp = pickUp;
         }
+
+        /// <summary>
+        /// The pick-up button (Enter, or the left mouse button off the team button) is held (actionPickup): the leader kneels
+        /// and picks up the selected item in reach; while it is held the arrows and the move button do not move the hero.
+        /// </summary>
+        public bool PickUp { get; }
+
+        /// <summary>This input with the pick-up button held (or not).</summary>
+        public MoveInput WithPickUp(bool held) => new MoveInput(Left, Right, Up, Down, Run, Move, CursorX, CursorY, held);
 
         public bool Left { get; }
         public bool Right { get; }
@@ -164,10 +177,11 @@ namespace MindAttic.Overworld.Core
             new MoveInput(left, right, up, down, run, false, 0f, 0f);
 
         public bool Equals(MoveInput o) =>
-            Left == o.Left && Right == o.Right && Up == o.Up && Down == o.Down && Run == o.Run && Move == o.Move && CursorX.Equals(o.CursorX) && CursorY.Equals(o.CursorY);
+            Left == o.Left && Right == o.Right && Up == o.Up && Down == o.Down && Run == o.Run && Move == o.Move && CursorX.Equals(o.CursorX) && CursorY.Equals(o.CursorY) &&
+            PickUp == o.PickUp;
 
         public override bool Equals(object obj) => obj is MoveInput o && Equals(o);
-        public override int GetHashCode() => (Left ? 1 : 0) | (Right ? 2 : 0) | (Up ? 4 : 0) | (Down ? 8 : 0) | (Run ? 16 : 0) | (Move ? 32 : 0) ^ CursorX.GetHashCode() ^ (CursorY.GetHashCode() << 7);
+        public override int GetHashCode() => (Left ? 1 : 0) | (Right ? 2 : 0) | (Up ? 4 : 0) | (Down ? 8 : 0) | (Run ? 16 : 0) | (Move ? 32 : 0) | (PickUp ? 64 : 0) ^ CursorX.GetHashCode() ^ (CursorY.GetHashCode() << 7);
     }
 
     /// <summary>Sets what a player is holding (<see cref="MoveInput"/>); the party applies it every tick until the next.</summary>

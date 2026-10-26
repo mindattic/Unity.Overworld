@@ -87,6 +87,18 @@ namespace MindAttic.Overworld.Core
         public PlayerId Player { get; }
     }
 
+    /// <summary>
+    /// Puts the player's world cursor at (<see cref="X"/>, <see cref="Y"/>) on the ground, as CHANGE CURSOR did (and for
+    /// scripted runs that point it at something); the virtual mouse is not moved.
+    /// </summary>
+    public sealed class PlaceCursor : ICommand
+    {
+        public PlaceCursor(PlayerId player, float x, float y) { Player = player; X = x; Y = y; }
+        public PlayerId Player { get; }
+        public float X { get; }
+        public float Y { get; }
+    }
+
     public sealed class FreeCameraChanged : IGameEvent
     {
         public FreeCameraChanged(long tick, PlayerId player, bool on) { Tick = tick; Player = player; On = on; }
@@ -207,6 +219,12 @@ namespace MindAttic.Overworld.Core
         public Party Party { get; }
         CameraControlDefinition Control => View.Control;
 
+        /// <summary>
+        /// A use of the wheel that comes before the zoom (getMouse: with items in reach the wheel cycles them,
+        /// <see cref="Pickups.UseWheel"/>): given the player and the wheel's steps, true when it took them. Null: the wheel zooms.
+        /// </summary>
+        public Func<PlayerId, int, bool> WheelFirst { get; set; }
+
         /// <summary>Registers the view commands and the per-tick rules on <paramref name="game"/>, after the party's.</summary>
         public CameraControl Install(Game game)
         {
@@ -214,6 +232,7 @@ namespace MindAttic.Overworld.Core
             game.Register<SetViewInput>(HandleInput);
             game.Register<ToggleFreeCamera>(HandleFreeCamera);
             game.Register<ToggleExamine>(HandleExamine);
+            game.Register<PlaceCursor>(HandlePlaceCursor);
             game.AddSystem(this);
             game.EventRaised += OnEvent;
             return this;
@@ -267,6 +286,17 @@ namespace MindAttic.Overworld.Core
             return CommandResult.Accept(new ExamineChanged(game.Tick, c.Player, v.Examine));
         }
 
+        CommandResult HandlePlaceCursor(Game game, PlaceCursor c)
+        {
+            if (float.IsNaN(c.X) || float.IsNaN(c.Y) || float.IsInfinity(c.X) || float.IsInfinity(c.Y))
+                return CommandResult.Reject("The cursor is placed at a finite point.");
+            var cursor = For(c.Player).Cursor;
+            cursor.X = c.X;
+            cursor.Y = c.Y;
+            cursor.Settle();
+            return CommandResult.Accept();
+        }
+
         public void Step(Game game, long tick, ICollection<IGameEvent> events)
         {
             foreach (var player in game.Players) Step(For(player), Party.Leader(player), Party.InputOf(player).Move);
@@ -300,7 +330,7 @@ namespace MindAttic.Overworld.Core
             // the zoom button drags the zoom by how far the mouse is above or below the centre line.
             cursor.MouseX = Math.Min(Math.Max(cursor.MouseX + dx, def.EdgeMargin), def.ScreenWidth - def.EdgeMargin);
             cursor.MouseY = Math.Min(Math.Max(cursor.MouseY + dy, def.EdgeMargin), def.ScreenHeight - def.EdgeMargin);
-            if (wheel != 0) cam.Move(0f, 0f, wheel * c.WheelStep);
+            if (wheel != 0 && !(WheelFirst != null && WheelFirst(v.Player, wheel))) cam.Move(0f, 0f, wheel * c.WheelStep);
             if (moveHeld) v.Centring = true;
             if (input.Zoom && hero.Mode == HeroMode.Adventure)
             {

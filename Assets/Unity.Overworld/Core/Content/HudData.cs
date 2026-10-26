@@ -119,6 +119,50 @@ namespace MindAttic.Overworld.Core
     }
 
     /// <summary>
+    /// The examine box (Gui/ExamineBox.vb renderExamine, RECONSTRUCTION 8.4): a panel picture at (X, Y) of Width x
+    /// Height, the pickup's picture as an icon, and its name, effect, description, weight and value, each at its point
+    /// from the panel's corner.
+    /// </summary>
+    public sealed class ExamineBoxDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public float Width { get; internal set; }
+        public float Height { get; internal set; }
+        public string Picture { get; internal set; }
+        public DataPoint Icon { get; internal set; }
+        public float IconSize { get; internal set; }
+        public HudFont Font { get; internal set; }
+        public TextColour Colour { get; internal set; }
+        public DataPoint Name { get; internal set; }
+        public DataPoint Effect { get; internal set; }
+        public DataPoint Description { get; internal set; }
+        public DataPoint Weight { get; internal set; }
+        public DataPoint Value { get; internal set; }
+        public string DescriptionText { get; internal set; }
+        public string WeightText { get; internal set; }
+        public string ValueText { get; internal set; }
+
+        /// <summary>The box's five lines for <paramref name="pickup"/>, in draw order: name, effect, description, weight, value.</summary>
+        public string[] Lines(PickupDefinition pickup)
+        {
+            var c = System.Globalization.CultureInfo.InvariantCulture;
+            return new[]
+            {
+                pickup.Name,
+                pickup.Effect,
+                string.Format(c, DescriptionText, pickup.Description),
+                // VB wrote a Single as its shortest text (0.1, 5.3, 0); the round-trip format is the same.
+                string.Format(c, WeightText, pickup.Weight.ToString(c)),
+                string.Format(c, ValueText, pickup.Value),
+            };
+        }
+
+        /// <summary>The five lines' points from the box's corner, in the order of <see cref="Lines"/>.</summary>
+        public DataPoint[] Points => new[] { Name, Effect, Description, Weight, Value };
+    }
+
+    /// <summary>
     /// The heads-up text (hud.json): the virtual screen the original drew on, its fonts, where the clock's lines go on the
     /// HUD and the hero screen, and how messages show.
     /// </summary>
@@ -150,6 +194,9 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>Where and how the rest prompt is written while the leader lies down (Engine.showRestText).</summary>
         public HudText Rest { get; internal set; }
+
+        /// <summary>The examine box (E, with the cursor over a pickup).</summary>
+        public ExamineBoxDefinition Examine { get; internal set; }
 
         /// <summary>The rest prompt for one hour ("Rest for {0} hour?").</summary>
         public string RestOne { get; internal set; }
@@ -232,6 +279,36 @@ namespace MindAttic.Overworld.Core
             rest.Check(data.RestOne.Contains("{0}"), "one", "must hold {0} for the hours");
             rest.Check(data.RestMany.Contains("{0}"), "many", "must hold {0} for the hours");
             rest.Done();
+
+            var ex = root.Section("examine");
+            var examine = new ExamineBoxDefinition
+            {
+                X = ex.Number("x", 0f, data.ScreenWidth),
+                Y = ex.Number("y", 0f, data.ScreenHeight),
+                Width = ex.Positive("width"),
+                Height = ex.Positive("height"),
+                Picture = ex.Text("picture"),
+                Font = ReadFont(ex, fonts),
+                Name = ex.Pair("name", 0f, data.ScreenWidth),
+                Effect = ex.Pair("effect", 0f, data.ScreenWidth),
+                Description = ex.Pair("description", 0f, data.ScreenWidth),
+                Weight = ex.Pair("weight", 0f, data.ScreenWidth),
+                Value = ex.Pair("value", 0f, data.ScreenWidth),
+                DescriptionText = ex.Text("descriptionText"),
+                WeightText = ex.Text("weightText"),
+                ValueText = ex.Text("valueText"),
+            };
+            var exColour = TimeData.ReadBytes(ex, "colour", 4, "an [a, r, g, b] colour of four whole numbers from 0 to 255");
+            examine.Colour = exColour == null ? new TextColour(255, 255, 255, 255) : new TextColour(exColour[0], exColour[1], exColour[2], exColour[3]);
+            var icon = ex.Section("icon");
+            examine.Icon = new DataPoint(icon.Number("x", 0f, data.ScreenWidth), icon.Number("y", 0f, data.ScreenHeight));
+            examine.IconSize = icon.Positive("size");
+            icon.Done();
+            ex.Check(examine.Picture.StartsWith("gfx/", StringComparison.Ordinal), "picture", "must be a path under gfx/");
+            foreach (var (key, text) in new[] { ("descriptionText", examine.DescriptionText), ("weightText", examine.WeightText), ("valueText", examine.ValueText) })
+                ex.Check(text.Contains("{0}"), key, "must hold {0} for the value");
+            ex.Done();
+            data.Examine = examine;
 
             var m = root.Section("messages");
             var tuning = new MessageTuning
