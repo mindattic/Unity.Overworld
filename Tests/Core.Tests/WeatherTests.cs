@@ -338,5 +338,19 @@ namespace MindAttic.Overworld.Tests
             Assert.IsFalse(view.IsVisible(0f, 0f, -3.5f), "z -3.5 is beyond -1 - 2");
             Assert.IsFalse(view.IsVisible(2.1f, 0f, -0.5f));
         }
+
+        // U.OVW-T44: with no seed the random is null; the constructors and the first steps must not touch the parameter.
+        [Test]
+        public void WeatherAndCloudsWithoutASeedConstructAndStepWithoutThrowing()
+        {
+            var game = new Game();
+            Assert.DoesNotThrow(() =>
+            {
+                new Weather(Data).Install(game);
+                new Clouds(Data).Install(game);
+            });
+            Assert.IsTrue(game.Submit(new JoinGame(PlayerId.One)).Accepted);
+            Assert.DoesNotThrow(() => { for (var i = 0; i < 5; i++) game.Step(); });
+        }
     }
 }

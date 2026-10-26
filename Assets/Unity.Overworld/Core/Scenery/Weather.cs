@@ -150,7 +150,7 @@ namespace MindAttic.Overworld.Core
                 if (k.Wander != 0f)
                 {
                     // getRndInt(1, 4): 1 up-right, 2 down-left, 3 up-left, 4 down-right, each axis a fresh random.
-                    switch (random.Next(1, 5))
+                    switch (this.random.Next(1, 5))
                     {
                         case 1:
                             x[i] += k.Wander * Percent();
@@ -234,7 +234,7 @@ namespace MindAttic.Overworld.Core
                 z[i] = c.StartZ - increment;
                 increment += c.ZStep;
                 width[i] = c.WidthSpread * Percent() + c.WidthMin;
-                var picture = random.Next(1, c.Textures.Count + 1);
+                var picture = this.random.Next(1, c.Textures.Count + 1);
                 files[i] = i < c.Balloons ? c.BalloonTexture : c.Textures[picture - 1];
             }
 
