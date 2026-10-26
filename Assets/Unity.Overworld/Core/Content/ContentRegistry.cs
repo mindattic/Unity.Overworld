@@ -50,6 +50,9 @@ namespace MindAttic.Overworld.Core
         /// <summary>How the world is drawn: the area tile grid, camera, backdrop and object sprites (view.json).</summary>
         public ViewData View { get; private set; }
 
+        /// <summary>The weather's particles and the clouds (weather.json).</summary>
+        public SceneryData Scenery { get; private set; }
+
         /// <summary>The clock, its periods and the calendar (time.json).</summary>
         public TimeData Time { get; private set; }
 
@@ -144,6 +147,7 @@ namespace MindAttic.Overworld.Core
             registry.Props = PropData.Read(source, manifest.Text("props"), errors);
             registry.Books = BookData.Read(source, manifest.Text("books"), errors);
             registry.View = ViewData.Read(source, manifest.Text("view"), registry.Props, errors);
+            registry.Scenery = SceneryData.Read(source, manifest.Text("weather"), registry.View?.Grid, errors);
             registry.Time = TimeData.Read(source, manifest.Text("time"), errors);
             var hudFile = manifest.Text("hud");
             registry.Hud = HudData.Read(source, hudFile, errors);

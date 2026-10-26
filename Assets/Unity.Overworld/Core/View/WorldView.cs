@@ -9,6 +9,9 @@ namespace MindAttic.Overworld.Core
         Hero,
         PropBottom,
         Weapon,
+
+        /// <summary>The tent: drawn on layer 1 (renderTent, after the tiles and before the pickups), not depth sorted.</summary>
+        Tent,
     }
 
     /// <summary>
@@ -94,6 +97,25 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>The objects' culling (renderObjects' inRange).</summary>
         public bool IsVisible(in Drawable drawable) => Camera.InRange(drawable.X, drawable.Y);
+
+        /// <summary>
+        /// The tent (Tent.loadTent / renderTent, RECONSTRUCTION 3.6): a quad as wide and as high as its size at its place on
+        /// the ground, drawn after the tiles and before the pickups when within the render range on x and y.
+        /// </summary>
+        public Drawable Tent
+        {
+            get
+            {
+                var t = Props.Tent;
+                return new Drawable(DrawableKind.Tent, 0, t.X, t.Y, 0f, t.Size, t.Size / 2f, View.TextureFile(t.Texture));
+            }
+        }
+
+        /// <summary>
+        /// The weather's and clouds' culling (renderRain, renderCloud): within the render range of the camera on x, y and z.
+        /// </summary>
+        public bool IsVisible(float x, float y, float z) =>
+            Camera.InRange(x, y) && WorldCamera.Near(z, Camera.Z, Camera.RenderRange);
 
         /// <summary>Every hero at its start, standing facing Right with its weapon idle (Heroes.loadHero).</summary>
         public HeroPose[] StartPoses()

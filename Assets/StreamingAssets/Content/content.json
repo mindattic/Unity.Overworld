@@ -15,6 +15,7 @@
   "props": "props.json",
   "books": "books.json",
   "view": "view.json",
+  "weather": "weather.json",
   "time": "time.json",
   "hud": "hud.json",
   "scripts": "scripts.json"

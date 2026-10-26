@@ -1,0 +1,44 @@
+{
+  "_source": "overhead 2/Weather.vb (module Rain: loadRain, updateRain, renderRain), Clouds.vb (loadCloud, updateCloud, renderCloud), frmMain.vb Keys.W and Textures.vb, RECONSTRUCTION 14.1 and 14.2. Every figure was per rendered frame and is per 60 Hz tick here.",
+  "area": {
+    "_note": "startX, startY, worldWidth and worldHeight (the area grid's size less one): random x is left + width * rnd, random y is top - height * rnd.",
+    "left": -3,
+    "top": 2,
+    "width": 10,
+    "height": 10
+  },
+  "weather": {
+    "_note": "maxRains 2500 (2,501 particles), RainWidth 0.04 and RainHeight RainWidth / 2 for setupVertex; particle n starts at z -1.5 - (n + 1) * 0.01, y without the lift; at z >= 0 it starts again at z -1.1, y lifted by 1. W steps through the cycle; the default is Snowing.",
+    "count": 2501,
+    "width": 0.04,
+    "halfHeight": 0.02,
+    "startZ": -1.5,
+    "startZStep": 0.01,
+    "respawnZ": -1.1,
+    "respawnLift": 1,
+    "groundZ": 0,
+    "start": "Snowing",
+    "cycle": ["Snowing", "Raining", "Clear", "FallingLeaves", "DustStorm"],
+    "kinds": [
+      {"kind": "Snowing", "texture": "gfx/weather/snow1.PNG", "jitter": [0.001, 0.001], "wander": 0, "stepX": 0, "fall": 0.01},
+      {"kind": "Raining", "texture": "gfx/weather/rain1.PNG", "jitter": [0, 0], "wander": 0, "stepX": 0, "fall": 0.05},
+      {"kind": "Clear", "texture": null, "jitter": [0, 0], "wander": 0, "stepX": 0, "fall": 0},
+      {"kind": "FallingLeaves", "_note": "texSnow1: no leaf picture exists in the original", "texture": "gfx/weather/snow1.PNG", "jitter": [0, 0], "wander": 0.003, "stepX": 0, "fall": 0.01},
+      {"kind": "DustStorm", "texture": "gfx/weather/dust1.PNG", "jitter": [0, 0], "wander": 0, "stepX": 0.05, "fall": 0.05}
+    ]
+  },
+  "clouds": {
+    "_note": "maxClouds 400 (401 clouds); cloud n at z -1.1 - n * 0.005; dX 0.003 * rnd + 0.001; Width 0.6 * rnd + 0.2, Height Width / 2 (setupVertex's half height); getRndInt(1, 2) picks cloud1 or cloud2 (cloud3 and cloud4 commented out); Cloud(0) to Cloud(3) are the balloon.",
+    "count": 401,
+    "startZ": -1.1,
+    "zStep": 0.005,
+    "lift": 1,
+    "speedMin": 0.001,
+    "speedSpread": 0.003,
+    "widthMin": 0.2,
+    "widthSpread": 0.6,
+    "textures": ["gfx/clouds/cloud1.PNG", "gfx/clouds/cloud2.PNG"],
+    "balloons": 4,
+    "balloonTexture": "gfx/balloon.PNG"
+  }
+}
