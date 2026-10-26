@@ -88,6 +88,9 @@ Each is a place where the original is silent, broken or ambiguous. They are deci
 
 | Topic | Original | Rebuild |
 |---|---|---|
+| Near plane (3.2) | `PerspectiveFovLH(PI/4, 4/3, 0, 100)`: a near plane of 0 | 0.01, the nearest a Unity camera allows (view.json); nothing the game draws comes nearer the camera than that except a recalled hero at Z -1 with the camera at -1, which neither version shows |
+| Aspect (3.2) | Fixed 4:3 in a 640 x 480 window | The 45-degree vertical field of view is kept and the aspect follows the window, so wider windows see more to the sides at the same world scale; 640 x 480 reproduces the original frame exactly (the capture tools render at that size) |
+| Colour key and layering (2.3, 3.3) | `TextureLoader.FromFile` with key 0xFFFF00FF; alpha blending with every quad at z 0, so later draws cover earlier ones | The art is imported verbatim under `Assets/Unity.Overworld/Art/Resources` at its original path, the importer turning opaque magenta into transparent black as Direct3D did; every quad is a sprite-shader quad layered by sorting order in the original's draw order (backdrop, tiles, then objects back to front by Y) |
 | Frame-rate dependence (RECONSTRUCTION 18) | Per-frame speeds on an unthrottled loop | Fixed 60 Hz tick; per-frame constants kept numerically as per-tick values |
 | Death and `Reset` (6.5) | Fades to black, then calls `Reset` every frame forever because health is never restored | Same fade and the same `Reset` effects (pickups returned, inventory emptied, camera home, morning), then the party is restored to full health at its start positions and play resumes |
 | `checkScripts` never called (9.3) | A `MOVE HERO TO` script locks input forever | The completion check runs every tick; the script ends when every target axis is within 0.05, as the code was written to do |

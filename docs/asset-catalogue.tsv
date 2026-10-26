@@ -212,7 +212,7 @@ gfx/gui/load/load640_8.JPG	38843	used	Loading picture, loaded
 gfx/gui/load/load640_9.JPG	51714	used	Loading picture, loaded
 gfx/gui/mana_fill.PNG	234	used	GUI art, loaded
 gfx/gui/menu.jpg	12241	not-shipped	GUI file never loaded
-gfx/gui/menu.PNG	115328	not-shipped	GUI file never loaded
+gfx/gui/menu.PNG	115328	used	Backdrop box texture (Textures.vb texMenu, drawn by Cube.renderCube), loaded
 gfx/gui/path.PNG	186	used	GUI art, loaded
 gfx/gui/quest_screen.PNG	8037	not-shipped	GUI file never loaded
 gfx/gui/quest_screen_completed.PNG	6974	used	GUI art, loaded

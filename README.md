@@ -6,8 +6,10 @@ and a stamina-gauge battle mode run from a ring menu around the active hero.
 
 [![Unity](https://img.shields.io/badge/Unity-6000.4.3f1-black)](ProjectSettings/ProjectVersion.txt) [![Status](https://img.shields.io/badge/status-reconstruction-orange)](docs/BIBLE.md)
 
-There is no build yet. This repo currently holds the Unity project scaffold, the reverse-engineering record the rebuild is written
-from, the design brief and the full list of stories in build order.
+The rebuild is in progress: the world draws as the original drew it (the 11 x 11 grid of area tiles under the 45-degree camera,
+the backdrop box, and the heroes and props back to front), and the stories that make it play follow in build order.
+`.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
+`-Capture <file.png>` saves a screenshot and quits.
 
 ## Why
 
@@ -56,8 +58,5 @@ mute: launched with `-muted` or `MINDATTIC_CLI_MUTED=1`, Unity.Shared's bootstra
 session-only and read-only against the player's own settings: nothing is ever written to settings.json, and a
 normal launch afterwards has sound again.
 
-There is no playable build or launch script yet (see Status above — no scenes, no player build pipeline), so
-there is nothing today that a mute flag could silence end-to-end; `SessionAudio` is in place so the mute takes
-effect automatically the moment a scene with audio exists. Once a build and a launch script land (modelled on
-Unity.QuickDuel's `play.ps1`), that script should default to `-muted` + `MINDATTIC_CLI_MUTED=1`, with a
-`-Sound` switch to opt back in.
+`play.ps1` (modelled on Unity.QuickDuel's) launches the player with `-muted` + `MINDATTIC_CLI_MUTED=1` by
+default; `-Sound` opts back in.

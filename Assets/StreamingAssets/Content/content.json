@@ -13,5 +13,6 @@
   "heroes": "heroes.json",
   "walls": "walls.json",
   "props": "props.json",
-  "books": "books.json"
+  "books": "books.json",
+  "view": "view.json"
 }

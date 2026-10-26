@@ -17,7 +17,7 @@ namespace MindAttic.Overworld.Core
 
     /// <summary>
     /// Everything the original kept in data or hard-coded in its source, loaded and validated: both world
-    /// databases, hero.mdb, the pickups, quests, weapons, heroes, walls, props and books. <see cref="Load"/> is the
+    /// databases, hero.mdb, the pickups, quests, weapons, heroes, walls, props, books and how the world is drawn. <see cref="Load"/> is the
     /// one reader; it throws a <see cref="ContentException"/> listing every problem, each with file, key and line.
     /// <para>
     /// The owner chose the 2007 root world.mdb as the game's world. Both databases are loaded; <see cref="PlayableWorld"/>
@@ -46,6 +46,9 @@ namespace MindAttic.Overworld.Core
         public WallData Walls { get; private set; }
         public PropData Props { get; private set; }
         public BookData Books { get; private set; }
+
+        /// <summary>How the world is drawn: the area tile grid, camera, backdrop and object sprites (view.json).</summary>
+        public ViewData View { get; private set; }
 
         /// <summary>The original's own dangling references, kept faithfully (not errors): where and what.</summary>
         public IReadOnlyList<string> Warnings { get; private set; }
@@ -131,6 +134,7 @@ namespace MindAttic.Overworld.Core
             registry.Walls = WallData.Read(source, manifest.Text("walls"), errors);
             registry.Props = PropData.Read(source, manifest.Text("props"), errors);
             registry.Books = BookData.Read(source, manifest.Text("books"), errors);
+            registry.View = ViewData.Read(source, manifest.Text("view"), registry.Props, errors);
             manifest.Done();
 
             // A pickup that opens a book by its own name ("CHANGE BOOK TO ITEM") must name a real book.

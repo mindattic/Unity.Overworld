@@ -4,6 +4,7 @@
     "references": [
         "Unity.Overworld.Core",
         "Unity.Overworld.Runtime",
+        "Unity.Overworld.Editor",
         "Unity.Shared.Core",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
