@@ -1,0 +1,26 @@
+{
+  "_source": "overhead 2/Sun.vb (module Lights: theTime, timeRatio, checkDayperiod, setDayColor, renderTime, renderDate), RECONSTRUCTION 6.1 to 6.3.",
+  "clock": {
+    "_note": "theTime starts 64-01-01 09:00 and one in-game minute is added each time timeRatio x gameSpeed seconds pass (gameSpeed is heroes.json tuning.gameSpeed); at most one minute a tick, as renderTime added at most one a frame. The light starts at the starting period's colour (r, g, b all 255) and the period at Day; no announcement is made at the start, since checkDayperiod first runs at 9:01.",
+    "start": {"year": 64, "month": 1, "day": 1, "hour": 9, "minute": 0},
+    "startPeriod": "Day",
+    "secondsPerMinute": 1,
+    "fadeStep": 1
+  },
+  "periods": [
+    {"_note": "9:00am to 6:00pm. Each channel rises 1 a minute toward 255 (a channel above its target is set to it).",
+     "name": "Day", "fromHour": 9, "toHour": 18, "colour": [255, 255, 255], "fade": ["rise", "rise", "rise"], "announcement": "Day"},
+    {"_note": "6:00pm to 9:00pm. Each channel falls 1 a minute toward (255, 128, 128) (a channel below its target is set to it).",
+     "name": "Evening", "fromHour": 18, "toHour": 21, "colour": [255, 128, 128], "fade": ["fall", "fall", "fall"], "announcement": "Evening"},
+    {"_note": "9:00pm to 6:00am. Red and green fall, blue rises, 1 a minute toward (128, 128, 255).",
+     "name": "Night", "fromHour": 21, "toHour": 6, "colour": [128, 128, 255], "fade": ["fall", "fall", "rise"], "announcement": "Night"},
+    {"_note": "6:00am to 9:00am. Each channel rises 1 a minute toward 255.",
+     "name": "Morning", "fromHour": 6, "toHour": 9, "colour": [255, 255, 255], "fade": ["rise", "rise", "rise"], "announcement": "Morning"}
+  ],
+  "calendar": {
+    "_note": "renderDate: the Gregorian month and weekday renamed (weekdays Sunday first, as .NET's DayOfWeek), and the year suffix.",
+    "months": ["Frostfall", "Dwelling", "Thawing", "Flora", "Rainy Season", "Swelter", "Pre-Harvest", "Reaping", "Goldera", "Yawning", "Gorging", "Yeardusk"],
+    "weekdays": ["Solaraday", "Lunaday", "Terraday", "Humpday", "Titanday", "Pyreday", "Wynday"],
+    "yearSuffix": "CE"
+  }
+}

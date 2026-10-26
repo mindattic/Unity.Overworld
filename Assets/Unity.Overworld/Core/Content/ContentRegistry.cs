@@ -50,6 +50,12 @@ namespace MindAttic.Overworld.Core
         /// <summary>How the world is drawn: the area tile grid, camera, backdrop and object sprites (view.json).</summary>
         public ViewData View { get; private set; }
 
+        /// <summary>The clock, its periods and the calendar (time.json).</summary>
+        public TimeData Time { get; private set; }
+
+        /// <summary>The heads-up text: fonts, the clock's lines and how messages show (hud.json).</summary>
+        public HudData Hud { get; private set; }
+
         /// <summary>The original's own dangling references, kept faithfully (not errors): where and what.</summary>
         public IReadOnlyList<string> Warnings { get; private set; }
 
@@ -135,6 +141,8 @@ namespace MindAttic.Overworld.Core
             registry.Props = PropData.Read(source, manifest.Text("props"), errors);
             registry.Books = BookData.Read(source, manifest.Text("books"), errors);
             registry.View = ViewData.Read(source, manifest.Text("view"), registry.Props, errors);
+            registry.Time = TimeData.Read(source, manifest.Text("time"), errors);
+            registry.Hud = HudData.Read(source, manifest.Text("hud"), errors);
             manifest.Done();
 
             // A pickup that opens a book by its own name ("CHANGE BOOK TO ITEM") must name a real book.

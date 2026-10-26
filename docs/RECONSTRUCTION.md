@@ -597,7 +597,7 @@ All HUD quads are screen-space (640 x 480 reference). `Write` uses D3DX fonts: A
 | Team button | (18,75) 28 x 28 | `icon_solo` / `icon_team`; click toggles |
 | Inventory button | (18,104) 28 x 28 | `inventory_Open` / `inventory_Closed` |
 | FPS | (iWidth-50, 4), yellow | sampled every 100 ms, shown when `bDrawFPS` |
-| Messages | spawn at screen centre | Queue of up to 100; each fades 2 alpha and rises 1 px per frame; the next spawns when the previous passed 14 px below centre; used for the tutorial and day-period announcements |
+| Messages | spawn at screen centre | Queue of up to 100; each fades 2 alpha and moves down 1 px per frame (Y grows; gone at alpha 0, after 128 frames); the next spawns when the previous passed 14 px below centre; used for the tutorial and day-period announcements |
 | Hero screen (Page Up) | `menu.png` (256 x 256 stretched) | Date line and time line only |
 | Options (F11) | (50,50) | Main: Controls, Video, Audio, Exit (the cursor ">"; Exit quits); Controls lists Move Left/Right/Up/Down key names; Video and Audio have no content |
 | Quest screen, Book, Inventory, Quick bar, Examine | sections 8 to 11 | |

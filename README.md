@@ -15,7 +15,9 @@ button zooms between -1 and -3.5, E shows the examine eye, and F (free camera), 
 camera moves. Belmont and Flagg follow the leader as the original's party did (running when more than 0.2 away, walking
 when near, standing within 0.05, recalled beside the leader, falling in, when a unit behind, and sliding apart when they
 crowd); `[` and `]` or a left click on a hero choose the leader, and `'` or the team button at the top left turns following
-off (solo), so the others kneel. The stories that make the rest play follow in build order.
+off (solo), so the others kneel. The clock runs a minute a second from 9:00 AM on Terraday, Frostfall 1, 64 CE: the HUD
+at the bottom left shows the period and time, the world's light fades toward evening red, night blue and morning white, and each
+period's name drifts down from the centre as it begins. The stories that make the rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
 `-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
 hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
@@ -24,7 +26,8 @@ the view with `-overworld-pointer <x>,<y>` (the virtual 640 x 480 mouse; 608 or 
 `-overworld-free-camera`; `-overworld-recall <hero>[,<seconds>]` recalls Belmont (1) or Flagg (2) beside the leader, at once
 or after that many seconds, so it falls in from z -1; `-overworld-solo` starts with the team off, and
 `-overworld-select <hero|next|previous>[,<seconds>]` makes Chrono (0), Belmont (1) or Flagg (2) the leader, or steps as `]` / `[`
-do; a scripted run never takes the real mouse.
+do; `-overworld-clock <h:mm>[,<seconds>]` sets the time of day (period and light settled at once) and, given seconds, how many
+real seconds a minute takes (0: a minute every 60 Hz tick, a day in 24 seconds); a scripted run never takes the real mouse.
 
 ## Why
 

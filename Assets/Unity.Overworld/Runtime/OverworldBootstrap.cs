@@ -22,6 +22,9 @@ namespace MindAttic.Overworld.Runtime
     /// that many seconds of play, so it falls in from z -1; <c>-overworld-solo</c> turns the team off (the others kneel);
     /// <c>-overworld-select &lt;hero|next|previous[,seconds]&gt;</c> makes that hero (0 Chrono, 1 Belmont, 2 Flagg) lead, as a
     /// left click on it does, or steps to the next or previous one as ] and [ do, at once or after that many seconds;
+    /// <c>-overworld-clock &lt;hour:minute[,seconds]&gt;</c> sets the clock to that time of day (the period and light settled at
+    /// once, as CHANGE TIME HOUR did) and, given seconds, makes an in-game minute take that many real seconds (0: a minute
+    /// every tick, so a day passes in 24 seconds), so captures can show each period, its light and its announcement;
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -40,6 +43,7 @@ namespace MindAttic.Overworld.Runtime
         public const string RecallArgument = "-overworld-recall";
         public const string SoloArgument = "-overworld-solo";
         public const string SelectArgument = "-overworld-select";
+        public const string ClockArgument = "-overworld-clock";
 
         public ContentRegistry Content { get; private set; }
         public GameHost Host { get; private set; }
@@ -49,6 +53,9 @@ namespace MindAttic.Overworld.Runtime
         public WorldViewPresenter World { get; private set; }
         public HeroInput Input { get; private set; }
         public TeamButtonPresenter TeamButton { get; private set; }
+        public WorldClock Clock { get; private set; }
+        public MessageBoard Messages { get; private set; }
+        public HudPresenter Hud { get; private set; }
 
         /// <summary>The content folder of this build (or of the project, in the editor).</summary>
         public static string ContentDirectory => Path.Combine(Application.streamingAssetsPath, "Content");
@@ -59,6 +66,10 @@ namespace MindAttic.Overworld.Runtime
             var game = new Game();
             Party = new Party(Content.Heroes, Content.Walls).Install(game);
             Control = new CameraControl(Content.View, Party).Install(game);
+            // renderTime ran before renderMessages, so the clock steps before the board: an announcement shows on its minute.
+            Messages = new MessageBoard(Content.Hud);
+            Clock = new WorldClock(Content.Time, Content.Heroes.Locomotion.GameSpeed, Messages).Install(game);
+            Messages.Install(game);
             var joined = game.Submit(new JoinGame(PlayerId.One));
             if (!joined.Accepted) Debug.LogError("Unity.Overworld: player 1 could not join: " + joined.Reason);
             Viewpoint = Control.For(PlayerId.One);
@@ -69,6 +80,9 @@ namespace MindAttic.Overworld.Runtime
             World.transform.SetParent(transform, false);
             World.Follow(Party, game);
             World.ShowCursor(Viewpoint.Cursor);
+            World.LightBy(Clock);
+            Hud = HudPresenter.Create(Content.Hud, Clock, Messages);
+            Hud.transform.SetParent(transform, false);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
             Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint, Party, Content.View.TeamButton);
             Input.transform.SetParent(transform, false);
@@ -85,6 +99,7 @@ namespace MindAttic.Overworld.Runtime
             var scriptedView = ApplyScriptedView(args, game);
             var recalled = ApplyScriptedRecall(args, game);
             var party = ApplyScriptedParty(args, game);
+            ApplyScriptedClock(args, game);
             if (scripted.HasValue || scriptedView || recalled || party || capture != null) Input.UseDevices = false;
 
             if (capture != null)
@@ -255,6 +270,51 @@ namespace MindAttic.Overworld.Runtime
             else Debug.LogError("Unity.Overworld: " + SelectArgument + " was refused: " + result.Reason);
         }
 
+        /// <summary>Applies <c>-overworld-clock &lt;hour:minute[,seconds]&gt;</c>; true when it was given.</summary>
+        bool ApplyScriptedClock(string[] args, Game game)
+        {
+            var text = ArgumentAfter(args, ClockArgument);
+            if (text == null) return false;
+            if (!TryClock(text, out var hour, out var minute, out var seconds))
+            {
+                Debug.LogError("Unity.Overworld: " + ClockArgument + " wants hour:minute (0:00 to 23:59) and optionally the real seconds a minute takes, not '" + text + "'.");
+                return true;
+            }
+
+            var set = game.Submit(new SetClock(PlayerId.One, hour, minute));
+            if (!set.Accepted) Debug.LogError("Unity.Overworld: " + ClockArgument + " was refused: " + set.Reason);
+            if (seconds.HasValue)
+            {
+                var ratio = game.Submit(new SetTimeRatio(PlayerId.One, seconds.Value));
+                if (!ratio.Accepted) Debug.LogError("Unity.Overworld: " + ClockArgument + " seconds were refused: " + ratio.Reason);
+            }
+
+            Debug.Log("Unity.Overworld: scripted clock " + Clock.TimeText + " (" + Clock.Period.Name + "), a minute every " +
+                      Clock.SecondsPerMinute.ToString(CultureInfo.InvariantCulture) + " s");
+            return true;
+        }
+
+        /// <summary>Reads <c>hour:minute[,seconds]</c>.</summary>
+        public static bool TryClock(string text, out int hour, out int minute, out float? seconds)
+        {
+            hour = minute = 0;
+            seconds = null;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            var time = parts[0].Split(':');
+            if (time.Length != 2 ||
+                !int.TryParse(time[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out hour) ||
+                !int.TryParse(time[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out minute) ||
+                hour < 0 || hour > 23 || minute < 0 || minute > 59) return false;
+            if (parts.Length == 2)
+            {
+                if (!float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var s) || !(s >= 0f)) return false;
+                seconds = s;
+            }
+
+            return true;
+        }
+
         /// <summary>The view keys <c>-overworld-view-hold</c> names (zoom, shift, x, z, num4, num6, num8, num2).</summary>
         public static ViewInput ScriptedViewKeys(string keys)
         {
@@ -323,6 +383,12 @@ namespace MindAttic.Overworld.Runtime
                     Debug.Log("Unity.Overworld: camera at (" + cam.X.ToString(CultureInfo.InvariantCulture) + ", " + cam.Y.ToString(CultureInfo.InvariantCulture) +
                               ", " + cam.Z.ToString(CultureInfo.InvariantCulture) + ")" + (Viewpoint.FreeCamera ? " free" : "") + (Viewpoint.Centring ? " centring" : ""));
                     Debug.Log("Unity.Overworld: " + Viewpoint.Cursor + " showing " + Viewpoint.Cursor.File);
+                }
+
+                if (Clock != null)
+                {
+                    Debug.Log("Unity.Overworld: clock " + Clock.TimeText + " " + Clock.Period.Name + ", " + Clock.DateText + ", light " + Clock.Light);
+                    foreach (var m in Messages.Shown) Debug.Log("Unity.Overworld: message " + m);
                 }
             }
             finally

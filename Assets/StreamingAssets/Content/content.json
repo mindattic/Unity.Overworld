@@ -14,5 +14,7 @@
   "walls": "walls.json",
   "props": "props.json",
   "books": "books.json",
-  "view": "view.json"
+  "view": "view.json",
+  "time": "time.json",
+  "hud": "hud.json"
 }

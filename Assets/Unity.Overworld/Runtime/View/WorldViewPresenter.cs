@@ -48,6 +48,22 @@ namespace MindAttic.Overworld.Runtime
 
         Game game;
 
+        /// <summary>The clock whose light the world is drawn in (null: white).</summary>
+        public WorldClock Daylight { get; private set; }
+
+        /// <summary>The colour every world quad is drawn in now (the original's material colour; the HUD is not lit).</summary>
+        public Color Tint => material != null ? material.color : Color.white;
+
+        /// <summary>
+        /// Lights the world by <paramref name="clock"/> from now on: every quad (backdrop, tiles, objects, the world cursor)
+        /// is multiplied by its light, as the original's material diffuse and ambient were (renderTime, RECONSTRUCTION 6.2).
+        /// </summary>
+        public void LightBy(WorldClock clock)
+        {
+            Daylight = clock;
+            Refresh();
+        }
+
         /// <summary>Draws <paramref name="party"/>'s heroes from now on, placed between their last two ticks of <paramref name="source"/>.</summary>
         public void Follow(Party party, Game source)
         {
@@ -137,6 +153,12 @@ namespace MindAttic.Overworld.Runtime
             Camera.transform.localPosition = Vector3.LerpUnclamped(
                 new Vector3(cam.PreviousX, cam.PreviousY, cam.PreviousZ), new Vector3(cam.X, cam.Y, cam.Z), alpha);
             Camera.transform.localRotation = Quaternion.identity;
+
+            if (Daylight != null)
+            {
+                var light = Daylight.Light;
+                material.color = new Color32(light.R, light.G, light.B, 255);
+            }
 
             foreach (var t in tiles) t.Value.enabled = View.IsVisible(t.Key) && HasTexture(t.Value);
 

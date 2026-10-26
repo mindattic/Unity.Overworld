@@ -1,0 +1,28 @@
+{
+  "_source": "overhead 2/Gui/StatusBox.vb renderStatus, Gui/HeroScreen.vb renderheroScreen, Gui/Messages.vb, Fonts.vb, Root.Write, RECONSTRUCTION 6.1 and 13. Positions are pixels of the 640 x 480 screen the original drew on (the window stretched it); Write drew text left and top aligned at the point, in the colour (a, r, g, b).",
+  "screen": {"width": 640, "height": 480},
+  "fonts": [
+    {"name": "fontCalisto", "families": ["Calisto MT", "Georgia", "Times New Roman"], "points": 8, "bold": true},
+    {"name": "fontArial", "families": ["Arial"], "points": 10, "bold": true},
+    {"name": "fontArialNarrow24", "families": ["Arial Narrow", "Arial"], "points": 24, "bold": false}
+  ],
+  "clock": {
+    "_note": "renderStatus writes the day period's name at (5, iHeight - 70) and the time at (5, iHeight - 57) in fontCalisto, (128, 255, 255, 0).",
+    "period": {"x": 5, "y": 410, "font": "fontCalisto", "colour": [128, 255, 255, 0]},
+    "time": {"x": 5, "y": 423, "font": "fontCalisto", "colour": [128, 255, 255, 0]}
+  },
+  "heroScreen": {
+    "_note": "renderheroScreen writes the date line at (iWidth - 250, 25) and the time line (time, two spaces, period) at (iWidth - 250, 45) in fontCalisto, (128, 255, 255, 0). The screen itself (Page Up, menu.png) comes with the interface story (U.OVW-US-A20).",
+    "date": {"x": 390, "y": 25, "font": "fontCalisto", "colour": [128, 255, 255, 0]},
+    "time": {"x": 390, "y": 45, "font": "fontCalisto", "colour": [128, 255, 255, 0]}
+  },
+  "messages": {
+    "_note": "Messages.vb: up to maxMessages waiting (a message added to a full queue replaces the last); the next is shown at the screen centre, x less 6 / 2 per character, once the last shown is more than 'spacing' pixels below the centre or gone; each shown message loses 'fade' alpha and drops 'drift' pixels a tick, starting at alpha 255, and is gone at 0. The period announcements use fontArialNarrow24 in white.",
+    "maxMessages": 100,
+    "characterWidth": 6,
+    "spacing": 14,
+    "fade": 2,
+    "drift": 1,
+    "announcement": {"font": "fontArialNarrow24", "colour": [255, 255, 255]}
+  }
+}
