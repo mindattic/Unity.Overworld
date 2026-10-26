@@ -40,7 +40,8 @@ namespace MindAttic.Overworld.Runtime
     /// over that pickup, opening the examine box;
     /// the inventory's <c>-overworld-give</c>, <c>-overworld-quickbar</c>, <c>-overworld-inventory</c>, <c>-overworld-swap</c>,
     /// <c>-overworld-drop</c>, <c>-overworld-use</c>, <c>-overworld-quick</c> and <c>-overworld-pickup-drop</c> (see
-    /// <see cref="ApplyScriptedInventory"/>);
+    /// <see cref="ApplyScriptedInventory"/>); the console's <c>-overworld-script</c>, <c>-overworld-console</c> and
+    /// <c>-overworld-script-after</c> (see <see cref="ApplyScriptedConsole"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -83,6 +84,11 @@ namespace MindAttic.Overworld.Runtime
         public SleepCycle Sleep { get; private set; }
         public Pickups Pickups { get; private set; }
         public InventoryControl Inventory { get; private set; }
+        public ScriptInterpreter Scripts { get; private set; }
+
+        public const string ScriptArgument = "-overworld-script";
+        public const string ConsoleArgument = "-overworld-console";
+        public const string ScriptAfterArgument = "-overworld-script-after";
 
         public const string GiveArgument = "-overworld-give";
         public const string InventoryArgument = "-overworld-inventory";
@@ -112,6 +118,11 @@ namespace MindAttic.Overworld.Runtime
             // getInput's inventory keys acted before the heroes: the pack steps after the pickups and before the party.
             Control = new CameraControl(Content.View, Party);
             Inventory = new InventoryControl(Pickups, Content.Hud.Inventory, Content.Hud.QuickBar, Control).Install(game);
+            // Every script runs through one interpreter: the console, the items' effects, the gold, the Rune, the quests'
+            // end scripts. It steps before the party, so a running MOVE steers its hero in the tick the party moves it.
+            Scripts = new ScriptInterpreter(Content.Scripts, Party, Pickups.Inventory) { Pack = Inventory, View = Control }.Install(game);
+            Pickups.Scripts = Scripts;
+            Inventory.Scripts = Scripts;
             Party.Install(game);
             Control.Install(game);
             // getMouse's wheel: the open pack or the target being chosen, then the items in reach, then the zoom.
@@ -123,10 +134,9 @@ namespace MindAttic.Overworld.Runtime
             Sleep = new SleepCycle(Party, Clock).Install(game);
             Clock.Install(game);
             Messages.Install(game);
-            // The items' scripts (and the gold's) until the script story's interpreter: vitals, gold, sleep, the panel.
-            var scripts = new ItemScripts(Party, Pickups.Inventory, Sleep) { Control = Inventory };
-            Pickups.Scripts = scripts;
-            Inventory.Scripts = scripts;
+            Scripts.Sleep = Sleep;
+            Scripts.Clock = Clock;
+            Scripts.Messages = Messages;
             var joined = game.Submit(new JoinGame(PlayerId.One));
             if (!joined.Accepted) Debug.LogError("Unity.Overworld: player 1 could not join: " + joined.Reason);
             Viewpoint = Control.For(PlayerId.One);
@@ -145,11 +155,13 @@ namespace MindAttic.Overworld.Runtime
             Hud.ShowVitals(Party, PlayerId.One);
             Hud.ShowPickups(Pickups, Viewpoint, World, PlayerId.One);
             Hud.ShowInventory(Inventory, PlayerId.One);
+            Hud.ShowConsole(Scripts, PlayerId.One);
             World.ShowTarget(Inventory, PlayerId.One, Content.Hud.Target);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
             Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint, Party, Content.View.TeamButton);
             Input.Inventory = Inventory;
             Input.InventoryButton = Content.Hud.InventoryButton;
+            Input.Scripts = Scripts;
             Input.transform.SetParent(transform, false);
 
             var scripted = ScriptedInput(args);
@@ -168,7 +180,8 @@ namespace MindAttic.Overworld.Runtime
             var rested = ApplyScriptedRest(args, game);
             var picked = ApplyScriptedPickups(args, game);
             var packed = ApplyScriptedInventory(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || seeded || capture != null) Input.UseDevices = false;
+            var typed = ApplyScriptedConsole(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -771,6 +784,77 @@ namespace MindAttic.Overworld.Runtime
             Debug.Log("Unity.Overworld: scripted inventory " + kind + " " + a + (b >= 0 ? " " + b : "") + "; " + DescribeInventory());
         }
 
+        /// <summary>
+        /// Applies the console's scripted arguments; true when any was given: <c>-overworld-script &lt;script&gt;</c> opens
+        /// the console, types the script key by key as a player would (the C shortcut and all) and presses Enter, so it runs
+        /// and becomes the one Insert recalls; <c>-overworld-console &lt;text&gt;</c> then opens the console and types the
+        /// text, leaving it open so a capture shows the prompt; <c>-overworld-script-after &lt;seconds&gt;</c> waits that many
+        /// seconds of play first.
+        /// </summary>
+        bool ApplyScriptedConsole(string[] args, Game game)
+        {
+            var run = ArgumentAfter(args, ScriptArgument);
+            var show = ArgumentAfter(args, ConsoleArgument);
+            if (run == null && show == null) return false;
+            var seconds = 0f;
+            var after = ArgumentAfter(args, ScriptAfterArgument);
+            if (after != null && !(float.TryParse(after, NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f))
+            {
+                Debug.LogError("Unity.Overworld: " + ScriptAfterArgument + " wants the seconds to wait, not '" + after + "'.");
+                seconds = 0f;
+            }
+
+            StartCoroutine(ConsoleAfter(game, run, show, seconds));
+            return true;
+        }
+
+        IEnumerator ConsoleAfter(Game game, string run, string show, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var console = Content.Scripts.Console;
+            if (run != null && TypeLine(game, run))
+            {
+                var result = game.Submit(new PressConsoleKey(PlayerId.One, console.Run));
+                var outcome = "not run";
+                foreach (var e in result.Events)
+                    if (e is ScriptRan ran) outcome = ran.Outcome.ToString();
+                Debug.Log("Unity.Overworld: scripted script '" + run + "': " + outcome + "; " + Describe(Party.Leader(PlayerId.One)) + " at (" +
+                          Party.Leader(PlayerId.One).X.ToString(CultureInfo.InvariantCulture) + ", " + Party.Leader(PlayerId.One).Y.ToString(CultureInfo.InvariantCulture) + "); " +
+                          DescribeScripts());
+            }
+
+            if (show != null && TypeLine(game, show))
+                Debug.Log("Unity.Overworld: scripted console '" + Scripts.Prompt(PlayerId.One) + "'");
+        }
+
+        /// <summary>Opens the console, clears its line and types <paramref name="text"/> with the console's keys; false when it has no keys for it.</summary>
+        bool TypeLine(Game game, string text)
+        {
+            var console = Content.Scripts.Console;
+            var keys = ScriptInterpreter.KeysFor(console, text);
+            if (keys == null)
+            {
+                Debug.LogError("Unity.Overworld: the console has no keys to type '" + text + "'.");
+                return false;
+            }
+
+            if (!Scripts.For(PlayerId.One).ConsoleOpen) game.Submit(new PressConsoleKey(PlayerId.One, console.Open));
+            game.Submit(new PressConsoleKey(PlayerId.One, console.Clear));
+            foreach (var (key, shift) in keys) game.Submit(new PressConsoleKey(PlayerId.One, key, shift));
+            return true;
+        }
+
+        string DescribeScripts()
+        {
+            var s = Scripts.For(PlayerId.One);
+            return "console " + (s.ConsoleOpen ? "open '" + s.Line + "'" : "shut") + ", last '" + s.Last + "'" + (s.Running ? ", script running" : "") +
+                   ", colour " + s.Colour + (s.OptionsOpen ? ", options open" : "") +
+                   (s.Book.Show || s.Book.Title != null || s.Book.Number.HasValue ? ", book " + (s.Book.Title ?? "#" + s.Book.Number) + (s.Book.Show ? " shown" : "") : "") +
+                   (Viewpoint != null ? ", camera (" + Viewpoint.Camera.X.ToString(CultureInfo.InvariantCulture) + ", " + Viewpoint.Camera.Y.ToString(CultureInfo.InvariantCulture) + ", " +
+                                        Viewpoint.Camera.Z.ToString(CultureInfo.InvariantCulture) + ")" : "") +
+                   (Sleep != null ? ", ambient " + Sleep.Ambient : "") + (Clock != null ? ", clock " + Clock.TimeText + " light " + Clock.Light : "");
+        }
+
         string DescribeInventory()
         {
             var v = Inventory.For(PlayerId.One);
@@ -893,6 +977,11 @@ namespace MindAttic.Overworld.Runtime
                         Debug.Log("Unity.Overworld: inventory " + DescribeInventory() + "; weight limit " + Inventory.WeightLimit.ToString(CultureInfo.InvariantCulture) +
                                   (Party.Leader(PlayerId.One).Burdened ? "; the leader is burdened" : ""));
                 }
+
+                if (Scripts != null)
+                    Debug.Log("Unity.Overworld: scripts " + DescribeScripts() +
+                              (Hud != null && Hud.ConsoleLabel != null && Hud.ConsoleLabel.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex
+                                  ? ", prompt '" + Hud.ConsoleLabel.text + "'" : ""));
 
                 if (Clock != null)
                 {

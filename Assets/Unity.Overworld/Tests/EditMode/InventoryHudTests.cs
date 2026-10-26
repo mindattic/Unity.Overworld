@@ -32,7 +32,7 @@ namespace MindAttic.Overworld.Tests
             inventory = new InventoryControl(pickups, content.Hud.Inventory, content.Hud.QuickBar, control).Install(game);
             party.Install(game);
             control.Install(game);
-            var scripts = new ItemScripts(party, pickups.Inventory) { Control = inventory };
+            var scripts = new ScriptInterpreter(content.Scripts, party, pickups.Inventory) { Pack = inventory };
             inventory.Scripts = scripts;
             Assert.IsTrue(game.Submit(new JoinGame(PlayerId.One)).Accepted);
             var viewpoint = control.For(PlayerId.One);

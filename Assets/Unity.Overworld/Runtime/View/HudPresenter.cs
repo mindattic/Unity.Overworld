@@ -726,6 +726,7 @@ namespace MindAttic.Overworld.Runtime
             RefreshRest();
             RefreshPickups();
             RefreshInventory();
+            RefreshConsole();
 
             var shown = Messages != null ? Messages.Shown : (IReadOnlyList<ShownMessage>)Array.Empty<ShownMessage>();
             for (var i = 0; i < shown.Count; i++)
@@ -769,6 +770,46 @@ namespace MindAttic.Overworld.Runtime
             PlaceBar(b.Health, b, b.FillWidth(hero.Health, hero.MaxHealth));
             PlaceBar(b.Mana, b, b.FillWidth(hero.Mana, hero.MaxMana));
             PlaceBar(b.Stamina, b, b.FillWidth(hero.Stamina, hero.MaxStamina));
+        }
+
+        // ---- the script console (U.OVW-US-A14): checkScripter's prompt -----------------------------------------------
+
+        /// <summary>The interpreter whose console is shown (null until <see cref="ShowConsole"/>).</summary>
+        public ScriptInterpreter Scripts { get; private set; }
+
+        PlayerId consolePlayer;
+
+        /// <summary>The console's prompt ("/ > line|" or "\ > line "), shown while it is open.</summary>
+        public Label ConsoleLabel { get; private set; }
+
+        /// <summary>Shows <paramref name="player"/>'s script console: its blinking prompt at the console's place, over the rest of the HUD.</summary>
+        public void ShowConsole(ScriptInterpreter scripts, PlayerId player)
+        {
+            Scripts = scripts ?? throw new ArgumentNullException(nameof(scripts));
+            consolePlayer = player;
+            var c = scripts.Data.Console;
+            ConsoleLabel = NewLabel(Document.rootVisualElement, "console", null);
+            Style(ConsoleLabel, c.Font);
+            ConsoleLabel.style.display = DisplayStyle.None;
+            RefreshConsole();
+        }
+
+        void RefreshConsole()
+        {
+            if (ConsoleLabel == null || Scripts == null) return;
+            var prompt = Scripts.Prompt(consolePlayer);
+            if (prompt == null)
+            {
+                ConsoleLabel.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var c = Scripts.Data.Console;
+            var colour = Scripts.For(consolePlayer).Colour;
+            ConsoleLabel.text = prompt;
+            Place(ConsoleLabel, c.X, c.Y);
+            ConsoleLabel.style.color = (Color)new Color32(colour.R, colour.G, colour.B, 255);
+            ConsoleLabel.style.display = DisplayStyle.Flex;
         }
 
         void RefreshRest()

@@ -6,6 +6,7 @@
         "Unity.Overworld.Runtime",
         "Unity.Overworld.Editor",
         "Unity.Shared.Core",
+        "Unity.InputSystem",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

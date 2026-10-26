@@ -34,7 +34,13 @@ wheel) move the cursor, the run key marks a stack and swaps it with the next one
 by the leader, where it can be picked up again, and Enter (or a click) uses it: solo on the leader, in team mode a satchel, draught
 or book at once and anything else on the hero chosen with left and right and Enter. Q shows the quick bar of the first ten stacks,
 and 1 to 0 use them. A pack heavier than 28.5 burdens the party: the heroes kneel and "You are overburdened" shows until something
-is dropped. The stories that make the rest play follow in build order.
+is dropped. `~` opens the script console (the green `/ > |` prompt at the top left): type the original's language, e.g.
+`CHANGE HERO HP +10 | CHANGE TIME DAYPERIOD NIGHT` (C on an empty line types `CHANGE `, again `CHANGE CAMERA `; the `\|` key is the
+pipe, `=` is Shift and the `+` key), Enter runs it and shuts the console, Esc, F11 or `~` shut it, and Insert brings the last one
+back. Every item's effect, the Rune's teleport and the quests' end scripts run through the same interpreter; a command it does not
+understand shows "Script failed to execute." and a number that is not one "Script failed to run.". While the console is open, or
+a script walks a hero (`MOVE HERO TO x,y,z`, `CHANGE HERO AI WALKLEFT` until `CHANGE HERO AI STOP`), the keys and mouse do not
+move the party. The stories that make the rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
 `-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
 hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
@@ -55,6 +61,8 @@ quick bar, `-overworld-inventory <slot>[,<seconds>]` opens the panel on that sta
 stacks with the run key, `-overworld-drop <slot>[*<count>][,<seconds>]` drops from a stack (Backspace), `-overworld-use <slot>[:<hero>][,<seconds>]`
 and `-overworld-quick <key>[:<hero>][,<seconds>]` use a stack from the panel or a number key (choosing that hero when the item asks for
 its target, or leaving the target marked without one), and `-overworld-pickup-drop <drop>[,<seconds>]` picks a dropped item up again;
+`-overworld-script "<script>"` types a script into the console key by key and presses Enter, `-overworld-console "<text>"` types
+text and leaves the console open (for a capture of the prompt), both after `-overworld-script-after <seconds>`;
 a scripted run never takes the real mouse.
 
 ## Why

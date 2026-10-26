@@ -16,7 +16,10 @@ namespace MindAttic.Overworld.Runtime
     /// Enter or the left button (off the team button) held is the pick-up button, and , and . choose the previous and
     /// next item in reach (the wheel does too, through Core, when any is in reach). The inventory controls (RECONSTRUCTION
     /// 8.3, 8.5): Delete or a click on the inventory button opens and closes the pack, Backspace drops, Q shows the quick
-    /// bar and 1 to 0 use its slots (the arrows, run key, Enter and right button act on the open pack in Core). Every frame, before the game advances, it sends what the
+    /// bar and 1 to 0 use its slots (the arrows, run key, Enter and right button act on the open pack in Core). The script
+    /// console (RECONSTRUCTION 9.3): ~ opens it and Insert opens it with the last script; while it is open every key goes to
+    /// it (<see cref="PressConsoleKey"/>, by the WinForms name the original tested), and while it is open or a script runs
+    /// nothing else is read. Every frame, before the game advances, it sends what the
     /// player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/> commands and the key presses and clicks as
     /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>
@@ -150,10 +153,32 @@ namespace MindAttic.Overworld.Runtime
             quickKeys[0], quickKeys[1], quickKeys[2], quickKeys[3], quickKeys[4], quickKeys[5], quickKeys[6], quickKeys[7], quickKeys[8], quickKeys[9],
         };
 
+        /// <summary>The script console and its input lock (null: no console).</summary>
+        public ScriptInterpreter Scripts { get; set; }
+
+        // Enter or the left button that was down while the input was locked (Enter runs a console line and shuts it) acts
+        // only once it has been let go, so the line's Enter does not also kneel the leader to pick up.
+        bool swallowConfirm;
+
         void Update()
         {
             if (Game == null) return;
             if (UseDevices) HoldPointer();
+
+            // frmMain took every key while the console was open, and getInput was not called while it was or a script ran.
+            var locked = Scripts != null && Scripts.InputLocked(Player);
+            if (UseDevices && Scripts != null) SendConsoleKeys();
+            if (locked)
+            {
+                swallowConfirm = true;
+                Last = default;
+                Game.Submit(new SetMoveInput(Player, default));
+                if (Viewpoint != null) Game.Submit(new SetViewInput(Player, default));
+                return;
+            }
+
+            if (swallowConfirm && UseDevices && !confirm.IsPressed() && !select.IsPressed()) swallowConfirm = false;
+            if (!UseDevices) swallowConfirm = false;
 
             var input = Scripted ?? (UseDevices ? Read() : default);
             Last = input;
@@ -178,8 +203,87 @@ namespace MindAttic.Overworld.Runtime
             if (quickBar.WasPressedThisFrame()) Game.Submit(new ToggleQuickBar(Player));
             for (var i = 0; i < quickKeys.Length; i++)
                 if (quickKeys[i].WasPressedThisFrame()) Game.Submit(new QuickUse(Player, i));
+            if (swallowConfirm) return;
             Confirm(confirm.WasPressedThisFrame() || select.WasPressedThisFrame());
             Click(select.IsPressed(), select.WasPressedThisFrame());
+        }
+
+        /// <summary>
+        /// The keys pressed this frame, by the WinForms name frmMain tested, for the console: every key while it is open,
+        /// and its open and recall keys while it is shut. Shift is read as it is now.
+        /// </summary>
+        void SendConsoleKeys()
+        {
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+            var console = Scripts.Data.Console;
+            var open = Scripts.For(Player).ConsoleOpen;
+            var shift = keyboard.shiftKey.isPressed;
+            foreach (var control in keyboard.allKeys)
+            {
+                if (control == null || !control.wasPressedThisFrame) continue;
+                var name = ConsoleKeyName(control.keyCode);
+                if (name == null) continue;
+                if (!open && name != console.Open && name != console.Recall) continue;
+                Game.Submit(new PressConsoleKey(Player, name, shift));
+                open = Scripts.For(Player).ConsoleOpen;
+            }
+        }
+
+        /// <summary>The WinForms key name (System.Windows.Forms.Keys) the original's KeyDown saw for <paramref name="key"/>, or null.</summary>
+        public static string ConsoleKeyName(Key key)
+        {
+            if (key >= Key.A && key <= Key.Z) return ((char)('A' + (key - Key.A))).ToString();
+            if (key >= Key.Digit1 && key <= Key.Digit9) return "D" + (1 + (key - Key.Digit1));
+            if (key >= Key.Numpad0 && key <= Key.Numpad9) return "NumPad" + (key - Key.Numpad0);
+            if (key >= Key.F1 && key <= Key.F12) return "F" + (1 + (key - Key.F1));
+            switch (key)
+            {
+                case Key.Digit0: return "D0";
+                case Key.Space: return "Space";
+                case Key.Enter: case Key.NumpadEnter: return "Enter";
+                case Key.Tab: return "Tab";
+                case Key.Backquote: return "Oemtilde";
+                case Key.Quote: return "OemQuotes";
+                case Key.Semicolon: return "OemSemicolon";
+                case Key.Comma: return "Oemcomma";
+                case Key.Period: return "OemPeriod";
+                case Key.Slash: return "OemQuestion";
+                case Key.Backslash: return "OemPipe";
+                case Key.LeftBracket: return "OemOpenBrackets";
+                case Key.RightBracket: return "OemCloseBrackets";
+                case Key.Minus: return "OemMinus";
+                case Key.Equals: return "Oemplus";
+                case Key.Backspace: return "Back";
+                case Key.Escape: return "Escape";
+                case Key.Insert: return "Insert";
+                case Key.Delete: return "Delete";
+                case Key.Home: return "Home";
+                case Key.End: return "End";
+                case Key.PageUp: return "PageUp";
+                case Key.PageDown: return "Next";
+                case Key.LeftArrow: return "Left";
+                case Key.RightArrow: return "Right";
+                case Key.UpArrow: return "Up";
+                case Key.DownArrow: return "Down";
+                case Key.LeftShift: case Key.RightShift: return "ShiftKey";
+                case Key.LeftCtrl: case Key.RightCtrl: return "ControlKey";
+                case Key.LeftAlt: case Key.RightAlt: return "Menu";
+                case Key.CapsLock: return "Capital";
+                case Key.NumLock: return "NumLock";
+                case Key.ScrollLock: return "Scroll";
+                case Key.PrintScreen: return "PrintScreen";
+                case Key.Pause: return "Pause";
+                case Key.NumpadPlus: return "Add";
+                case Key.NumpadMinus: return "Subtract";
+                case Key.NumpadMultiply: return "Multiply";
+                case Key.NumpadDivide: return "Divide";
+                case Key.NumpadPeriod: return "Decimal";
+                case Key.LeftMeta: return "LWin";
+                case Key.RightMeta: return "RWin";
+                case Key.ContextMenu: return "Apps";
+                default: return null;
+            }
         }
 
         /// <summary>
@@ -244,7 +348,7 @@ namespace MindAttic.Overworld.Runtime
             }
 
             return new MoveInput(left.IsPressed(), right.IsPressed(), up.IsPressed(), down.IsPressed(), run.IsPressed(), held, cursor.x, cursor.y,
-                PickUpHeld(confirm.IsPressed(), select.IsPressed()));
+                !swallowConfirm && PickUpHeld(confirm.IsPressed(), select.IsPressed()));
         }
 
         /// <summary>
