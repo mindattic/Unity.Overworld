@@ -282,8 +282,9 @@ namespace MindAttic.Overworld.Core
             {
                 var input = InputOf(player);
                 var hero = Leader(player);
-                ApplyInput(hero, input);
-                if (input.Move) moveHeld[hero.Index] = true;
+                var focus = Focus != null ? Focus(player) : InputFocus.World;
+                ApplyInput(hero, input, focus);
+                if (input.Move && focus != InputFocus.Inventory) moveHeld[hero.Index] = true;
             }
 
             var led = new bool[heroes.Count];
@@ -300,6 +301,7 @@ namespace MindAttic.Overworld.Core
                 var vitalsBefore = (hero.Health, hero.Mana, hero.Stamina);
                 var statusBefore = hero.Status;
                 CheckStatus(hero);
+                CheckWeight(hero, tick, events);
                 Regenerate(hero, now);
 
                 switch (hero.State)
@@ -420,16 +422,58 @@ namespace MindAttic.Overworld.Core
         {
             if (command.Hero < 0 || command.Hero >= heroes.Count)
                 return CommandResult.Reject("There is no hero " + command.Hero + " in the party.");
-            var hero = heroes[command.Hero];
-            var statusBefore = hero.Status;
-            if (command.Health.HasValue) hero.Health = Math.Max(0, Math.Min(hero.MaxHealth, command.Health.Value));
-            if (command.Mana.HasValue) hero.Mana = Math.Max(0, Math.Min(hero.MaxMana, command.Mana.Value));
-            if (command.Stamina.HasValue) hero.Stamina = Math.Max(0, Math.Min(hero.MaxStamina, command.Stamina.Value));
-            if (command.Status.HasValue) hero.Status = command.Status.Value;
-            var events = new List<IGameEvent> { new HeroVitalsChanged(game.Tick, hero.Index, hero.Health, hero.Mana, hero.Stamina) };
-            if (hero.Status != statusBefore) events.Add(new HeroStatusChanged(game.Tick, hero.Index, hero.Status, statusBefore));
+            var events = new List<IGameEvent>();
+            SetVitals(command.Hero, command.Health, command.Mana, command.Stamina, command.Status, game.Tick, events);
             return CommandResult.Accept(events.ToArray());
         }
+
+        /// <summary>
+        /// CHANGE HERO HP / MP / AP / STATUS as assignments (<see cref="SetHeroVitals"/>, and the item scripts): each given
+        /// value clamped to 0 and the hero's maximum; adds the vitals (and any status change) to <paramref name="events"/>.
+        /// </summary>
+        internal void SetVitals(int index, int? health, int? mana, int? stamina, HeroStatus? status, long tick, ICollection<IGameEvent> events)
+        {
+            var hero = heroes[index];
+            var statusBefore = hero.Status;
+            if (health.HasValue) hero.Health = Math.Max(0, Math.Min(hero.MaxHealth, health.Value));
+            if (mana.HasValue) hero.Mana = Math.Max(0, Math.Min(hero.MaxMana, mana.Value));
+            if (stamina.HasValue) hero.Stamina = Math.Max(0, Math.Min(hero.MaxStamina, stamina.Value));
+            if (status.HasValue) hero.Status = status.Value;
+            events.Add(new HeroVitalsChanged(tick, hero.Index, hero.Health, hero.Mana, hero.Stamina));
+            if (hero.Status != statusBefore) events.Add(new HeroStatusChanged(tick, hero.Index, hero.Status, statusBefore));
+        }
+
+        // ---- weight (Heroes.checkWeight) -------------------------------------------------------------------------
+
+        /// <summary>The party's pack, whose weight against <see cref="HeroData.PartyWeightLimit"/> burdens every hero (null: never burdened).</summary>
+        public Inventory Pack { get; set; }
+
+        /// <summary>
+        /// checkWeight: with the pack heavier than the party's limit the hero is burdened and kneels (so it cannot walk,
+        /// run or head for the cursor); otherwise it is not burdened (and kneels on until it moves).
+        /// </summary>
+        void CheckWeight(Hero hero, long tick, ICollection<IGameEvent> events)
+        {
+            var burdened = Pack != null && Pack.Weight > Data.PartyWeightLimit;
+            if (burdened)
+            {
+                hero.Kneeling = true;
+                hero.State = HeroState.Kneeling;
+            }
+
+            if (burdened == hero.Burdened) return;
+            hero.Burdened = burdened;
+            events.Add(new HeroBurdened(tick, hero.Index, burdened));
+        }
+
+        // ---- what the keys work on (Inventory.bInventory, HeroSelect.bHeroSelect) ---------------------------------
+
+        /// <summary>
+        /// What a player's keys work on now: with the pack open the arrows move its cursor, the run key swaps and the move
+        /// button drops (the leader neither turns, walks, runs nor heads for the cursor); while an item's target is chosen
+        /// left and right choose it (up, down and the move button still move the leader, as they did). Null: the world.
+        /// </summary>
+        public Func<PlayerId, InputFocus> Focus { get; set; }
 
         // ---- following (Heroes.checkfollow, checkFlocking) ---------------------------------------------------------
 
@@ -529,17 +573,21 @@ namespace MindAttic.Overworld.Core
 
         // ---- input (Input.getKeyboard, getMouse, KeysUp) ----------------------------------------------------------
 
-        void ApplyInput(Hero hero, MoveInput input)
+        void ApplyInput(Hero hero, MoveInput input, InputFocus focus)
         {
-            // actionRun: running needs stamina.
-            if (input.Run) hero.Running = hero.Stamina > 0;
+            var packOpen = focus == InputFocus.Inventory;
+            var choosing = focus == InputFocus.Target;
+
+            // actionRun: running needs stamina (with the pack open the run key swaps instead).
+            if (input.Run && !packOpen) hero.Running = hero.Stamina > 0;
 
             // actionLeft / Right / Up / Down, in that order, so the last held arrow sets the facing; while the pick-up
-            // button is held (bItemPickup) they only mark the direction held.
-            if (input.Left) Arrow(hero, Facing.Left, input.PickUp);
-            if (input.Right) Arrow(hero, Facing.Right, input.PickUp);
-            if (input.Up) Arrow(hero, Facing.Up, input.PickUp);
-            if (input.Down) Arrow(hero, Facing.Down, input.PickUp);
+            // button is held (bItemPickup) they only mark the direction held, as they do while the pack is open, and
+            // left and right do while an item's target is chosen.
+            if (input.Left) Arrow(hero, Facing.Left, input.PickUp || packOpen || choosing);
+            if (input.Right) Arrow(hero, Facing.Right, input.PickUp || packOpen || choosing);
+            if (input.Up) Arrow(hero, Facing.Up, input.PickUp || packOpen);
+            if (input.Down) Arrow(hero, Facing.Down, input.PickUp || packOpen);
 
             // tryingConflict: opposite arrows together face Down and stand.
             if ((input.Left && input.Right) || (input.Up && input.Down))
@@ -548,8 +596,9 @@ namespace MindAttic.Overworld.Core
                 hero.State = HeroState.Standing;
             }
 
-            // actionMove waits while the pick-up button is held (getMouse tests the left button first; Enter blocks it).
-            if (input.Move && !input.PickUp) MoveTowardCursor(hero, input.CursorX, input.CursorY);
+            // actionMove waits while the pick-up button is held (getMouse tests the left button first; Enter blocks it);
+            // with the pack open the move button drops instead.
+            if (input.Move && !input.PickUp && !packOpen) MoveTowardCursor(hero, input.CursorX, input.CursorY);
 
             // KeysUp: released keys clear their flags; with nothing held (the pick-up button included, and no pickup
             // under way) the hero stands.

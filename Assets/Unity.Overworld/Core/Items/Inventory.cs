@@ -37,8 +37,8 @@ namespace MindAttic.Overworld.Core
 
     /// <summary>
     /// The party's pack and purse (Inventory.vb's items, itemCount and inventoryWeight; Root.Gold): one list of stacks
-    /// for the whole party, the total weight carried, and the gold. Picking up (U.OVW-US-A12) fills it; the inventory
-    /// story (A13) shows, swaps, uses and drops from it.
+    /// for the whole party, the total weight carried, and the gold. Picking up (U.OVW-US-A12) fills it; the
+    /// <see cref="InventoryControl"/> (U.OVW-US-A13) shows, swaps, uses and drops from it.
     /// </summary>
     public sealed class Inventory
     {
@@ -79,6 +79,33 @@ namespace MindAttic.Overworld.Core
             items.Add(stack);
             Weight += stack.Weight * stack.Amount;
             return stack;
+        }
+
+        /// <summary>
+        /// One of the stack at <paramref name="slot"/> leaves the pack (a use or a drop): a stack of more loses one and its
+        /// weight; a stack of one is removed (RemoveFromInventory), the stacks after it closing up. True when the stack was removed.
+        /// </summary>
+        internal bool TakeOne(int slot)
+        {
+            var stack = items[slot];
+            if (stack.Amount > 1)
+            {
+                stack.Amount--;
+                Weight -= stack.Weight;
+                return false;
+            }
+
+            Weight -= stack.Weight;
+            items.RemoveAt(slot);
+            return true;
+        }
+
+        /// <summary>SwapItem: the stacks at <paramref name="a"/> and <paramref name="b"/> change places.</summary>
+        internal void Swap(int a, int b)
+        {
+            var t = items[a];
+            items[a] = items[b];
+            items[b] = t;
         }
     }
 }

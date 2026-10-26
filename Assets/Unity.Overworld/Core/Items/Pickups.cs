@@ -36,6 +36,58 @@ namespace MindAttic.Overworld.Core
         public override string ToString() => Name + " " + Index + " at (" + X.ToString(CultureInfo.InvariantCulture) + ", " + Y.ToString(CultureInfo.InvariantCulture) + ")" + (PickedUp ? " picked up" : "");
     }
 
+    /// <summary>
+    /// An item dropped from the pack into the world (the original's dropped(n), Inventory.checkDrop): a copy of the
+    /// stack's item lying where it fell, drawn with its inventory picture, until it is picked up again. It never grows back.
+    /// </summary>
+    public sealed class DroppedItem
+    {
+        internal DroppedItem(int index) { Index = index; PickedUp = true; }
+
+        /// <summary>Its slot among the drops (a slot whose item was picked up again is used for the next drop).</summary>
+        public int Index { get; }
+
+        /// <summary>The pickup the dropped stack was first made from (its name, script and texts).</summary>
+        public PickupDefinition Source { get; internal set; }
+
+        public string Name => Source?.Name;
+
+        /// <summary>The picture it lies as and goes back into the pack with: the stack's inventory picture.</summary>
+        public string File { get; internal set; }
+
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+
+        /// <summary>Picked up again (or never dropped): not drawn and not in reach.</summary>
+        public bool PickedUp { get; internal set; }
+
+        public override string ToString() => Name + " dropped " + Index + " at (" + X.ToString(CultureInfo.InvariantCulture) + ", " + Y.ToString(CultureInfo.InvariantCulture) + ")" + (PickedUp ? " picked up" : "");
+    }
+
+    /// <summary>A hero picked a dropped item up again; it went back into the pack (<see cref="Stack"/>).</summary>
+    public sealed class DroppedItemCollected : IGameEvent
+    {
+        public DroppedItemCollected(long tick, PlayerId player, int hero, int drop, string name, InventoryItem stack)
+        {
+            Tick = tick;
+            Player = player;
+            Hero = hero;
+            Drop = drop;
+            Name = name;
+            Stack = stack;
+        }
+
+        public long Tick { get; }
+        public PlayerId Player { get; }
+        public int Hero { get; }
+
+        /// <summary>The drop's slot.</summary>
+        public int Drop { get; }
+
+        public string Name { get; }
+        public InventoryItem Stack { get; }
+    }
+
     /// <summary>The , and . keys (Input.actionItemLast / actionItemNext), or a turn of the wheel: the previous (-1) or next (+1) item in reach.</summary>
     public sealed class CyclePickup : ICommand
     {
@@ -188,12 +240,16 @@ namespace MindAttic.Overworld.Core
         {
             public readonly List<int> InReach = new List<int>();
             public int Slot;
+            public readonly List<int> DropsInReach = new List<int>();
+            public int DropSlot;
             public bool Latched;
             public bool Pressed;
         }
 
         readonly Pickup[] pickups;
+        readonly List<DroppedItem> drops = new List<DroppedItem>();
         readonly Dictionary<PlayerId, Reach> reaches = new Dictionary<PlayerId, Reach>();
+        readonly Random random;
 
         /// <param name="data">The pickups and how reach, hover and labels work.</param>
         /// <param name="party">Whose leaders pick up.</param>
@@ -207,6 +263,7 @@ namespace MindAttic.Overworld.Core
             Inventory = inventory ?? new Inventory();
             Scripts = new CurrencyScripts(Inventory);
             var rng = random ?? new Random();
+            this.random = rng;
             var positions = data.ResolvePositions(rng.NextDouble);
             pickups = new Pickup[data.Pickups.Count];
             for (var i = 0; i < pickups.Length; i++) pickups[i] = new Pickup(data.Pickups[i], positions[i], data.WorldFile(data.Pickups[i]));
@@ -221,6 +278,51 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>Every pickup, by index.</summary>
         public IReadOnlyList<Pickup> All => pickups;
+
+        /// <summary>Every drop slot used so far, by slot (picked-up ones are free for the next drop).</summary>
+        public IReadOnlyList<DroppedItem> Drops => drops;
+
+        /// <summary>
+        /// Inventory.checkDrop: a copy of <paramref name="stack"/>'s item falls at <paramref name="hero"/>'s position plus
+        /// the drop spread times a random fraction (x then y), into the first free drop slot (the original's next slot, which
+        /// ran out after 372 drops; BIBLE). The pack is not changed here.
+        /// </summary>
+        internal DroppedItem Drop(InventoryItem stack, Hero hero)
+        {
+            DroppedItem drop = null;
+            foreach (var d in drops)
+                if (d.PickedUp)
+                {
+                    drop = d;
+                    break;
+                }
+
+            if (drop == null)
+            {
+                drop = new DroppedItem(drops.Count);
+                drops.Add(drop);
+            }
+
+            var spread = Data.DropSpread;
+            drop.Source = stack.Source;
+            drop.File = stack.Texture;
+            drop.X = hero.X + spread * (float)random.NextDouble();
+            drop.Y = hero.Y + spread * (float)random.NextDouble();
+            drop.PickedUp = false;
+            return drop;
+        }
+
+        /// <summary>The drops in reach of the hero <paramref name="player"/> leads, as last listed, in slot order.</summary>
+        public IReadOnlyList<int> DropsInReach(PlayerId player) => For(player).DropsInReach;
+
+        /// <summary>The selected drop in reach of <paramref name="player"/>'s leader (its name shows over it), or -1.</summary>
+        public int SelectedDrop(PlayerId player)
+        {
+            var r = For(player);
+            if (r.DropsInReach.Count == 0 || r.DropSlot >= r.DropsInReach.Count) return -1;
+            var index = r.DropsInReach[r.DropSlot];
+            return drops[index].PickedUp ? -1 : index;
+        }
 
         public Pickups Install(Game game)
         {
@@ -274,7 +376,7 @@ namespace MindAttic.Overworld.Core
         public bool UseWheel(PlayerId player, int steps)
         {
             var r = For(player);
-            if (r.InReach.Count == 0 || steps == 0) return false;
+            if ((r.InReach.Count == 0 && r.DropsInReach.Count == 0) || steps == 0) return false;
             for (var i = 0; i < Math.Abs(steps); i++) Cycle(r, steps > 0 ? 1 : -1);
             return true;
         }
@@ -286,18 +388,21 @@ namespace MindAttic.Overworld.Core
             return CommandResult.Accept(new PickupSelected(game.Tick, c.Player, Selected(c.Player)));
         }
 
-        /// <summary>actionItemLast / actionItemNext: wrapping through the items in reach; with none, the first slot.</summary>
+        /// <summary>
+        /// actionItemLast / actionItemNext: wrapping through the items in reach, and through the drops in reach beside
+        /// them (one step moves both selections, as the original's did); with none, the first slot.
+        /// </summary>
         static void Cycle(Reach r, int step)
         {
-            var last = r.InReach.Count - 1;
-            if (last < 0)
-            {
-                r.Slot = 0;
-                return;
-            }
+            r.Slot = Cycle(r.Slot, r.InReach.Count - 1, step);
+            r.DropSlot = Cycle(r.DropSlot, r.DropsInReach.Count - 1, step);
+        }
 
-            if (step < 0) r.Slot = r.Slot > 0 ? r.Slot - 1 : last;
-            else r.Slot = r.Slot < last ? r.Slot + 1 : 0;
+        static int Cycle(int slot, int last, int step)
+        {
+            if (last < 0) return 0;
+            if (step < 0) return slot > 0 ? slot - 1 : last;
+            return slot < last ? slot + 1 : 0;
         }
 
         CommandResult HandlePickUp(Game game, PickUp c)
@@ -328,7 +433,11 @@ namespace MindAttic.Overworld.Core
                 var hero = Party.Leader(player);
                 var held = Party.InputOf(player).PickUp || r.Pressed;
                 r.Pressed = false;
-                if (held) Press(hero, r);
+                if (held)
+                {
+                    // actionPickup kneels only with the pack shut and no item's target being chosen (Enter uses there).
+                    if (Focus == null || Focus(player) == InputFocus.World) Press(hero, r);
+                }
                 else
                 {
                     // KeysUp: the button let go.
@@ -338,7 +447,48 @@ namespace MindAttic.Overworld.Core
 
                 List(hero, r);
                 Collect(game, player, hero, r, now, tick, events);
+                ListDrops(hero, r);
+                CollectDrop(player, hero, r, tick, events);
             }
+        }
+
+        /// <summary>What a player's keys work on now (the pack open, a target being chosen, or the world); null: always the world.</summary>
+        public Func<PlayerId, InputFocus> Focus { get; set; }
+
+        /// <summary>checkDroppedInRange: the drops in reach of the leader, as <see cref="List"/> finds the pickups.</summary>
+        void ListDrops(Hero hero, Reach r)
+        {
+            var reach = Data.Reach;
+            var size = Data.ItemSize;
+            var heroSize = Party.Data.HeroSize;
+            var hx = hero.X + heroSize * reach.HeroPoint.X;
+            var hy = hero.Y + heroSize * reach.HeroPoint.Y;
+            r.DropsInReach.Clear();
+            foreach (var d in drops)
+            {
+                if (d.PickedUp) continue;
+                if (!WorldCamera.Near(d.X + size * reach.ItemPoint.X, hx, reach.Range) || !WorldCamera.Near(d.Y + size * reach.ItemPoint.Y, hy, reach.Range)) continue;
+                r.DropsInReach.Add(d.Index);
+                if (r.DropsInReach.Count >= reach.Listed) break;
+            }
+
+            if (r.DropsInReach.Count <= 1 || r.DropSlot >= r.DropsInReach.Count) r.DropSlot = 0;
+        }
+
+        /// <summary>
+        /// checkDroppedPickup: a leader still picking up (no pickup was taken this tick) takes the selected drop back into
+        /// the pack by name; a drop never grows back.
+        /// </summary>
+        void CollectDrop(PlayerId player, Hero hero, Reach r, long tick, ICollection<IGameEvent> events)
+        {
+            if (!hero.PickingUp) return;
+            var index = SelectedDrop(player);
+            if (index < 0) return;
+            hero.PickingUp = false;
+            var d = drops[index];
+            d.PickedUp = true;
+            var stack = Inventory.Add(d.Source, d.File);
+            events.Add(new DroppedItemCollected(tick, player, hero.Index, index, d.Name, stack));
         }
 
         /// <summary>actionPickup: the leader stops running; unless it lies down, a new press kneels it to pick up.</summary>

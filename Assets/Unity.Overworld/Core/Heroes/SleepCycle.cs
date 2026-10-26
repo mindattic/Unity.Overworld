@@ -151,18 +151,29 @@ namespace MindAttic.Overworld.Core
         {
             if (c.Hero < 0 || c.Hero >= Party.Heroes.Count) return CommandResult.Reject("There is no hero " + c.Hero + " in the party.");
             if (c.Hour.HasValue && (c.Hour < 0 || c.Hour > 23)) return CommandResult.Reject("The hour must be 0 to 23, not " + c.Hour + ".");
-            var hero = Party.Heroes[c.Hero];
-            hero.Laying = true;
-            hero.State = HeroState.Kneeling;
-            return CommandResult.Accept(Begin(game, c.Player, hero, c.Hour));
+            return CommandResult.Accept(LayDown(c.Player, c.Hero, c.Hour, game.Tick));
         }
 
-        SleepStarted Begin(Game game, PlayerId player, Hero hero, int? wakeHour)
+        /// <summary>
+        /// CHANGE HERO AI LAYDOWN (with the draught's hour, or null): hero <paramref name="index"/> lies down (its AI
+        /// Kneeling) and the party's sleep begins. The hero and hour must be valid.
+        /// </summary>
+        internal SleepStarted LayDown(PlayerId player, int index, int? hour, long tick)
+        {
+            var hero = Party.Heroes[index];
+            hero.Laying = true;
+            hero.State = HeroState.Kneeling;
+            return Begin(tick, player, hero, hour);
+        }
+
+        SleepStarted Begin(Game game, PlayerId player, Hero hero, int? wakeHour) => Begin(game.Tick, player, hero, wakeHour);
+
+        SleepStarted Begin(long tick, PlayerId player, Hero hero, int? wakeHour)
         {
             Sleeping = true;
             Sleeper = player;
             WakeHour = wakeHour;
-            return new SleepStarted(game.Tick, player, hero.Index, wakeHour);
+            return new SleepStarted(tick, player, hero.Index, wakeHour);
         }
 
         public void Step(Game game, long tick, ICollection<IGameEvent> events)

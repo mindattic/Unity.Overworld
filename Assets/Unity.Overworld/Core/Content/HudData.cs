@@ -162,6 +162,161 @@ namespace MindAttic.Overworld.Core
         public DataPoint[] Points => new[] { Name, Effect, Description, Weight, Value };
     }
 
+    /// <summary>A stack's count over its icon (fontAmount): at <see cref="Single"/> from the icon for 2 to 9, <see cref="Double"/> beyond.</summary>
+    public sealed class CountText
+    {
+        public HudFont Font { get; internal set; }
+        public TextColour Colour { get; internal set; }
+        public DataPoint Single { get; internal set; }
+        public DataPoint Double { get; internal set; }
+
+        /// <summary>Where the count of <paramref name="amount"/> goes from its icon's corner; null when it shows none (1 or less).</summary>
+        public DataPoint? Offset(int amount) => amount <= 1 ? (DataPoint?)null : amount <= 9 ? Single : Double;
+    }
+
+    /// <summary>
+    /// The inventory panel (Inventory.vb, RECONSTRUCTION 8.3): the picture at (X, Y) of Width x Height, the icon slots
+    /// from its corner (ten to a row, rows <see cref="RowPitch"/> apart), the item and swap cursors, and its text.
+    /// </summary>
+    public sealed class InventoryPanelDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public float Width { get; internal set; }
+        public float Height { get; internal set; }
+        public string Picture { get; internal set; }
+
+        /// <summary>The first icon's corner from the panel's (8, 8).</summary>
+        public DataPoint Icons { get; internal set; }
+
+        public float IconSize { get; internal set; }
+        public float ColumnPitch { get; internal set; }
+        public float RowPitch { get; internal set; }
+
+        /// <summary>Icons to a row (10); up and down move the cursor by this many.</summary>
+        public int Columns { get; internal set; }
+
+        /// <summary>The icon slots the panel has (101).</summary>
+        public int Slots { get; internal set; }
+
+        public string ItemCursor { get; internal set; }
+        public string SwapCursor { get; internal set; }
+        public HudFont Font { get; internal set; }
+
+        /// <summary>The weight, gold, name, item weight and value colour (light green) and the effect and description colour (cyan).</summary>
+        public TextColour Green { get; internal set; }
+
+        public TextColour Cyan { get; internal set; }
+        public DataPoint Weight { get; internal set; }
+        public DataPoint Gold { get; internal set; }
+        public DataPoint Name { get; internal set; }
+        public DataPoint Effect { get; internal set; }
+        public DataPoint Description { get; internal set; }
+        public DataPoint ItemWeight { get; internal set; }
+
+        /// <summary>The value's right-hand x from the panel (321) and y; the text starts <see cref="ValueCharacter"/> pixels left a character.</summary>
+        public DataPoint Value { get; internal set; }
+
+        public float ValueCharacter { get; internal set; }
+        public string WeightText { get; internal set; }
+        public string GoldText { get; internal set; }
+        public string AmountText { get; internal set; }
+        public string ValueText { get; internal set; }
+        public CountText Count { get; internal set; }
+
+        /// <summary>The top-left corner of icon slot <paramref name="slot"/> on the 640 x 480 screen.</summary>
+        public DataPoint IconAt(int slot) =>
+            new DataPoint(X + Icons.X + ColumnPitch * (slot % Columns), Y + Icons.Y + RowPitch * (slot / Columns));
+
+        /// <summary>The virtual mouse at (<paramref name="mouseX"/>, <paramref name="mouseY"/>) is over the panel (bShowCursor2D, inclusive).</summary>
+        public bool Contains(float mouseX, float mouseY) => mouseX >= X && mouseX <= X + Width && mouseY >= Y && mouseY <= Y + Height;
+
+        /// <summary>
+        /// checkCursorOverInventory: the first of the <paramref name="count"/> icons the virtual mouse is over (within half an
+        /// icon of its centre on both axes), or -1. (The original's vertical test reached from its centre to the screen's top
+        /// edge, so the hit was the band above each icon; BIBLE.)
+        /// </summary>
+        public int SlotUnder(float mouseX, float mouseY, int count)
+        {
+            if (!Contains(mouseX, mouseY)) return -1;
+            var half = IconSize / 2f;
+            for (var n = 0; n < count && n < Slots; n++)
+            {
+                var at = IconAt(n);
+                if (WorldCamera.Near(mouseX, at.X + half, half) && WorldCamera.Near(mouseY, at.Y + half, half)) return n;
+            }
+
+            return -1;
+        }
+
+        /// <summary>"Weight: n / limit", each to one decimal place (FormatNumber(x, 1)).</summary>
+        public string WeightLine(float weight, float limit) =>
+            string.Format(System.Globalization.CultureInfo.InvariantCulture, WeightText, Number(weight), Number(limit));
+
+        /// <summary>FormatNumber(x, 1): one decimal place, thousands grouped.</summary>
+        public static string Number(float value) => ((double)value).ToString("N1", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>The quick bar (QuickBar.vb, RECONSTRUCTION 8.5): the picture at the bottom right and the first ten stacks' icons in it.</summary>
+    public sealed class QuickBarDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public float Width { get; internal set; }
+        public float Height { get; internal set; }
+        public string Picture { get; internal set; }
+
+        /// <summary>The first icon's x from the bar (1); the icons sit at the bar's top.</summary>
+        public float IconX { get; internal set; }
+
+        public float Pitch { get; internal set; }
+        public float IconSize { get; internal set; }
+
+        /// <summary>The slots the bar shows and the 1 to 0 keys use (10).</summary>
+        public int Slots { get; internal set; }
+
+        public CountText Count { get; internal set; }
+
+        /// <summary>The top-left corner of quick slot <paramref name="slot"/>.</summary>
+        public DataPoint IconAt(int slot) => new DataPoint(X + IconX + Pitch * slot, Y);
+    }
+
+    /// <summary>
+    /// A button of the 640 x 480 screen (InventoryBtn.vb): its square, the hit box Cursor2D tested (across its width, from
+    /// <see cref="HitTop"/> above its top to <see cref="HitBottom"/> from its bottom), and its pictures on and off.
+    /// </summary>
+    public sealed class ScreenButtonDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public float Width { get; internal set; }
+        public float Height { get; internal set; }
+        public float HitTop { get; internal set; }
+        public float HitBottom { get; internal set; }
+        public string OnPicture { get; internal set; }
+        public string OffPicture { get; internal set; }
+        public string Picture(bool on) => on ? OnPicture : OffPicture;
+
+        /// <summary>The virtual mouse is over the button (A_between_BC, inclusive).</summary>
+        public bool Contains(float mouseX, float mouseY) =>
+            mouseX >= X && mouseX <= X + Width && mouseY >= Y + HitTop && mouseY <= Y + Height + HitBottom;
+    }
+
+    /// <summary>
+    /// The chosen target of an item (HeroSelect.vb renderHeroSelect, RECONSTRUCTION 4.7 and 8.3): select_hero.png on the
+    /// hero's quad, and a marker and its name in 3D text at the hero's position plus <see cref="LabelPoint"/> times the
+    /// hero size plus <see cref="LabelOffset"/>.
+    /// </summary>
+    public sealed class TargetMarkerDefinition
+    {
+        public string Picture { get; internal set; }
+        public DataPoint LabelPoint { get; internal set; }
+        public DataPoint LabelOffset { get; internal set; }
+        public string Marker { get; internal set; }
+        public float MarkerScale { get; internal set; }
+        public float NameScale { get; internal set; }
+    }
+
     /// <summary>
     /// The heads-up text (hud.json): the virtual screen the original drew on, its fonts, where the clock's lines go on the
     /// HUD and the hero screen, and how messages show.
@@ -197,6 +352,23 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>The examine box (E, with the cursor over a pickup).</summary>
         public ExamineBoxDefinition Examine { get; internal set; }
+
+        /// <summary>The inventory panel (Delete or the inventory button).</summary>
+        public InventoryPanelDefinition Inventory { get; internal set; }
+
+        /// <summary>The quick bar (Q).</summary>
+        public QuickBarDefinition QuickBar { get; internal set; }
+
+        /// <summary>The inventory button (inventory_Open while the panel is open, inventory_Closed otherwise).</summary>
+        public ScreenButtonDefinition InventoryButton { get; internal set; }
+
+        /// <summary>"You are overburdened", written at the centre while the leader is burdened, in the status box's colour.</summary>
+        public HudText Burdened { get; internal set; }
+
+        public string BurdenedText { get; internal set; }
+
+        /// <summary>The marker over an item's chosen target.</summary>
+        public TargetMarkerDefinition Target { get; internal set; }
 
         /// <summary>The rest prompt for one hour ("Rest for {0} hour?").</summary>
         public string RestOne { get; internal set; }
@@ -310,6 +482,32 @@ namespace MindAttic.Overworld.Core
             ex.Done();
             data.Examine = examine;
 
+            data.Inventory = ReadInventory(root.Section("inventory"), data, fonts);
+            data.QuickBar = ReadQuickBar(root.Section("quickBar"), data, fonts);
+            data.InventoryButton = ReadButton(root.Section("inventoryButton"), data);
+            var burdened = root.Section("burdened");
+            data.Burdened = new HudText
+            {
+                X = burdened.Number("x", 0f, data.ScreenWidth),
+                Y = burdened.Number("y", 0f, data.ScreenHeight),
+                Font = ReadFont(burdened, fonts),
+                Colour = new TextColour(255, 255, 255, 255),
+            };
+            data.BurdenedText = burdened.Text("text");
+            burdened.Done();
+            var target = root.Section("target");
+            data.Target = new TargetMarkerDefinition
+            {
+                Picture = target.Text("picture"),
+                LabelPoint = target.Pair("labelPoint", -1f, 1f),
+                LabelOffset = target.Pair("labelOffset", -1f, 1f),
+                Marker = target.Text("marker"),
+                MarkerScale = target.Positive("markerScale"),
+                NameScale = target.Positive("nameScale"),
+            };
+            target.Check(data.Target.Picture.StartsWith("gfx/", StringComparison.Ordinal), "picture", "must be a path under gfx/");
+            target.Done();
+
             var m = root.Section("messages");
             var tuning = new MessageTuning
             {
@@ -328,6 +526,119 @@ namespace MindAttic.Overworld.Core
             data.Messages = tuning;
             root.Done();
             return data;
+        }
+
+        static TextColour ReadColour(ContentReader r, string key)
+        {
+            var c = TimeData.ReadBytes(r, key, 4, "an [a, r, g, b] colour of four whole numbers from 0 to 255");
+            return c == null ? new TextColour(255, 255, 255, 255) : new TextColour(c[0], c[1], c[2], c[3]);
+        }
+
+        static string ReadPicture(ContentReader r, string key)
+        {
+            var file = r.Text(key);
+            r.Check(file.StartsWith("gfx/", StringComparison.Ordinal), key, "must be a path under gfx/");
+            return file;
+        }
+
+        static CountText ReadCount(ContentReader parent, List<HudFont> fonts)
+        {
+            var r = parent.Section("count");
+            var count = new CountText
+            {
+                Font = ReadFont(r, fonts),
+                Colour = ReadColour(r, "colour"),
+                Single = r.Pair("single", 0f, 100f),
+                Double = r.Pair("double", 0f, 100f),
+            };
+            r.Done();
+            return count;
+        }
+
+        static InventoryPanelDefinition ReadInventory(ContentReader r, HudData data, List<HudFont> fonts)
+        {
+            var icons = r.Section("icons");
+            var panel = new InventoryPanelDefinition
+            {
+                X = r.Number("x", 0f, data.ScreenWidth),
+                Y = r.Number("y", 0f, data.ScreenHeight),
+                Width = r.Positive("width"),
+                Height = r.Positive("height"),
+                Picture = ReadPicture(r, "picture"),
+                Icons = new DataPoint(icons.Number("x", 0f, data.ScreenWidth), icons.Number("y", 0f, data.ScreenHeight)),
+                IconSize = icons.Positive("size"),
+                ColumnPitch = icons.Positive("columnPitch"),
+                RowPitch = icons.Positive("rowPitch"),
+                Columns = icons.Integer("columns", 1, 100),
+                Slots = icons.Integer("slots", 1, 10000),
+            };
+            icons.Done();
+            panel.ItemCursor = ReadPicture(r, "itemCursor");
+            panel.SwapCursor = ReadPicture(r, "swapCursor");
+            panel.Font = ReadFont(r, fonts);
+            panel.Green = ReadColour(r, "green");
+            panel.Cyan = ReadColour(r, "cyan");
+            panel.Weight = r.Pair("weight", 0f, data.ScreenWidth);
+            panel.Gold = r.Pair("gold", 0f, data.ScreenWidth);
+            panel.Name = r.Pair("name", 0f, data.ScreenWidth);
+            panel.Effect = r.Pair("effect", 0f, data.ScreenWidth);
+            panel.Description = r.Pair("description", 0f, data.ScreenWidth);
+            panel.ItemWeight = r.Pair("itemWeight", 0f, data.ScreenWidth);
+            panel.Value = r.Pair("value", 0f, data.ScreenWidth);
+            panel.ValueCharacter = r.Number("valueCharacter", 0f, 100f);
+            panel.WeightText = r.Text("weightText");
+            panel.GoldText = r.Text("goldText");
+            panel.AmountText = r.Text("amountText");
+            panel.ValueText = r.Text("valueText");
+            panel.Count = ReadCount(r, fonts);
+            r.Check(panel.WeightText.Contains("{0}") && panel.WeightText.Contains("{1}"), "weightText", "must hold {0} for the weight and {1} for the limit");
+            r.Check(panel.GoldText.Contains("{0}"), "goldText", "must hold {0} for the gold");
+            r.Check(panel.AmountText.Contains("{0}") && panel.AmountText.Contains("{1}"), "amountText", "must hold {0} for the name and {1} for the amount");
+            r.Check(panel.ValueText.Contains("{0}"), "valueText", "must hold {0} for the value");
+            r.Check(panel.X + panel.Width <= data.ScreenWidth && panel.Y + panel.Height <= data.ScreenHeight, "x", "must keep the panel on the screen");
+            r.Done();
+            return panel;
+        }
+
+        static QuickBarDefinition ReadQuickBar(ContentReader r, HudData data, List<HudFont> fonts)
+        {
+            var bar = new QuickBarDefinition
+            {
+                X = r.Number("x", 0f, data.ScreenWidth),
+                Y = r.Number("y", 0f, data.ScreenHeight),
+                Width = r.Positive("width"),
+                Height = r.Positive("height"),
+                Picture = ReadPicture(r, "picture"),
+                IconX = r.Number("iconX", 0f, data.ScreenWidth),
+                Pitch = r.Positive("pitch"),
+                IconSize = r.Positive("iconSize"),
+                Slots = r.Integer("slots", 1, 10),
+                Count = ReadCount(r, fonts),
+            };
+            r.Done();
+            return bar;
+        }
+
+        static ScreenButtonDefinition ReadButton(ContentReader r, HudData data)
+        {
+            var position = r.Pair("position", 0f);
+            var size = r.Pair("size", 1f);
+            var hit = r.Pair("hitTopBottom");
+            var button = new ScreenButtonDefinition
+            {
+                X = position.X,
+                Y = position.Y,
+                Width = size.X,
+                Height = size.Y,
+                HitTop = hit.X,
+                HitBottom = hit.Y,
+                OnPicture = ReadPicture(r, "open"),
+                OffPicture = ReadPicture(r, "closed"),
+            };
+            r.Check(button.X + button.Width <= data.ScreenWidth && button.Y + button.Height <= data.ScreenHeight, "position", "must keep the button on the screen");
+            r.Check(button.Y + button.HitTop < button.Y + button.Height + button.HitBottom, "hitTopBottom", "must leave the hit box some height");
+            r.Done();
+            return button;
         }
 
         static BarDefinition ReadBar(ContentReader parent, string key, HudData data)

@@ -4,7 +4,8 @@
   "fonts": [
     {"name": "fontCalisto", "families": ["Calisto MT", "Georgia", "Times New Roman"], "points": 8, "bold": true},
     {"name": "fontArial", "families": ["Arial"], "points": 10, "bold": true},
-    {"name": "fontArialNarrow24", "families": ["Arial Narrow", "Arial"], "points": 24, "bold": false}
+    {"name": "fontArialNarrow24", "families": ["Arial Narrow", "Arial"], "points": 24, "bold": false},
+    {"name": "fontAmount", "families": ["Small Fonts", "Arial"], "points": 7, "bold": false}
   ],
   "clock": {
     "_note": "renderStatus writes the day period's name at (5, iHeight - 70) and the time at (5, iHeight - 57) in fontCalisto, (128, 255, 255, 0).",
@@ -53,6 +54,59 @@
     "descriptionText": "Description:\n{0}",
     "weightText": "Weight: {0}",
     "valueText": "Value: ${0}"
+  },
+  "inventory": {
+    "_note": "Inventory.vb: inventory.png (332 x 385) drawn over 345 x 400 at (iWidth - 345 - 12, iHeight - 400 - 50); icon slots of 32 px from the panel + (8, 8), 32 apart, ten to a row (the wrap test is iconCols > 32 * 9), rows 40 apart, 101 of them; item_cursor.png on the selected icon and swap_cursor.png on the icon marked for a swap. In fontArial: 'Weight: n / limit' (FormatNumber(x, 1)) at +(345 - 120, 400 - 22) and 'Gold: n' at +(12, 400 - 22) in (255, 128, 255, 128); with a stack selected its name (with ' x n' over one) at +(12, 400 - 110) and its weight at +(345 - 30, 400 - 110) in that green, its effect at +(12, 400 - 92) and description at +(12, 400 - 66) in (255, 0, 255, 255), and '$' and its value at +(345 - 24 - 6 per character, 400 - 44) in the green. Every stack over one writes its count in fontAmount at its icon + (14, 24), or + (12, 24) past 9, in (255, 0, 255, 255).",
+    "x": 283, "y": 30, "width": 345, "height": 400,
+    "picture": "gfx/gui/inventory.PNG",
+    "icons": {"x": 8, "y": 8, "size": 32, "columnPitch": 32, "rowPitch": 40, "columns": 10, "slots": 101},
+    "itemCursor": "gfx/cursor/item_cursor.PNG",
+    "swapCursor": "gfx/cursor/swap_cursor.PNG",
+    "font": "fontArial",
+    "green": [255, 128, 255, 128],
+    "cyan": [255, 0, 255, 255],
+    "weight": [225, 378],
+    "gold": [12, 378],
+    "name": [12, 290],
+    "effect": [12, 308],
+    "description": [12, 334],
+    "itemWeight": [315, 290],
+    "value": [321, 356],
+    "valueCharacter": 6,
+    "weightText": "Weight: {0} / {1}",
+    "goldText": "Gold: {0}",
+    "amountText": "{0} x {1}",
+    "valueText": "${0}",
+    "count": {"font": "fontAmount", "colour": [255, 0, 255, 255], "single": [14, 24], "double": [12, 24]}
+  },
+  "quickBar": {
+    "_note": "QuickBar.vb: quick_bar.png (470 x 47) drawn over 400 x 36 at (iWidth - 400 - 2, iHeight - 36 - 2) while bQuickBar is on (Q); the first ten stacks' icons, 32 px, at the bar + (1 + 40 n, 0), drawn before the bar, each count over one in fontAmount at the icon + (16, 18), or + (15, 18) past 9.",
+    "x": 238, "y": 442, "width": 400, "height": 36,
+    "picture": "gfx/gui/quick_bar.PNG",
+    "iconX": 1, "pitch": 40, "iconSize": 32, "slots": 10,
+    "count": {"font": "fontAmount", "colour": [255, 0, 255, 255], "single": [16, 18], "double": [15, 18]}
+  },
+  "inventoryButton": {
+    "_note": "Gui/InventoryBtn.vb and Cursor2D.rendercursor2D: a 28 x 28 square at (18, 104) showing inventory_Open while the panel is open and inventory_Closed otherwise (32 x 30 pictures stretched to it); the left button toggles the panel while the virtual mouse is across its width and between its top - 10 and its bottom - 12.",
+    "position": [18, 104],
+    "size": [28, 28],
+    "hitTopBottom": [-10, -12],
+    "open": "gfx/gui/inventory_Open.PNG",
+    "closed": "gfx/gui/inventory_Closed.PNG"
+  },
+  "burdened": {
+    "_note": "StatusBox.renderStatus: while the leader is burdened, 'You are overburdened' at (centerScreen.X - 75, centerScreen.Y) in fontCalisto, in the status box's (255, 255 - r, 255, 255 - b) of the world light.",
+    "x": 245, "y": 240, "font": "fontCalisto",
+    "text": "You are overburdened"
+  },
+  "target": {
+    "_note": "HeroSelect.renderHeroSelect: while an item's target is being chosen, select_hero.png on the chosen hero's quad (heroSize square at its position), and renderText's '.' (scale 0.02) and its name (0.007) at (x + heroSize / 2 + 0.005, y - heroSize / 2 + 0.1), in the world's light.",
+    "picture": "gfx/gui/select_hero.PNG",
+    "labelPoint": [0.5, -0.5],
+    "labelOffset": [0.005, 0.1],
+    "marker": ".",
+    "markerScale": 0.02,
+    "nameScale": 0.007
   },
   "messages": {
     "_note": "Messages.vb: up to maxMessages waiting (a message added to a full queue replaces the last); the next is shown at the screen centre, x less 6 / 2 per character, once the last shown is more than 'spacing' pixels below the centre or gone; each shown message loses 'fade' alpha and drops 'drift' pixels a tick, starting at alpha 255, and is gone at 0. The period announcements use fontArialNarrow24 in white.",

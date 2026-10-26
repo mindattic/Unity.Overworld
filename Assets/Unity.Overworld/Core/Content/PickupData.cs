@@ -134,6 +134,12 @@ namespace MindAttic.Overworld.Core
         /// <summary>The share of maximum stamina a pickup costs a hero moving in battle (checkItemPickup's 5 percent).</summary>
         public float BattlePickupStamina { get; private set; }
 
+        /// <summary>
+        /// Inventory.checkDrop: a dropped item lands at the leader's position plus this times a random fraction on each
+        /// axis (x then y), 0.05.
+        /// </summary>
+        public float DropSpread { get; private set; }
+
         /// <summary>The picture file of an item texture name ("egg" is "gfx/items/egg.PNG").</summary>
         public string File(string texture) => texture == null ? null : ArtFolder + texture + ArtExtension;
 
@@ -244,6 +250,9 @@ namespace MindAttic.Overworld.Core
             labelReader.Done();
 
             var battleStamina = root.Number("battlePickupStamina", 0f, 1f);
+            var dropReader = root.Section("drop");
+            var dropSpread = dropReader.Number("spread", 0f, 1f);
+            dropReader.Done();
 
             var byIndex = new SortedDictionary<int, PickupDefinition>();
             foreach (var r in root.Objects("pickups"))
@@ -341,6 +350,7 @@ namespace MindAttic.Overworld.Core
                 Hover = hover,
                 Label = label,
                 BattlePickupStamina = battleStamina,
+                DropSpread = dropSpread,
             };
         }
     }
