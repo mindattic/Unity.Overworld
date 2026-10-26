@@ -54,16 +54,23 @@ $rules = @(
   @('^sfx/hero/regen\.wav$', 'used', 'Regeneration sound, loaded'),
   @('^sfx/ruby\.avi$', 'not-shipped', 'Video constructed but never shown'),
   @('^sfx/music/music\.wma$', 'not-shipped', 'Legacy WMA music; the MP3 ships'),
-  @('^sfx/(sword_|)(hit|swing)_\d\.wav$|^sfx/sword_(hit|swing)_\d\.wav$', 'not-shipped', 'Duplicate of the file under sfx/hero/attack'),
   @('^sfx/', 'union', 'Sound beyond the code, built in the audio layer')
 )
 
-$rows = foreach ($f in Get-ChildItem -LiteralPath $root -Recurse -File) {
+$rows = foreach ($f in Get-ChildItem -LiteralPath $root -Recurse -File -Force) {
   $rel = $f.FullName.Substring($root.Length + 1).Replace('\', '/')
   $key = $rel.ToLowerInvariant()
   $hit = $rules | Where-Object { $key -match $_[0] } | Select-Object -First 1
   if (-not $hit) { throw "No disposition rule for $rel" }
-  [pscustomobject]@{ Path = $rel; Bytes = $f.Length; Disposition = $hit[1]; Note = $hit[2] }
+  $disposition = $hit[1]; $note = $hit[2]
+  if ($key -match '^sfx/(sword_(hit|swing)_\d\.wav)$') {
+    # Decided by content, not name: only a byte-identical copy of the sfx/hero/attack file is a duplicate.
+    $twin = Join-Path $root ('sfx' + [IO.Path]::DirectorySeparatorChar + 'hero' + [IO.Path]::DirectorySeparatorChar + 'attack' + [IO.Path]::DirectorySeparatorChar + $f.Name)
+    if ((Test-Path -LiteralPath $twin) -and (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash -eq (Get-FileHash -LiteralPath $twin -Algorithm SHA256).Hash) {
+      $disposition = 'not-shipped'; $note = 'Byte-identical duplicate of the file under sfx/hero/attack'
+    } else { $disposition = 'union'; $note = 'Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer' }
+  }
+  [pscustomobject]@{ Path = $rel; Bytes = $f.Length; Disposition = $disposition; Note = $note }
 }
 $lines = @('path' + "`t" + 'bytes' + "`t" + 'disposition' + "`t" + 'note')
 $lines += $rows | Sort-Object { $_.Path } -CaseSensitive | ForEach-Object { "$($_.Path)`t$($_.Bytes)`t$($_.Disposition)`t$($_.Note)" }

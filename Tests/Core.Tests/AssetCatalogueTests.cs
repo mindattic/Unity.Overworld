@@ -34,14 +34,23 @@ namespace MindAttic.Overworld.Tests
             throw new FileNotFoundException(relative + " was not found above " + AppContext.BaseDirectory);
         }
 
-        static readonly List<Entry> Catalogue = File.ReadAllLines(RepoFile("docs/asset-catalogue.tsv"))
-            .Skip(1).Where(l => l.Length > 0)
-            .Select(l =>
+        static List<Entry> catalogue;
+
+        static List<Entry> Catalogue => catalogue ??= Parse();
+
+        static List<Entry> Parse()
+        {
+            var entries = new List<Entry>();
+            foreach (var line in File.ReadAllLines(RepoFile("docs/asset-catalogue.tsv")).Skip(1).Where(l => l.Length > 0))
             {
-                var c = l.Split('\t');
-                Assert.AreEqual(4, c.Length, "Catalogue line must have path, bytes, disposition, note: " + l);
-                return new Entry { Path = c[0], Bytes = long.Parse(c[1]), Disposition = c[2], Note = c[3] };
-            }).ToList();
+                var c = line.Split('	');
+                if (c.Length != 4 || !long.TryParse(c[1], out var bytes))
+                    throw new InvalidDataException("Catalogue line must have path, bytes, disposition, note: " + line);
+                entries.Add(new Entry { Path = c[0], Bytes = bytes, Disposition = c[2], Note = c[3] });
+            }
+
+            return entries;
+        }
 
         static int Count(string prefix) => Catalogue.Count(e => e.Path.StartsWith(prefix, StringComparison.Ordinal));
 
@@ -118,8 +127,12 @@ namespace MindAttic.Overworld.Tests
             if (File.Exists(zip))
             {
                 using var archive = System.IO.Compression.ZipFile.OpenRead(zip);
-                return archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name))
+                var files = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name))
                     .Select(e => new KeyValuePair<string, long>(e.FullName.Replace(Bs, '/'), e.Length)).ToList();
+                var top = files[0].Key.Substring(0, files[0].Key.IndexOf('/') + 1);
+                if (top.Length > 0 && files.All(f => f.Key.StartsWith(top, StringComparison.Ordinal)))
+                    files = files.Select(f => new KeyValuePair<string, long>(f.Key.Substring(top.Length), f.Value)).ToList();
+                return files;
             }
 
             return null;
@@ -132,8 +145,6 @@ namespace MindAttic.Overworld.Tests
             if (original == null) Assert.Inconclusive("The original Overworld folder (or Overworld.zip) is not available on this machine.");
 
             var list = original.ToList();
-            Assert.AreEqual(OriginalFileCount, list.Count, "The original no longer has 895 files");
-
             var catalogued = Catalogue.ToDictionary(e => e.Path, e => e.Bytes, StringComparer.Ordinal);
             var missing = list.Where(o => !catalogued.ContainsKey(o.Key)).Select(o => o.Key).ToList();
             var extra = catalogued.Keys.Where(k => list.All(o => o.Key != k)).ToList();
@@ -142,6 +153,7 @@ namespace MindAttic.Overworld.Tests
 
             var wrongSize = list.Where(o => catalogued[o.Key] != o.Value).Select(o => o.Key).ToList();
             Assert.IsEmpty(wrongSize, "Original files whose size differs from the catalogue");
+            Assert.AreEqual(OriginalFileCount, list.Count, "The original no longer has 895 files");
         }
     }
 }

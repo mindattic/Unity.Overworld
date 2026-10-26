@@ -883,14 +883,14 @@ sfx/music/Battle.mp3	4974550	union	Sound beyond the code, built in the audio lay
 sfx/music/Music.mp3	7121188	used	Music object constructed at start (never played in the original)
 sfx/music/music.wma	613638	not-shipped	Legacy WMA music; the MP3 ships
 sfx/ruby.avi	2001902	not-shipped	Video constructed but never shown
-sfx/sword_hit_1.wav	14444	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_hit_2.wav	4358	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_hit_3.wav	4852	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_swing_1.wav	1714	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_swing_2.wav	20468	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_swing_3.wav	11180	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_swing_4.wav	10050	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_swing_5.wav	6814	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_swing_6.wav	6666	not-shipped	Duplicate of the file under sfx/hero/attack
-sfx/sword_swing_7.wav	2760	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_hit_1.wav	14444	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_hit_2.wav	4358	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_hit_3.wav	4852	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_swing_1.wav	1714	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_swing_2.wav	20468	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_swing_3.wav	11180	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_swing_4.wav	10050	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_swing_5.wav	6814	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_swing_6.wav	6666	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
+sfx/sword_swing_7.wav	2760	union	Differs from the sfx/hero/attack file of the same name, so not a duplicate; built in the audio layer
 world.mdb	794624	union	Older database beyond the code (section 16, union layer)
