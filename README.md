@@ -18,7 +18,8 @@ camera moves. The stories that make the rest play follow in build order.
 hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
 the view with `-overworld-pointer <x>,<y>` (the virtual 640 x 480 mouse; 608 or 32 and 448 or 32 are the scrolling edges),
 `-overworld-wheel <steps>`, `-overworld-view-hold zoom,shift,x,z,num4,num6,num8,num2`, `-overworld-examine` and
-`-overworld-free-camera`; a scripted run never takes the real mouse.
+`-overworld-free-camera`; `-overworld-recall <hero>[,<seconds>]` recalls Belmont (1) or Flagg (2) beside the leader, at once
+or after that many seconds, so it falls in from z -1; a scripted run never takes the real mouse.
 
 ## Why
 

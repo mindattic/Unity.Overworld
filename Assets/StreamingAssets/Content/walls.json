@@ -7,5 +7,13 @@
     {"from": [2.5, 2], "to": [3, 2]},
     {"from": [3, 2], "to": [3.5, 1.5]},
     {"from": [3.5, 1.5], "to": [4, 2]}
-  ]
+  ],
+  "collision": {
+    "_note": "Heroes.checkWall / horizontalWall / angledWall / verticalWall, RECONSTRUCTION 3.5. Each tick, per hero, the test point is the hero's position plus heroSize x probe, raised by probeLift. A wall within reach x |velocity| on the axis it blocks sets that velocity to +/-push, away from the wall to the side the point is on; within angledStop of an angled wall's line the hero's x velocity is zeroed too.",
+    "probe": [0.5, -0.5],
+    "probeLift": 0.01,
+    "reach": 2,
+    "push": 0.001,
+    "angledStop": 0.03
+  }
 }

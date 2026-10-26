@@ -18,6 +18,8 @@ namespace MindAttic.Overworld.Runtime
     /// (x, y) of the 640 x 480 screen (32 or 608 / 448 is an edge, which scrolls); <c>-overworld-wheel &lt;steps&gt;</c> turns
     /// the wheel (positive in, negative out); <c>-overworld-view-hold &lt;zoom,shift,x,z,num4,num6,num8,num2&gt;</c> holds
     /// those view keys; <c>-overworld-examine</c> and <c>-overworld-free-camera</c> switch those on;
+    /// <c>-overworld-recall &lt;hero[,seconds]&gt;</c> recalls that hero (1 Belmont, 2 Flagg) beside the leader, at once or after
+    /// that many seconds of play, so it falls in from z -1;
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -33,6 +35,7 @@ namespace MindAttic.Overworld.Runtime
         public const string ViewHoldArgument = "-overworld-view-hold";
         public const string ExamineArgument = "-overworld-examine";
         public const string FreeCameraArgument = "-overworld-free-camera";
+        public const string RecallArgument = "-overworld-recall";
 
         public ContentRegistry Content { get; private set; }
         public GameHost Host { get; private set; }
@@ -49,7 +52,7 @@ namespace MindAttic.Overworld.Runtime
         {
             Content = ContentRegistry.Load(new DirectoryContentSource(ContentDirectory));
             var game = new Game();
-            Party = new Party(Content.Heroes).Install(game);
+            Party = new Party(Content.Heroes, Content.Walls).Install(game);
             Control = new CameraControl(Content.View, Party).Install(game);
             var joined = game.Submit(new JoinGame(PlayerId.One));
             if (!joined.Accepted) Debug.LogError("Unity.Overworld: player 1 could not join: " + joined.Reason);
@@ -74,7 +77,8 @@ namespace MindAttic.Overworld.Runtime
 
             var capture = ArgumentAfter(args, CaptureArgument);
             var scriptedView = ApplyScriptedView(args, game);
-            if (scripted.HasValue || scriptedView || capture != null) Input.UseDevices = false;
+            var recalled = ApplyScriptedRecall(args, game);
+            if (scripted.HasValue || scriptedView || recalled || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -167,6 +171,38 @@ namespace MindAttic.Overworld.Runtime
             return any;
         }
 
+        /// <summary>Applies <c>-overworld-recall &lt;hero[,seconds]&gt;</c>; true when it was given.</summary>
+        bool ApplyScriptedRecall(string[] args, Game game)
+        {
+            var recall = ArgumentAfter(args, RecallArgument);
+            if (recall == null) return false;
+            if (!TryRecall(recall, out var hero, out var seconds))
+            {
+                Debug.LogError("Unity.Overworld: " + RecallArgument + " wants a hero's place in the party (1 or 2) and optionally the seconds to wait, not '" + recall + "'.");
+                return true;
+            }
+
+            StartCoroutine(RecallAfter(game, hero, seconds));
+            return true;
+        }
+
+        /// <summary>Reads <c>hero[,seconds]</c>.</summary>
+        public static bool TryRecall(string text, out int hero, out float seconds)
+        {
+            seconds = 0f;
+            var parts = text.Split(',');
+            return int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out hero) &&
+                   (parts.Length == 1 || (parts.Length == 2 && float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f));
+        }
+
+        IEnumerator RecallAfter(Game game, int hero, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var result = game.Submit(new RecallHero(PlayerId.One, hero));
+            if (result.Accepted) Debug.Log("Unity.Overworld: scripted recall of " + Party.Heroes[hero]);
+            else Debug.LogError("Unity.Overworld: " + RecallArgument + " " + hero + " was refused: " + result.Reason);
+        }
+
         /// <summary>The view keys <c>-overworld-view-hold</c> names (zoom, shift, x, z, num4, num6, num8, num2).</summary>
         public static ViewInput ScriptedViewKeys(string keys)
         {
@@ -224,7 +260,8 @@ namespace MindAttic.Overworld.Runtime
                 File.WriteAllBytes(file, shot.EncodeToPNG());
                 Debug.Log("Unity.Overworld: captured " + Path.GetFullPath(file));
                 if (Party != null)
-                    foreach (var hero in Party.Heroes) Debug.Log("Unity.Overworld: " + hero + " showing " + hero.Sprite);
+                    foreach (var hero in Party.Heroes)
+                        Debug.Log("Unity.Overworld: " + hero + " z " + hero.Z.ToString(CultureInfo.InvariantCulture) + " showing " + hero.Sprite);
                 if (Viewpoint != null)
                 {
                     var cam = Viewpoint.Camera;

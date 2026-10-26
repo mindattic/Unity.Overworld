@@ -4,14 +4,16 @@ using System.Collections.Generic;
 namespace MindAttic.Overworld.Core
 {
     /// <summary>
-    /// The art set every hero draws with (Textures.loadTextures, RECONSTRUCTION 4.4): one standing picture per facing and
-    /// the six-frame walk and run cycles per facing, as paths under the original's folder (heroes.json "sprites").
+    /// The art set every hero draws with (Textures.loadTextures, RECONSTRUCTION 4.4): one standing picture per facing, the
+    /// two halt pictures and the six-frame walk and run cycles per facing, as paths under the original's folder
+    /// (heroes.json "sprites").
     /// </summary>
     public sealed class HeroSprites
     {
         static readonly Facing[] Facings = { Facing.Left, Facing.Right, Facing.Up, Facing.Down };
 
         readonly Dictionary<Facing, string> stand = new Dictionary<Facing, string>();
+        readonly Dictionary<Facing, string> halt = new Dictionary<Facing, string>();
         readonly Dictionary<Facing, IReadOnlyList<string>> walk = new Dictionary<Facing, IReadOnlyList<string>>();
         readonly Dictionary<Facing, IReadOnlyList<string>> run = new Dictionary<Facing, IReadOnlyList<string>>();
 
@@ -21,6 +23,12 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>The standing picture (stand\face_*) facing <paramref name="facing"/>.</summary>
         public string Stand(Facing facing) => stand[facing];
+
+        /// <summary>
+        /// The halt picture (halt\halt_left|right): the original loaded only these two, so up and down show the left one
+        /// (the picture a falling hero shows is always halt_left, checkFall).
+        /// </summary>
+        public string Halt(Facing facing) => halt[facing == Facing.Right ? Facing.Right : Facing.Left];
 
         /// <summary>The walk cycle (walk\walk_*1..6) facing <paramref name="facing"/>, in frame order.</summary>
         public IReadOnlyList<string> Walk(Facing facing) => walk[facing];
@@ -34,6 +42,8 @@ namespace MindAttic.Overworld.Core
             get
             {
                 var list = new List<string>();
+                list.Add(halt[Facing.Left]);
+                list.Add(halt[Facing.Right]);
                 foreach (var f in Facings)
                 {
                     list.Add(stand[f]);
@@ -51,6 +61,10 @@ namespace MindAttic.Overworld.Core
             var standReader = r.Section("stand");
             foreach (var f in Facings) sprites.stand[f] = Picture(standReader, Key(f));
             standReader.Done();
+            var haltReader = r.Section("halt");
+            sprites.halt[Facing.Left] = Picture(haltReader, "left");
+            sprites.halt[Facing.Right] = Picture(haltReader, "right");
+            haltReader.Done();
             ReadCycle(r.Section("walk"), sprites.walk, walkFrames + 1);
             ReadCycle(r.Section("run"), sprites.run, runFrames + 1);
             r.Done();
@@ -140,6 +154,34 @@ namespace MindAttic.Overworld.Core
             };
             r.Check(t.RunReach < t.MaxReach, "runReach", "must be below maxReach");
             r.Check(t.ArriveRange < t.NearRange, "arriveRange", "must be below nearRange");
+            r.Done();
+            return t;
+        }
+    }
+
+    /// <summary>
+    /// How a hero falls into place (Heroes.checkFall and recallHero; RECONSTRUCTION 3.7 and 4.5), heroes.json "fall".
+    /// </summary>
+    public sealed class FallTuning
+    {
+        /// <summary>How far a hero below z 0 rises each tick (0.04).</summary>
+        public float Rise { get; internal set; }
+
+        /// <summary>The depth a recalled hero is placed at (-1): it falls in from there.</summary>
+        public float RecallZ { get; internal set; }
+
+        /// <summary>A recalled hero lands within +/- half this of its leader on each axis (0.1).</summary>
+        public float RecallSpread { get; internal set; }
+
+        internal static FallTuning Read(ContentReader r)
+        {
+            var t = new FallTuning
+            {
+                Rise = r.Positive("rise"),
+                RecallZ = r.Number("recallZ", float.MinValue, 0f),
+                RecallSpread = r.Number("recallSpread", 0f),
+            };
+            r.Check(t.RecallZ < 0f, "recallZ", "must be below 0, or a recalled hero would not fall");
             r.Done();
             return t;
         }

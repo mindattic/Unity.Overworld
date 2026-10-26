@@ -23,15 +23,53 @@ namespace MindAttic.Overworld.Core
         public bool IsVertical => X1 == X2;
     }
 
-    /// <summary>The six wall segments (RECONSTRUCTION 3.5).</summary>
+    /// <summary>
+    /// How the walls push heroes back (Heroes.checkWall, horizontalWall, angledWall, verticalWall; RECONSTRUCTION 3.5),
+    /// walls.json "collision".
+    /// </summary>
+    public sealed class WallCollisionTuning
+    {
+        /// <summary>The hero's test point, as fractions of heroSize from its position (1/2 across, 1/2 down).</summary>
+        public DataPoint Probe { get; internal set; }
+
+        /// <summary>Added to the test point's y after the probe (0.01).</summary>
+        public float ProbeLift { get; internal set; }
+
+        /// <summary>A wall is touched within this many times the hero's velocity on the axis it blocks (2).</summary>
+        public float Reach { get; internal set; }
+
+        /// <summary>The velocity a touched wall leaves on its axis, away from the wall (0.001).</summary>
+        public float Push { get; internal set; }
+
+        /// <summary>Within this of an angled wall's line the hero's x velocity is zeroed (0.03).</summary>
+        public float AngledStop { get; internal set; }
+
+        internal static WallCollisionTuning Read(ContentReader r)
+        {
+            var t = new WallCollisionTuning
+            {
+                Probe = r.Pair("probe", -1f, 1f),
+                ProbeLift = r.Number("probeLift"),
+                Reach = r.Positive("reach"),
+                Push = r.Positive("push"),
+                AngledStop = r.Number("angledStop", 0f),
+            };
+            r.Done();
+            return t;
+        }
+    }
+
+    /// <summary>The six wall segments and how they push heroes back (RECONSTRUCTION 3.5).</summary>
     public sealed class WallData
     {
-        internal WallData(List<WallDefinition> walls)
+        internal WallData(List<WallDefinition> walls, WallCollisionTuning collision)
         {
             Walls = walls;
+            Collision = collision;
         }
 
         public IReadOnlyList<WallDefinition> Walls { get; }
+        public WallCollisionTuning Collision { get; }
 
         internal static WallData Read(IContentSource source, string file, List<string> errors)
         {
@@ -60,8 +98,9 @@ namespace MindAttic.Overworld.Core
             }
 
             if (list.Count == 0) errors.Add(file + ".walls: there must be at least one wall");
+            var collision = WallCollisionTuning.Read(root.Section("collision"));
             root.Done();
-            return new WallData(list);
+            return new WallData(list, collision);
         }
     }
 

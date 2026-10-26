@@ -4,12 +4,13 @@ using System.Collections.Generic;
 namespace MindAttic.Overworld.Core
 {
     /// <summary>
-    /// The party in play and its locomotion (U.OVW-US-A5; RECONSTRUCTION 4.3, 4.4, 5.1, 5.4 and 5.6). Each tick it does
-    /// what the original's frame did: every player's held input is applied to the hero that player leads (getKeyboard's
-    /// arrows and run key, getMouse's move-to-cursor, then KeysUp), then every hero runs its AI state (aiStanding,
-    /// aiWalking, aiRunning: the velocity steps toward its speed and the walk or run cycle advances on the clock) and
-    /// moves by its velocity times the game speed. Installed on a <see cref="Game"/>, which then accepts
-    /// <see cref="SetMoveInput"/>; presentation reads <see cref="Heroes"/>.
+    /// The party in play and its locomotion (U.OVW-US-A5 and A7; RECONSTRUCTION 3.5, 3.7, 4.3, 4.4, 5.1, 5.4 and 5.6).
+    /// Each tick it does what the original's frame did: every player's held input is applied to the hero that player leads
+    /// (getKeyboard's arrows and run key, getMouse's move-to-cursor, then KeysUp), then every hero runs its AI state
+    /// (aiStanding, aiWalking, aiRunning: the velocity steps toward its speed and the walk or run cycle advances on the
+    /// clock), the walls push its velocity back (checkWall, <see cref="WallCollision"/>), a hero below the ground rises
+    /// into place (checkFall), and it moves by its velocity times the game speed. Installed on a <see cref="Game"/>, which
+    /// then accepts <see cref="SetMoveInput"/> and <see cref="RecallHero"/>; presentation reads <see cref="Heroes"/>.
     /// </summary>
     public sealed class Party : ITickSystem
     {
@@ -17,10 +18,18 @@ namespace MindAttic.Overworld.Core
         readonly Dictionary<PlayerId, MoveInput> inputs = new Dictionary<PlayerId, MoveInput>();
         readonly Dictionary<PlayerId, int> leaders = new Dictionary<PlayerId, int>();
 
-        public Party(HeroData data)
+        readonly Random random;
+
+        /// <param name="data">The heroes, their art and their movement.</param>
+        /// <param name="walls">The walls that stop them (null: none).</param>
+        /// <param name="random">Where a recalled hero lands within the spread (getRndPercent); null for an unseeded one.</param>
+        public Party(HeroData data, WallData walls = null, Random random = null)
         {
             Data = data ?? throw new ArgumentNullException(nameof(data));
-            if (data.Sprites == null || data.Locomotion == null) throw new ArgumentException("The hero data has no sprites or locomotion.", nameof(data));
+            if (data.Sprites == null || data.Locomotion == null || data.Fall == null)
+                throw new ArgumentException("The hero data has no sprites, locomotion or fall.", nameof(data));
+            Walls = walls;
+            this.random = random ?? new Random();
             for (var i = 0; i < data.Heroes.Count; i++)
             {
                 var hero = new Hero(i, data.Heroes[i]);
@@ -30,6 +39,9 @@ namespace MindAttic.Overworld.Core
         }
 
         public HeroData Data { get; }
+
+        /// <summary>The walls the heroes cannot walk through (null: none).</summary>
+        public WallData Walls { get; }
         public IReadOnlyList<Hero> Heroes => heroes;
         LocomotionTuning Tuning => Data.Locomotion;
         HeroSprites Sprites => Data.Sprites;
@@ -39,6 +51,7 @@ namespace MindAttic.Overworld.Core
         {
             if (game == null) throw new ArgumentNullException(nameof(game));
             game.Register<SetMoveInput>(HandleInput);
+            game.Register<RecallHero>(HandleRecall);
             game.AddSystem(this);
             return this;
         }
@@ -66,6 +79,30 @@ namespace MindAttic.Overworld.Core
             return CommandResult.Accept();
         }
 
+        CommandResult HandleRecall(Game game, RecallHero command)
+        {
+            if (command.Hero < 0 || command.Hero >= heroes.Count)
+                return CommandResult.Reject("There is no hero " + command.Hero + " in the party.");
+            var leader = LeaderOf(command.Player);
+            if (command.Hero == leader) return CommandResult.Reject(heroes[leader].Name + " leads; a leader is not recalled to itself.");
+            return CommandResult.Accept(Recall(heroes[command.Hero], heroes[leader], game.Tick));
+        }
+
+        /// <summary>
+        /// recallHero: places <paramref name="hero"/> at its leader's position less half the spread plus the spread times
+        /// a random fraction (x first, then y), at the recall depth, from where it falls into place. It is placed, not
+        /// moved, so it is drawn there at once rather than eased from where it was.
+        /// </summary>
+        internal HeroRecalled Recall(Hero hero, Hero leader, long tick)
+        {
+            var fall = Data.Fall;
+            var half = fall.RecallSpread / 2f;
+            hero.X = hero.PreviousX = leader.X - half + fall.RecallSpread * (float)random.NextDouble();
+            hero.Y = hero.PreviousY = leader.Y - half + fall.RecallSpread * (float)random.NextDouble();
+            hero.Z = hero.PreviousZ = fall.RecallZ;
+            return new HeroRecalled(tick, hero.Index, leader.Index, hero.X, hero.Y, hero.Z);
+        }
+
         public void Step(Game game, long tick, ICollection<IGameEvent> events)
         {
             var now = tick * Clock.TickSeconds;
@@ -75,6 +112,7 @@ namespace MindAttic.Overworld.Core
                 before[i] = (heroes[i].State, heroes[i].Facing);
                 heroes[i].PreviousX = heroes[i].X;
                 heroes[i].PreviousY = heroes[i].Y;
+                heroes[i].PreviousZ = heroes[i].Z;
             }
 
             // getInput: the input of every player, on the hero each leads.
@@ -110,6 +148,10 @@ namespace MindAttic.Overworld.Core
                         hero.DY = 0f;
                         break;
                 }
+
+                // checkfollow comes with the party's following (U.OVW-US-A8); then checkWall and checkFall.
+                if (Walls != null) WallCollision.Apply(hero, Walls, Data.HeroSize);
+                if (Fall(hero)) events.Add(new HeroLanded(tick, i));
 
                 hero.X += hero.DX * Tuning.GameSpeed;
                 hero.Y += hero.DY * Tuning.GameSpeed;
@@ -231,6 +273,23 @@ namespace MindAttic.Overworld.Core
 
             hero.DX = vx;
             hero.DY = vy;
+        }
+
+        /// <summary>
+        /// checkFall: a hero below the ground rises by the fall's rise and shows the halt_left picture; at or above it, it
+        /// is set on the ground. True on the tick its rise reaches the ground (the next tick sets it exactly to 0).
+        /// </summary>
+        bool Fall(Hero hero)
+        {
+            if (hero.Z < 0f)
+            {
+                hero.Z += Data.Fall.Rise;
+                hero.Sprite = Sprites.Halt(Facing.Left);
+                return hero.Z >= 0f;
+            }
+
+            hero.Z = 0f;
+            return false;
         }
 
         static float Clamp(float value, float limit) => value > limit ? limit : value < -limit ? -limit : value;

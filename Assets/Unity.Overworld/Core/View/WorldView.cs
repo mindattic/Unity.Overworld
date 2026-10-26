@@ -123,7 +123,8 @@ namespace MindAttic.Overworld.Core
                 var h = party.Heroes[i];
                 var x = h.PreviousX + (h.X - h.PreviousX) * alpha;
                 var y = h.PreviousY + (h.Y - h.PreviousY) * alpha;
-                poses[i] = new HeroPose(x, y, h.Z, h.Sprite, View.WeaponIdle);
+                var z = h.PreviousZ + (h.Z - h.PreviousZ) * alpha;
+                poses[i] = new HeroPose(x, y, z, h.Sprite, View.WeaponIdle);
             }
 
             return poses;

@@ -77,8 +77,9 @@ namespace MindAttic.Overworld.Tests
                 CollectionAssert.AreEqual(Enumerable.Range(1, 6).Select(n => "gfx/hero/Chrono/run/run_" + name + n + ".PNG"), s.Run(f));
             }
 
-            Assert.AreEqual(52, s.Files.Count);
-            Assert.AreEqual(52, s.Files.Distinct().Count());
+            // Two halt pictures (the falling pose, U.OVW-US-A7), then per facing a stand picture and six walk and six run frames.
+            Assert.AreEqual(54, s.Files.Count);
+            Assert.AreEqual(54, s.Files.Distinct().Count());
         }
 
         [Test]

@@ -14,6 +14,7 @@
   "sprites": {
     "_note": "Textures.loadTextures: the Chrono set every hero draws with (64 x 64, magenta keyed). stand is face_* (one frame); walk and run are walk_*1..6 and run_*1..6, in frame order. Paths are under the original's folder, exactly as on disk.",
     "stand": {"left": "gfx/hero/Chrono/stand/face_left.PNG", "right": "gfx/hero/Chrono/stand/face_right.PNG", "up": "gfx/hero/Chrono/stand/face_up.PNG", "down": "gfx/hero/Chrono/stand/face_down.PNG"},
+    "halt": {"left": "gfx/hero/Chrono/halt/halt_left.PNG", "right": "gfx/hero/Chrono/halt/halt_right.PNG"},
     "walk": {
       "left": ["gfx/hero/Chrono/walk/walk_left1.PNG", "gfx/hero/Chrono/walk/walk_left2.PNG", "gfx/hero/Chrono/walk/walk_left3.PNG", "gfx/hero/Chrono/walk/walk_left4.PNG", "gfx/hero/Chrono/walk/walk_left5.PNG", "gfx/hero/Chrono/walk/walk_left6.PNG"],
       "right": ["gfx/hero/Chrono/walk/walk_right1.PNG", "gfx/hero/Chrono/walk/walk_right2.PNG", "gfx/hero/Chrono/walk/walk_right3.PNG", "gfx/hero/Chrono/walk/walk_right4.PNG", "gfx/hero/Chrono/walk/walk_right5.PNG", "gfx/hero/Chrono/walk/walk_right6.PNG"],
@@ -39,6 +40,12 @@
     "arriveRange": 0.01,
     "cursorOffset": [0.03, 0.01],
     "heroPoint": [0.5, -0.33333333]
+  },
+  "fall": {
+    "_note": "Heroes.checkFall and recallHero, RECONSTRUCTION 3.7 and 4.5. A hero below z 0 rises by 'rise' each tick showing the halt_left picture, and is set to z 0 once it reaches it. A recalled hero is placed within +/- recallSpread / 2 of its leader on each axis (leader - spread/2 + spread x random) at z recallZ, so it falls into place.",
+    "rise": 0.04,
+    "recallZ": -1,
+    "recallSpread": 0.1
   },
   "heroes": [
     {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},

@@ -86,13 +86,14 @@ namespace MindAttic.Overworld.Core
     /// <summary>The three heroes (Chrono, Belmont, Flagg) as the original's Engine.initHero built them.</summary>
     public sealed class HeroData
     {
-        internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, HeroSprites sprites, LocomotionTuning locomotion, List<HeroDefinition> heroes)
+        internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, HeroSprites sprites, LocomotionTuning locomotion, FallTuning fall, List<HeroDefinition> heroes)
         {
             HeroSize = heroSize;
             SpriteSet = spriteSet;
             MoveDistancePerAgility = moveDistancePerAgility;
             Sprites = sprites;
             Locomotion = locomotion;
+            Fall = fall;
             Heroes = heroes;
         }
 
@@ -109,6 +110,9 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>How heroes walk, run and follow the cursor.</summary>
         public LocomotionTuning Locomotion { get; }
+
+        /// <summary>How a hero below the ground rises into place, and where a recalled hero lands.</summary>
+        public FallTuning Fall { get; }
 
         public IReadOnlyList<HeroDefinition> Heroes { get; }
 
@@ -134,6 +138,7 @@ namespace MindAttic.Overworld.Core
             commonReader.Done();
             var sprites = HeroSprites.Read(root.Section("sprites"), common.WalkFrames, common.RunFrames);
             var locomotion = LocomotionTuning.Read(root.Section("locomotion"));
+            var fall = FallTuning.Read(root.Section("fall"));
 
             // Each hero is the common block with its own keys laid over it (Belmont's walk rate and speeds).
             var list = new List<HeroDefinition>();
@@ -157,7 +162,7 @@ namespace MindAttic.Overworld.Core
             }
 
             root.Done();
-            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, list);
+            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, fall, list);
         }
 
         static HeroDefinition ReadCommon(ContentReader c, out float perAgility)

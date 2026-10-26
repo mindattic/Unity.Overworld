@@ -30,12 +30,18 @@ namespace MindAttic.Overworld.Core
         public float X { get; internal set; }
 
         public float Y { get; internal set; }
+
+        /// <summary>Depth: 0 on the ground; below 0 the hero is falling into place (it rises back to 0, checkFall).</summary>
         public float Z { get; internal set; }
+
+        /// <summary>The hero is falling into place (below the ground plane, rising to it).</summary>
+        public bool Falling => Z < 0f;
 
         /// <summary>Where the hero was at the start of the last tick, for presentation to interpolate.</summary>
         public float PreviousX { get; internal set; }
 
         public float PreviousY { get; internal set; }
+        public float PreviousZ { get; internal set; }
 
         /// <summary>Velocity, world units per tick.</summary>
         public float DX { get; internal set; }
@@ -143,5 +149,53 @@ namespace MindAttic.Overworld.Core
         public int Hero { get; }
         public HeroState State { get; }
         public Facing Facing { get; }
+    }
+
+    /// <summary>
+    /// Recalls a hero to the party (recallHero, RECONSTRUCTION 4.5): it is placed within the recall spread of the hero
+    /// <see cref="ICommand.Player"/> leads, at the recall depth, and falls into place. The party's follow rule recalls a
+    /// straggler on its own; this command is the same act, asked for.
+    /// </summary>
+    public sealed class RecallHero : ICommand
+    {
+        public RecallHero(PlayerId player, int hero) { Player = player; Hero = hero; }
+        public PlayerId Player { get; }
+
+        /// <summary>The hero's place in the party; not the player's own leader.</summary>
+        public int Hero { get; }
+    }
+
+    /// <summary>A hero was recalled beside its leader at (x, y), depth z, and is falling into place.</summary>
+    public sealed class HeroRecalled : IGameEvent
+    {
+        public HeroRecalled(long tick, int hero, int leader, float x, float y, float z)
+        {
+            Tick = tick;
+            Hero = hero;
+            Leader = leader;
+            X = x;
+            Y = y;
+            Z = z;
+        }
+
+        public long Tick { get; }
+        public int Hero { get; }
+        public int Leader { get; }
+        public float X { get; }
+        public float Y { get; }
+        public float Z { get; }
+    }
+
+    /// <summary>A falling hero reached the ground (its depth came back to 0).</summary>
+    public sealed class HeroLanded : IGameEvent
+    {
+        public HeroLanded(long tick, int hero)
+        {
+            Tick = tick;
+            Hero = hero;
+        }
+
+        public long Tick { get; }
+        public int Hero { get; }
     }
 }
