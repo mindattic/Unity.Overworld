@@ -105,6 +105,27 @@ namespace MindAttic.Overworld.Core
         }
 
         /// <summary>
+        /// Every hero of <paramref name="party"/> where it is and with the picture it shows, its weapon idle;
+        /// <paramref name="alpha"/> (0 to 1, how far through the next tick) places it between its last two ticks.
+        /// </summary>
+        public HeroPose[] Poses(Party party, float alpha = 1f)
+        {
+            if (party == null) throw new ArgumentNullException(nameof(party));
+            if (alpha < 0f) alpha = 0f;
+            if (alpha > 1f) alpha = 1f;
+            var poses = new HeroPose[party.Heroes.Count];
+            for (var i = 0; i < poses.Length; i++)
+            {
+                var h = party.Heroes[i];
+                var x = h.PreviousX + (h.X - h.PreviousX) * alpha;
+                var y = h.PreviousY + (h.Y - h.PreviousY) * alpha;
+                poses[i] = new HeroPose(x, y, h.Z, h.Sprite, View.WeaponIdle);
+            }
+
+            return poses;
+        }
+
+        /// <summary>
         /// checkDrawOrder's list, before sorting: every hero, every prop bottom, then every hero's weapon at its hero's
         /// position.
         /// </summary>

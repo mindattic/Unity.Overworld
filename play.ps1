@@ -42,7 +42,8 @@ if ($Build -or -not (Test-Path $exe)) {
 $arguments = @('-logFile', "`"$log`"")
 if (-not $Sound) { $arguments += '-muted' }
 if ($Capture) {
-    $arguments += @('-overworld-capture', "`"$([IO.Path]::GetFullPath((Join-Path (Get-Location) $Capture)))`"", '-screen-width', '640', '-screen-height', '480', '-screen-fullscreen', '0')
+    $captureFile = if ([IO.Path]::IsPathRooted($Capture)) { $Capture } else { Join-Path (Get-Location) $Capture }
+    $arguments += @('-overworld-capture', "`"$([IO.Path]::GetFullPath($captureFile))`"",'-screen-width', '640', '-screen-height', '480', '-screen-fullscreen', '0')
     $Wait = $true
 }
 if ($PlayerArgs) { $arguments += $PlayerArgs }

@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.mindattic.unity.shared": "file:../../Unity.Shared/unity/com.mindattic.unity.shared",
+    "com.unity.inputsystem": "1.20.1",
     "com.unity.multiplayer.center": "1.0.1",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",

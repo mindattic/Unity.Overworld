@@ -31,8 +31,21 @@ namespace MindAttic.Overworld.Runtime
         public Camera Camera { get; private set; }
         public MeshRenderer Backdrop { get; private set; }
 
-        /// <summary>Where each hero stands and what it shows; the start poses until locomotion moves them.</summary>
+        /// <summary>Where each hero stands and what it shows: the start poses, or the party's each frame once <see cref="Follow"/> is called.</summary>
         public HeroPose[] Poses { get; set; }
+
+        /// <summary>The party drawn, when following one (null draws <see cref="Poses"/> as set).</summary>
+        public Party Party { get; private set; }
+
+        Game game;
+
+        /// <summary>Draws <paramref name="party"/>'s heroes from now on, placed between their last two ticks of <paramref name="source"/>.</summary>
+        public void Follow(Party party, Game source)
+        {
+            Party = party;
+            game = source;
+            Refresh();
+        }
 
         /// <summary>The tiles' renderers, in the view's tile order.</summary>
         public IReadOnlyList<KeyValuePair<AreaTileDefinition, MeshRenderer>> Tiles => tiles;
@@ -102,6 +115,8 @@ namespace MindAttic.Overworld.Runtime
             Camera.transform.localRotation = Quaternion.identity;
 
             foreach (var t in tiles) t.Value.enabled = View.IsVisible(t.Key) && HasTexture(t.Value);
+
+            if (Party != null) Poses = View.Poses(Party, game != null ? game.Alpha : 1f);
 
             var order = View.BackToFront(Poses);
             for (var i = 0; i < order.Count; i++)

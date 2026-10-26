@@ -11,6 +11,35 @@
     "walkFrames": 5, "runFrames": 5, "drawFrames": 5, "battleFrames": 5, "faceFrames": 0, "haltFrames": 0, "kneelFrames": 0,
     "moveDistancePerAgility": 0.05
   },
+  "sprites": {
+    "_note": "Textures.loadTextures: the Chrono set every hero draws with (64 x 64, magenta keyed). stand is face_* (one frame); walk and run are walk_*1..6 and run_*1..6, in frame order. Paths are under the original's folder, exactly as on disk.",
+    "stand": {"left": "gfx/hero/Chrono/stand/face_left.PNG", "right": "gfx/hero/Chrono/stand/face_right.PNG", "up": "gfx/hero/Chrono/stand/face_up.PNG", "down": "gfx/hero/Chrono/stand/face_down.PNG"},
+    "walk": {
+      "left": ["gfx/hero/Chrono/walk/walk_left1.PNG", "gfx/hero/Chrono/walk/walk_left2.PNG", "gfx/hero/Chrono/walk/walk_left3.PNG", "gfx/hero/Chrono/walk/walk_left4.PNG", "gfx/hero/Chrono/walk/walk_left5.PNG", "gfx/hero/Chrono/walk/walk_left6.PNG"],
+      "right": ["gfx/hero/Chrono/walk/walk_right1.PNG", "gfx/hero/Chrono/walk/walk_right2.PNG", "gfx/hero/Chrono/walk/walk_right3.PNG", "gfx/hero/Chrono/walk/walk_right4.PNG", "gfx/hero/Chrono/walk/walk_right5.PNG", "gfx/hero/Chrono/walk/walk_right6.PNG"],
+      "up": ["gfx/hero/Chrono/walk/walk_up1.PNG", "gfx/hero/Chrono/walk/walk_up2.PNG", "gfx/hero/Chrono/walk/walk_up3.PNG", "gfx/hero/Chrono/walk/walk_up4.PNG", "gfx/hero/Chrono/walk/walk_up5.PNG", "gfx/hero/Chrono/walk/walk_up6.PNG"],
+      "down": ["gfx/hero/Chrono/walk/walk_down1.PNG", "gfx/hero/Chrono/walk/walk_down2.PNG", "gfx/hero/Chrono/walk/walk_down3.PNG", "gfx/hero/Chrono/walk/walk_down4.PNG", "gfx/hero/Chrono/walk/walk_down5.PNG", "gfx/hero/Chrono/walk/walk_down6.PNG"]
+    },
+    "run": {
+      "left": ["gfx/hero/Chrono/run/run_left1.PNG", "gfx/hero/Chrono/run/run_left2.PNG", "gfx/hero/Chrono/run/run_left3.PNG", "gfx/hero/Chrono/run/run_left4.PNG", "gfx/hero/Chrono/run/run_left5.PNG", "gfx/hero/Chrono/run/run_left6.PNG"],
+      "right": ["gfx/hero/Chrono/run/run_right1.PNG", "gfx/hero/Chrono/run/run_right2.PNG", "gfx/hero/Chrono/run/run_right3.PNG", "gfx/hero/Chrono/run/run_right4.PNG", "gfx/hero/Chrono/run/run_right5.PNG", "gfx/hero/Chrono/run/run_right6.PNG"],
+      "up": ["gfx/hero/Chrono/run/run_up1.PNG", "gfx/hero/Chrono/run/run_up2.PNG", "gfx/hero/Chrono/run/run_up3.PNG", "gfx/hero/Chrono/run/run_up4.PNG", "gfx/hero/Chrono/run/run_up5.PNG", "gfx/hero/Chrono/run/run_up6.PNG"],
+      "down": ["gfx/hero/Chrono/run/run_down1.PNG", "gfx/hero/Chrono/run/run_down2.PNG", "gfx/hero/Chrono/run/run_down3.PNG", "gfx/hero/Chrono/run/run_down4.PNG", "gfx/hero/Chrono/run/run_down5.PNG", "gfx/hero/Chrono/run/run_down6.PNG"]
+    }
+  },
+  "locomotion": {
+    "_note": "Heroes.aiWalking / aiRunning and Input.actionMove, RECONSTRUCTION 4.4 and 5.4. Per-frame figures are per 60 Hz tick (BIBLE). Held arrows move the velocity toward +/-walkSpeed or runSpeed by 'acceleration' each tick. The right button aims from the hero's point (heroSize x the fractions) to the cursor plus cursorOffset, each axis clamped to maxReach; at or beyond runReach on either axis (or with the run key) the hero runs while it has stamina, else walks with each axis clamped to runReach; velocity is the reach x followSpeed, x nearBoost within nearRange of the cursor on both axes, and the hero stops within arriveRange.",
+    "acceleration": 0.001,
+    "gameSpeed": 1,
+    "followSpeed": 0.02,
+    "maxReach": 0.6,
+    "runReach": 0.2,
+    "nearRange": 0.1,
+    "nearBoost": 1.5,
+    "arriveRange": 0.01,
+    "cursorOffset": [0.03, 0.01],
+    "heroPoint": [0.5, -0.33333333]
+  },
   "heroes": [
     {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},
     {"id": 1, "name": "Belmont", "start": [0.3, -0.05], "weapon": "Steel Sword", "state": "Standing", "walkRate": 0.1, "walkSpeed": 0.005, "runSpeed": 0.01},

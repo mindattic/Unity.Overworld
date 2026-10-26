@@ -18,7 +18,7 @@ namespace MindAttic.Overworld.Core
         Battle,
     }
 
-    /// <summary>A hero's starting AI state (the original's heroAiState).</summary>
+    /// <summary>A hero's AI state (the original's heroAiState).</summary>
     public enum HeroState
     {
         Standing,
@@ -86,11 +86,13 @@ namespace MindAttic.Overworld.Core
     /// <summary>The three heroes (Chrono, Belmont, Flagg) as the original's Engine.initHero built them.</summary>
     public sealed class HeroData
     {
-        internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, List<HeroDefinition> heroes)
+        internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, HeroSprites sprites, LocomotionTuning locomotion, List<HeroDefinition> heroes)
         {
             HeroSize = heroSize;
             SpriteSet = spriteSet;
             MoveDistancePerAgility = moveDistancePerAgility;
+            Sprites = sprites;
+            Locomotion = locomotion;
             Heroes = heroes;
         }
 
@@ -101,6 +103,12 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>moveDistanceMax = Agility * this (0.25 for Agility 5).</summary>
         public float MoveDistancePerAgility { get; }
+
+        /// <summary>The pictures of the art set: standing, walking and running in each facing.</summary>
+        public HeroSprites Sprites { get; }
+
+        /// <summary>How heroes walk, run and follow the cursor.</summary>
+        public LocomotionTuning Locomotion { get; }
 
         public IReadOnlyList<HeroDefinition> Heroes { get; }
 
@@ -124,6 +132,8 @@ namespace MindAttic.Overworld.Core
             var commonReader = root.Section("common");
             var common = ReadCommon(commonReader, out var perAgility);
             commonReader.Done();
+            var sprites = HeroSprites.Read(root.Section("sprites"), common.WalkFrames, common.RunFrames);
+            var locomotion = LocomotionTuning.Read(root.Section("locomotion"));
 
             // Each hero is the common block with its own keys laid over it (Belmont's walk rate and speeds).
             var list = new List<HeroDefinition>();
@@ -147,7 +157,7 @@ namespace MindAttic.Overworld.Core
             }
 
             root.Done();
-            return new HeroData(heroSize, spriteSet, perAgility, list);
+            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, list);
         }
 
         static HeroDefinition ReadCommon(ContentReader c, out float perAgility)

@@ -7,9 +7,12 @@ and a stamina-gauge battle mode run from a ring menu around the active hero.
 [![Unity](https://img.shields.io/badge/Unity-6000.4.3f1-black)](ProjectSettings/ProjectVersion.txt) [![Status](https://img.shields.io/badge/status-reconstruction-orange)](docs/BIBLE.md)
 
 The rebuild is in progress: the world draws as the original drew it (the 11 x 11 grid of area tiles under the 45-degree camera,
-the backdrop box, and the heroes and props back to front), and the stories that make it play follow in build order.
+the backdrop box, and the heroes and props back to front), and Chrono moves as the original moved him: hold the right mouse
+button to head for the cursor (walking near it, running when it is far or the run key, Right Ctrl or Space, is held), or use the
+arrow keys. The stories that make the rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
-`-Capture <file.png>` saves a screenshot and quits.
+`-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
+hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point).
 
 ## Why
 

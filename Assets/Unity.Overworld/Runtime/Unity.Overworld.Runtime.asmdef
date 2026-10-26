@@ -3,6 +3,7 @@
     "rootNamespace": "MindAttic.Overworld.Runtime",
     "references": [
         "Unity.Overworld.Core",
+        "Unity.InputSystem",
         "Unity.Shared.Core"
     ],
     "includePlatforms": [],
