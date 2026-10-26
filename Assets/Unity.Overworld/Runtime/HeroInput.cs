@@ -16,7 +16,8 @@ namespace MindAttic.Overworld.Runtime
     /// Enter or the left button (off the team button) held is the pick-up button, and , and . choose the previous and
     /// next item in reach (the wheel does too, through Core, when any is in reach). The inventory controls (RECONSTRUCTION
     /// 8.3, 8.5): Delete or a click on the inventory button opens and closes the pack, Backspace drops, Q shows the quick
-    /// bar and 1 to 0 use its slots (the arrows, run key, Enter and right button act on the open pack in Core). Page Down opens and shuts the quest screen (RECONSTRUCTION 10; the arrows work it in Core). The script
+    /// bar and 1 to 0 use its slots (the arrows, run key, Enter and right button act on the open pack in Core). Page Down opens and shuts the quest screen (RECONSTRUCTION 10; the arrows work it in Core). B shows and
+    /// hides the book and N loads the next book (RECONSTRUCTION 11; the arrows and the wheel turn its pages in Core). The script
     /// console (RECONSTRUCTION 9.3): ~ opens it and Insert opens it with the last script; while it is open every key goes to
     /// it (<see cref="PressConsoleKey"/>, by the WinForms name the original tested), and while it is open or a script runs
     /// nothing else is read. Every frame, before the game advances, it sends what the
@@ -29,7 +30,7 @@ namespace MindAttic.Overworld.Runtime
         InputAction left, right, up, down, run, move, point;
         InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
         InputAction previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem;
-        InputAction inventory, drop, quickBar, questScreen;
+        InputAction inventory, drop, quickBar, questScreen, book, nextBook;
         readonly InputAction[] quickKeys = new InputAction[10];
         Vector2? scriptedMouse;
         int scriptedWheelSent;
@@ -119,6 +120,8 @@ namespace MindAttic.Overworld.Runtime
             drop = Button("Drop", "<Keyboard>/backspace");
             quickBar = Button("QuickBar", "<Keyboard>/q");
             questScreen = Button("QuestScreen", "<Keyboard>/pageDown");
+            book = Button("Book", "<Keyboard>/b");
+            nextBook = Button("NextBook", "<Keyboard>/n");
             // 1 to 9 then 0: quick slots 0 to 9.
             for (var i = 0; i < quickKeys.Length; i++) quickKeys[i] = Button("Quick" + (i + 1) % 10, "<Keyboard>/digit" + (i + 1) % 10);
         }
@@ -150,7 +153,7 @@ namespace MindAttic.Overworld.Runtime
         {
             left, right, up, down, run, move, point,
             motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown,
-            previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem, inventory, drop, quickBar, questScreen,
+            previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem, inventory, drop, quickBar, questScreen, book, nextBook,
             quickKeys[0], quickKeys[1], quickKeys[2], quickKeys[3], quickKeys[4], quickKeys[5], quickKeys[6], quickKeys[7], quickKeys[8], quickKeys[9],
         };
 
@@ -203,6 +206,8 @@ namespace MindAttic.Overworld.Runtime
             if (drop.WasPressedThisFrame()) Game.Submit(new DropItem(Player));
             if (quickBar.WasPressedThisFrame()) Game.Submit(new ToggleQuickBar(Player));
             if (questScreen.WasPressedThisFrame()) Game.Submit(new ToggleQuestScreen(Player));
+            if (book.WasPressedThisFrame()) Game.Submit(new ToggleBook(Player));
+            if (nextBook.WasPressedThisFrame()) Game.Submit(new NextBook(Player));
             for (var i = 0; i < quickKeys.Length; i++)
                 if (quickKeys[i].WasPressedThisFrame()) Game.Submit(new QuickUse(Player, i));
             if (swallowConfirm) return;

@@ -29,6 +29,10 @@ namespace MindAttic.Overworld.Runtime
         VisualElement statusLayer;
         TextureLibrary textures;
         readonly Dictionary<HudFont, Font> fonts = new Dictionary<HudFont, Font>();
+        readonly HashSet<HudFont> slanted = new HashSet<HudFont>();
+        readonly Dictionary<HudFont, FontDefinition> definitions = new Dictionary<HudFont, FontDefinition>();
+        readonly Dictionary<HudFont, string> faceNames = new Dictionary<HudFont, string>();
+        readonly List<UnityEngine.TextCore.Text.FontAsset> assets = new List<UnityEngine.TextCore.Text.FontAsset>();
         PanelSettings settings;
         VisualElement messageLayer;
 
@@ -76,13 +80,13 @@ namespace MindAttic.Overworld.Runtime
             Party = party;
             Player = player;
             textures = library ?? textures ?? new TextureLibrary();
-            if (bars.Count == 0 && Hud.Bars != null && statusLayer != null)
+            if (bars.Count == 0 && Hud.Bars != null && barLayer != null)
             {
                 // Health, mana, then stamina, each fill drawn first and its bar over it (renderHealthBar, rendermanaBar, renderStaminaBar).
                 foreach (var bar in new[] { Hud.Bars.Health, Hud.Bars.Mana, Hud.Bars.Stamina })
                 {
-                    var fill = NewPicture(statusLayer, "fill " + bar.Fill, bar.Fill);
-                    var frame = NewPicture(statusLayer, "bar " + bar.Frame, bar.Frame);
+                    var fill = NewPicture(barLayer, "fill " + bar.Fill, bar.Fill);
+                    var frame = NewPicture(barLayer, "bar " + bar.Frame, bar.Frame);
                     bars[bar] = (fill, frame);
                 }
             }
@@ -164,12 +168,17 @@ namespace MindAttic.Overworld.Runtime
             messageLayer.style.top = 0;
             root.Add(messageLayer);
             examineLayer = NewLayer(root, "examine");
-            // renderQuestScreen came after the examine box and before renderMessages.
+            // renderBook came after renderExamine and before the bars (renderHealthBar ...), so the bars draw over the book.
+            bookLayer = NewLayer(root, "book");
+            barLayer = NewLayer(root, "bars");
+            // renderQuestScreen came after the bars and before renderMessages.
             questLayer = NewLayer(root, "quest screen");
             messageLayer.BringToFront();
             questLabels.Clear();
             markerLabels.Clear();
             QuestPicture = null;
+            BookPicture = null;
+            bookLabels.Clear();
             messageLabels.Clear();
             statusLabels.Clear();
             bars.Clear();
@@ -259,8 +268,7 @@ namespace MindAttic.Overworld.Runtime
             var label = NewLabel(labelLayer, name, null);
             label.style.unityTextAlign = TextAnchor.MiddleCenter;
             label.style.translate = new Translate(Length.Percent(-50), Length.Percent(-50));
-            var face = FontFor(Pickups.Data.Label.Font);
-            if (face != null) label.style.unityFontDefinition = FontDefinition.FromFont(face);
+            label.style.unityFontDefinition = DefinitionFor(Pickups.Data.Label.Font);
             label.style.display = DisplayStyle.None;
             return label;
         }
@@ -794,6 +802,86 @@ namespace MindAttic.Overworld.Runtime
             for (var i = markers.Count; i < markerLabels.Count; i++) markerLabels[i].style.display = DisplayStyle.None;
         }
 
+        // ---- the books (U.OVW-US-A16): renderBook's cover, two pages and page numbers ---------------------------------
+
+        VisualElement bookLayer;
+        VisualElement barLayer;
+        readonly List<Label> bookLabels = new List<Label>();
+        PlayerId bookPlayer;
+        string bookPictureFile;
+
+        /// <summary>The books shown (null until <see cref="ShowBook"/>).</summary>
+        public BookReader Books { get; private set; }
+
+        /// <summary>The book's cover picture, shown while the book is.</summary>
+        public VisualElement BookPicture { get; private set; }
+
+        /// <summary>The cover picture the book shows now.</summary>
+        public string BookPictureFile => bookPictureFile;
+
+        /// <summary>The left page, the right page, the left number and the right number, in draw order.</summary>
+        public IReadOnlyList<Label> BookLabels => bookLabels;
+
+        /// <summary>
+        /// Shows <paramref name="player"/>'s book from now on, while it is shown (renderBook): its cover over the book's
+        /// place, the two pages in its lettering and their numbers, in black, over the examine box and under the bars.
+        /// </summary>
+        public void ShowBook(BookReader books, PlayerId player, TextureLibrary library = null)
+        {
+            Books = books ?? throw new ArgumentNullException(nameof(books));
+            bookPlayer = player;
+            textures = library ?? textures ?? new TextureLibrary();
+            if (BookPicture == null && bookLayer != null)
+            {
+                bookPictureFile = books.Screen.Picture;
+                BookPicture = NewPicture(bookLayer, "book", bookPictureFile);
+                for (var i = 0; i < 4; i++)
+                {
+                    var label = NewLabel(bookLayer, i < 2 ? "page " + i : "page number " + (i - 2), null);
+                    // The page files are hand-wrapped, with their own spaces: written as they are.
+                    label.style.whiteSpace = WhiteSpace.Pre;
+                    bookLabels.Add(label);
+                }
+
+                bookLayer.style.display = DisplayStyle.None;
+            }
+
+            Refresh();
+        }
+
+        void RefreshBook()
+        {
+            if (Books == null || BookPicture == null) return;
+            var v = Books.For(bookPlayer);
+            if (!v.Shown)
+            {
+                bookLayer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var def = Books.Screen;
+            bookLayer.style.display = DisplayStyle.Flex;
+            var file = def.CoverPicture(v.Cover) ?? def.Picture;
+            if (file != bookPictureFile)
+            {
+                bookPictureFile = file;
+                SetPicture(BookPicture, file);
+            }
+
+            PlaceBox(BookPicture, def.X, def.Y, def.Width, def.Height);
+            var lines = def.Lines(Books.Current(bookPlayer), v);
+            for (var i = 0; i < bookLabels.Count && i < lines.Count; i++)
+            {
+                var (text, at, font) = lines[i];
+                var label = bookLabels[i];
+                label.text = text.Replace("\r\n", "\n").Replace('\r', '\n');
+                Place(label, at.X, at.Y);
+                Style(label, font);
+                label.style.color = (Color)new Color32(def.Colour.R, def.Colour.G, def.Colour.B, def.Colour.A);
+                label.style.display = DisplayStyle.Flex;
+            }
+        }
+
         void LateUpdate() => Refresh();
 
         static VisualElement NewLayer(VisualElement root, string name)
@@ -835,6 +923,7 @@ namespace MindAttic.Overworld.Runtime
             RefreshRest();
             RefreshPickups();
             RefreshInventory();
+            RefreshBook();
             RefreshQuests();
             RefreshConsole();
 
@@ -983,30 +1072,69 @@ namespace MindAttic.Overworld.Runtime
             if (font == null) return;
             // A GDI point is 96 / 72 pixels; the panel is 480 units tall, as the original's screen was pixels.
             label.style.fontSize = font.Points * 96f / 72f;
-            label.style.unityFontStyleAndWeight = font.Bold ? FontStyle.Bold : FontStyle.Normal;
-            var face = FontFor(font);
-            if (face != null) label.style.unityFontDefinition = FontDefinition.FromFont(face);
+            var definition = DefinitionFor(font);
+            var italic = font.Italic && !slanted.Contains(font);
+            label.style.unityFontStyleAndWeight = font.Bold ? (italic ? FontStyle.BoldAndItalic : FontStyle.Bold) : italic ? FontStyle.Italic : FontStyle.Normal;
+            label.style.unityFontDefinition = definition;
         }
 
-        /// <summary>The first of the font's faces installed on this machine, or Unity's built-in face when none is.</summary>
+        /// <summary>The first of the font's faces installed on this machine, or Unity's built-in face when none is (the 3D text's).</summary>
         Font FontFor(HudFont font)
         {
-            if (fonts.TryGetValue(font, out var face)) return face;
+            DefinitionFor(font);
+            return fonts.TryGetValue(font, out var face) ? face : null;
+        }
+
+        /// <summary>
+        /// What a label in <paramref name="font"/> is drawn with: the first of its faces installed on this machine, or
+        /// Unity's built-in face when none is. A family Windows lists only under its style's name (Monotype Corsiva has one
+        /// face, an italic, listed as "Monotype Corsiva Italic") does not load as a dynamic font by that name, so it is
+        /// loaded as a font asset by its family and style; such a face is already slanted and is not slanted again (GDI
+        /// used it as it is).
+        /// </summary>
+        FontDefinition DefinitionFor(HudFont font)
+        {
+            if (definitions.TryGetValue(font, out var definition)) return definition;
             var installed = new HashSet<string>(Font.GetOSInstalledFontNames(), StringComparer.OrdinalIgnoreCase);
+            Font face = null;
             foreach (var family in font.Families)
             {
-                if (!installed.Contains(family)) continue;
-                face = Font.CreateDynamicFontFromOSFont(family, Mathf.Max(1, Mathf.RoundToInt(font.Points * 96f / 72f)));
-                if (face != null) break;
+                if (installed.Contains(family))
+                {
+                    face = Font.CreateDynamicFontFromOSFont(family, Mathf.Max(1, Mathf.RoundToInt(font.Points * 96f / 72f)));
+                    if (face != null) break;
+                    continue;
+                }
+
+                if (!font.Italic || !installed.Contains(family + " Italic")) continue;
+                var asset = UnityEngine.TextCore.Text.FontAsset.CreateFontAsset(family, "Regular") ?? UnityEngine.TextCore.Text.FontAsset.CreateFontAsset(family, "Italic");
+                if (asset == null) continue;
+                assets.Add(asset);
+                slanted.Add(font);
+                faceNames[font] = family;
+                definition = FontDefinition.FromSDFFont(asset);
+                definitions[font] = definition;
+                return definition;
             }
 
             if (face == null) face = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             fonts[font] = face;
-            return face;
+            faceNames[font] = face.name;
+            definition = FontDefinition.FromFont(face);
+            definitions[font] = definition;
+            return definition;
         }
 
-        /// <summary>The face a label is drawn in (for checks).</summary>
+        /// <summary>The dynamic face a label is drawn in, or null when it is drawn with a font asset (for checks).</summary>
         public Font FaceOf(HudFont font) => font == null ? null : FontFor(font);
+
+        /// <summary>The name of the face a label in <paramref name="font"/> is drawn in (for checks and the capture log).</summary>
+        public string FaceNameOf(HudFont font)
+        {
+            if (font == null) return null;
+            DefinitionFor(font);
+            return faceNames.TryGetValue(font, out var name) ? name : null;
+        }
 
         void OnDestroy()
         {
@@ -1018,6 +1146,7 @@ namespace MindAttic.Overworld.Runtime
 
             foreach (var f in fonts.Values)
                 if (f != null && f.name != "LegacyRuntime") Release(f);
+            foreach (var a in assets) Release(a);
         }
 
         static void Release(UnityEngine.Object o)

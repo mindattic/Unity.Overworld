@@ -43,7 +43,8 @@ namespace MindAttic.Overworld.Runtime
     /// <c>-overworld-drop</c>, <c>-overworld-use</c>, <c>-overworld-quick</c> and <c>-overworld-pickup-drop</c> (see
     /// <see cref="ApplyScriptedInventory"/>); the console's <c>-overworld-script</c>, <c>-overworld-console</c> and
     /// <c>-overworld-script-after</c> (see <see cref="ApplyScriptedConsole"/>); the quests' <c>-overworld-objective</c> and
-    /// <c>-overworld-quest-screen</c> (see <see cref="ApplyScriptedQuests"/>);
+    /// <c>-overworld-quest-screen</c> (see <see cref="ApplyScriptedQuests"/>); the books' <c>-overworld-book</c> (see
+    /// <see cref="ApplyScriptedBook"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -88,6 +89,9 @@ namespace MindAttic.Overworld.Runtime
         public InventoryControl Inventory { get; private set; }
         public ScriptInterpreter Scripts { get; private set; }
         public QuestLog Quests { get; private set; }
+        public BookReader Books { get; private set; }
+
+        public const string BookArgument = "-overworld-book";
 
         public const string QuestScreenArgument = "-overworld-quest-screen";
         public const string ObjectiveArgument = "-overworld-objective";
@@ -129,13 +133,18 @@ namespace MindAttic.Overworld.Runtime
             Scripts = new ScriptInterpreter(Content.Scripts, Party, Pickups.Inventory) { Pack = Inventory, View = Control }.Install(game);
             Pickups.Scripts = Scripts;
             Inventory.Scripts = Scripts;
+            // The books: B, N, the arrows' and wheel's page turns and CHANGE BOOK. After the pack (a drop with the book
+            // shown hides it instead) and before the party (left and right only mark their direction while it is shown).
+            Books = new BookReader(Content.Books, Content.Hud.Book, Party).Install(game);
+            Scripts.Books = Books;
+            Inventory.Books = Books;
             // checkQuests and checkSubquests ran after getInput and before updateHero: the quests step before the party,
             // their scripts (HERO the item target, selectedHero) through the interpreter.
             Quests = new QuestLog(Content.Quests, Party) { Scripts = Scripts, ScriptHero = Scripts.TargetOf }.Install(game);
             Party.Install(game);
             Control.Install(game);
-            // getMouse's wheel: the open pack or the target being chosen, then the items in reach, then the zoom.
-            Control.WheelFirst = (player, steps) => Inventory.UseWheel(player, steps) || Pickups.UseWheel(player, steps);
+            // getMouse's wheel: the book, the open pack or the target being chosen, then the items in reach, then the zoom.
+            Control.WheelFirst = (player, steps) => Books.UseWheel(player, steps) || Inventory.UseWheel(player, steps) || Pickups.UseWheel(player, steps);
             // renderTime ran before renderMessages, so the clock steps before the board: an announcement shows on its minute.
             Messages = new MessageBoard(Content.Hud);
             Clock = new WorldClock(Content.Time, Content.Heroes.Locomotion.GameSpeed, Messages);
@@ -165,6 +174,7 @@ namespace MindAttic.Overworld.Runtime
             Hud.ShowPickups(Pickups, Viewpoint, World, PlayerId.One);
             Hud.ShowInventory(Inventory, PlayerId.One);
             Hud.ShowQuests(Quests, PlayerId.One);
+            Hud.ShowBook(Books, PlayerId.One);
             Hud.ShowConsole(Scripts, PlayerId.One);
             World.ShowTarget(Inventory, PlayerId.One, Content.Hud.Target);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
@@ -192,7 +202,8 @@ namespace MindAttic.Overworld.Runtime
             var packed = ApplyScriptedInventory(args, game);
             var typed = ApplyScriptedConsole(args, game);
             var quested = ApplyScriptedQuests(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || seeded || capture != null) Input.UseDevices = false;
+            var read = ApplyScriptedBook(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -986,12 +997,68 @@ namespace MindAttic.Overworld.Runtime
                    string.Join(", ", Quests.Subquests) + "], screen " + (v.Open ? "open on " + v.Page + (v.Subquest >= 0 ? " subquest " + v.Subquest : "") : "shut");
         }
 
+        string DescribeBook()
+        {
+            var v = Books.For(PlayerId.One);
+            return "'" + Books.Current(PlayerId.One).Title + "' pages " + (v.Page + 1) + " and " + (v.Page + 2) + (v.Shown ? " shown" : " hidden") +
+                   ", " + v.Numbering + ", cover " + (v.Cover ?? "plain") + ", lettering " + v.Lettering;
+        }
+
+        /// <summary>
+        /// <c>-overworld-book &lt;title|number[,page[,seconds]]&gt;</c>: the book shown at the spread holding that page (1
+        /// first), at once or after that many seconds, styled as it opens in play: a book with a pickup as that item's
+        /// script opens it (its cover, lettering and numbering), the Colesium (no pickup) as N loads it.
+        /// </summary>
+        bool ApplyScriptedBook(string[] args, Game game)
+        {
+            var text = ArgumentAfter(args, BookArgument);
+            if (text == null) return false;
+            if (TryBook(text, Books, out var book, out var page, out var seconds)) StartCoroutine(BookAfter(game, book, page, seconds));
+            else Debug.LogError("Unity.Overworld: " + BookArgument + " wants a book's title or number (0 to " + (Books.Library.Books.Count - 1) +
+                                "), optionally its page (1 first) and the seconds to wait, not '" + text + "'.");
+            return true;
+        }
+
+        /// <summary>Reads <c>title|number[,page[,seconds]]</c>: the book's index, the page (0 first) and the seconds.</summary>
+        public static bool TryBook(string text, BookReader books, out int book, out int page, out float seconds)
+        {
+            book = -1;
+            page = 0;
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 3) return false;
+            var what = parts[0].Trim();
+            book = int.TryParse(what, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : books.IndexOf(what);
+            if (book < 0 || book >= books.Library.Books.Count) return false;
+            if (parts.Length > 1)
+            {
+                if (!int.TryParse(parts[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var p) || p < 1 || p > books.Library.Books[book].Pages.Count) return false;
+                page = p - 1;
+            }
+
+            return parts.Length < 3 || (float.TryParse(parts[2].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f);
+        }
+
+        IEnumerator BookAfter(Game game, int book, int page, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var title = Books.Library.Books[book].Title;
+            var item = Content.Pickups.Pickups.FirstOrDefault(p => p.Name == title && p.Script.Contains("CHANGE BOOK"));
+            // The item's script but its TO ITEM (which names the pack's selected stack), or N's lettering.
+            var style = item != null
+                ? string.Join(" | ", item.Script.Split(new[] { " | " }, StringSplitOptions.None).Where(c => !c.Trim().StartsWith("CHANGE BOOK TO", StringComparison.OrdinalIgnoreCase)))
+                : "CHANGE BOOK FONT " + Books.Screen.NextLettering;
+            game.Submit(new RunScript(PlayerId.One, style));
+            var r = game.Submit(new OpenBook(PlayerId.One, book, page));
+            if (!r.Accepted) Debug.LogError("Unity.Overworld: " + BookArgument + " was refused: " + r.Reason);
+            Debug.Log("Unity.Overworld: scripted book " + DescribeBook());
+        }
+
         string DescribeScripts()
         {
             var s = Scripts.For(PlayerId.One);
             return "console " + (s.ConsoleOpen ? "open '" + s.Line + "'" : "shut") + ", last '" + s.Last + "'" + (s.Running ? ", script running" : "") +
                    ", colour " + s.Colour + (s.OptionsOpen ? ", options open" : "") +
-                   (s.Book.Show || s.Book.Title != null || s.Book.Number.HasValue ? ", book " + (s.Book.Title ?? "#" + s.Book.Number) + (s.Book.Show ? " shown" : "") : "") +
                    (Viewpoint != null ? ", camera (" + Viewpoint.Camera.X.ToString(CultureInfo.InvariantCulture) + ", " + Viewpoint.Camera.Y.ToString(CultureInfo.InvariantCulture) + ", " +
                                         Viewpoint.Camera.Z.ToString(CultureInfo.InvariantCulture) + ")" : "") +
                    (Sleep != null ? ", ambient " + Sleep.Ambient : "") + (Clock != null ? ", clock " + Clock.TimeText + " light " + Clock.Light : "");
@@ -1124,6 +1191,12 @@ namespace MindAttic.Overworld.Runtime
                     Debug.Log("Unity.Overworld: scripts " + DescribeScripts() +
                               (Hud != null && Hud.ConsoleLabel != null && Hud.ConsoleLabel.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex
                                   ? ", prompt '" + Hud.ConsoleLabel.text + "'" : ""));
+
+                if (Books != null)
+                    Debug.Log("Unity.Overworld: book " + DescribeBook() +
+                              (Hud != null && Books.For(PlayerId.One).Shown
+                                  ? "; face " + Hud.FaceNameOf(Books.Screen.Lettering(Books.For(PlayerId.One).Lettering)) + "; cover " + Hud.BookPictureFile + " [" + string.Join(" | ", Hud.BookLabels.Select(l => l.text.Length > 40 ? l.text.Substring(0, 40).Replace("\n", "/") + "..." : l.text.Replace("\n", "/"))) + "]"
+                                  : ""));
 
                 if (Quests != null)
                     Debug.Log("Unity.Overworld: quests " + DescribeQuests() +
