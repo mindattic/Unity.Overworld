@@ -11,8 +11,10 @@ namespace MindAttic.Overworld.Core
     /// velocity steps toward its speed and the walk or run cycle advances on the clock), a follower is steered after the
     /// leader or recalled beside it, or kneels when the team is off (checkfollow), the walls push its velocity back
     /// (checkWall, <see cref="WallCollision"/>), a hero below the ground rises into place (checkFall), and it moves by its
-    /// velocity times the game speed. Installed on a <see cref="Game"/>, which then accepts <see cref="SetMoveInput"/>,
-    /// <see cref="RecallHero"/>, <see cref="ToggleTeam"/>, <see cref="SelectHero"/> and <see cref="CycleLeader"/>;
+    /// velocity times the game speed. Before its AI each hero's status is checked and it regenerates (checkStatus,
+    /// checkRegen; U.OVW-US-A10, RECONSTRUCTION 7), and after its move its status animation steps (renderIcon).
+    /// Installed on a <see cref="Game"/>, which then accepts <see cref="SetMoveInput"/>, <see cref="RecallHero"/>,
+    /// <see cref="ToggleTeam"/>, <see cref="SelectHero"/>, <see cref="CycleLeader"/> and <see cref="SetHeroVitals"/>;
     /// presentation reads <see cref="Heroes"/> and <see cref="Team"/>.
     /// </summary>
     /// <remarks>
@@ -33,8 +35,9 @@ namespace MindAttic.Overworld.Core
         public Party(HeroData data, WallData walls = null, Random random = null)
         {
             Data = data ?? throw new ArgumentNullException(nameof(data));
-            if (data.Sprites == null || data.Locomotion == null || data.Fall == null || data.Follow == null || data.Flocking == null || data.Selection == null)
-                throw new ArgumentException("The hero data has no sprites, locomotion, fall, follow, flocking or selection.", nameof(data));
+            if (data.Sprites == null || data.Locomotion == null || data.Fall == null || data.Follow == null || data.Flocking == null || data.Selection == null ||
+                data.Vitals == null)
+                throw new ArgumentException("The hero data has no sprites, locomotion, fall, follow, flocking, selection or vitals.", nameof(data));
             Walls = walls;
             this.random = random ?? new Random();
             Team = data.Follow.TeamAtStart;
@@ -66,6 +69,7 @@ namespace MindAttic.Overworld.Core
             game.Register<ToggleTeam>(HandleTeam);
             game.Register<SelectHero>(HandleSelect);
             game.Register<CycleLeader>(HandleCycle);
+            game.Register<SetHeroVitals>(HandleVitals);
             game.AddSystem(this);
             return this;
         }
@@ -255,10 +259,15 @@ namespace MindAttic.Overworld.Core
 
             Flock(led);
 
-            // updateHero: every hero's AI, then its move.
+            // updateHero: every hero's status and regeneration, its AI, then its move.
             for (var i = 0; i < heroes.Count; i++)
             {
                 var hero = heroes[i];
+                var vitalsBefore = (hero.Health, hero.Mana, hero.Stamina);
+                var statusBefore = hero.Status;
+                CheckStatus(hero);
+                Regenerate(hero, now);
+
                 switch (hero.State)
                 {
                     case HeroState.Kneeling:
@@ -292,7 +301,100 @@ namespace MindAttic.Overworld.Core
 
                 if (before[i].Item1 != hero.State || before[i].Item2 != hero.Facing)
                     events.Add(new HeroStateChanged(tick, i, hero.State, hero.Facing));
+
+                // renderIcon: the status animation above the hero.
+                AnimateStatus(hero, now);
+                if (hero.Status != statusBefore) events.Add(new HeroStatusChanged(tick, i, hero.Status, statusBefore));
+                if ((hero.Health, hero.Mana, hero.Stamina) != vitalsBefore) events.Add(new HeroVitalsChanged(tick, i, hero.Health, hero.Mana, hero.Stamina));
             }
+        }
+
+        // ---- vitals (Heroes.checkStatus, checkRegen; StatusIcon.renderIcon) ----------------------------------------
+
+        VitalsTuning Vitals => Data.Vitals;
+
+        /// <summary>
+        /// The tuning's fractions as the decimals the data wrote (0.15, not the float's 0.1500000059...), so a threshold
+        /// lands where the original's double arithmetic put it: 0.15 x 60 is 9, and stamina 9 is not Exhausted.
+        /// </summary>
+        static double Fraction(float value) => Math.Round((double)value, 6);
+
+        /// <summary>
+        /// checkStatus: a hero not poisoned is Fine, Exhausted with stamina below 15 percent of its maximum, Angry (over
+        /// Exhausted) with health below 5 percent; a poisoned one stays Poisoned until it is cured.
+        /// </summary>
+        void CheckStatus(Hero hero)
+        {
+            if (hero.Status == HeroStatus.Poisoned) return;
+            var status = HeroStatus.Fine;
+            if (hero.Stamina < Fraction(Vitals.ExhaustedBelow) * hero.MaxStamina) status = HeroStatus.Exhausted;
+            if (hero.Health < Fraction(Vitals.AngryBelow) * hero.MaxHealth) status = HeroStatus.Angry;
+            hero.Status = status;
+        }
+
+        /// <summary>
+        /// checkRegen in adventure mode: once the hero's regen rate (2 s) has passed since its last step, a hero not
+        /// poisoned gains stamina kneeling (+2, unless picking up) or standing (+1), up to its maximum; a poisoned one loses
+        /// a health point instead (to 0); and a running hero loses a stamina point (to 0) either way. Battle mode's refill
+        /// is the battle story's (A18).
+        /// </summary>
+        void Regenerate(Hero hero, double now)
+        {
+            if (hero.Mode != HeroMode.Adventure) return;
+            // The tick clock is exact; the epsilon keeps 120 ticks from falling a hair short of 2 s.
+            if (now + 1e-6 < hero.LastRegenTime + hero.Definition.RegenRate) return;
+            var v = Vitals;
+            if (hero.Status != HeroStatus.Poisoned)
+            {
+                if (hero.State == HeroState.Kneeling && !hero.PickingUp) hero.Stamina = Math.Min(hero.MaxStamina, hero.Stamina + v.KneelingStamina);
+                if (hero.State == HeroState.Standing) hero.Stamina = Math.Min(hero.MaxStamina, hero.Stamina + v.StandingStamina);
+            }
+            else
+            {
+                hero.Health = Math.Max(0, hero.Health - v.PoisonHealth);
+            }
+
+            if (hero.State == HeroState.Running) hero.Stamina = Math.Max(0, hero.Stamina - v.RunningStamina);
+            hero.LastRegenTime = now;
+        }
+
+        /// <summary>
+        /// AnimateIcon: the status's frames advance every icon rate (0.3 s), looping; a Fine hero shows none. Each hero keeps
+        /// its own timer (the original shared one, so only the first animated hero ever moved; BIBLE).
+        /// </summary>
+        void AnimateStatus(Hero hero, double now)
+        {
+            var frames = Vitals.Icon(hero.Status);
+            if (frames.Count == 0)
+            {
+                hero.StatusIcon = null;
+                return;
+            }
+
+            if (hero.StatusFrame < 0 || hero.StatusFrame >= frames.Count) hero.StatusFrame = 0;
+            if (now + 1e-6 >= hero.LastStatusTime + Vitals.IconRate)
+            {
+                hero.StatusFrame = hero.StatusFrame < frames.Count - 1 ? hero.StatusFrame + 1 : 0;
+                hero.LastStatusTime = now;
+            }
+
+            hero.StatusIcon = frames[hero.StatusFrame];
+        }
+
+        /// <summary>CHANGE HERO HP / MP / AP / STATUS as assignments: each given value clamped to 0 and the hero's maximum.</summary>
+        CommandResult HandleVitals(Game game, SetHeroVitals command)
+        {
+            if (command.Hero < 0 || command.Hero >= heroes.Count)
+                return CommandResult.Reject("There is no hero " + command.Hero + " in the party.");
+            var hero = heroes[command.Hero];
+            var statusBefore = hero.Status;
+            if (command.Health.HasValue) hero.Health = Math.Max(0, Math.Min(hero.MaxHealth, command.Health.Value));
+            if (command.Mana.HasValue) hero.Mana = Math.Max(0, Math.Min(hero.MaxMana, command.Mana.Value));
+            if (command.Stamina.HasValue) hero.Stamina = Math.Max(0, Math.Min(hero.MaxStamina, command.Stamina.Value));
+            if (command.Status.HasValue) hero.Status = command.Status.Value;
+            var events = new List<IGameEvent> { new HeroVitalsChanged(game.Tick, hero.Index, hero.Health, hero.Mana, hero.Stamina) };
+            if (hero.Status != statusBefore) events.Add(new HeroStatusChanged(game.Tick, hero.Index, hero.Status, statusBefore));
+            return CommandResult.Accept(events.ToArray());
         }
 
         // ---- following (Heroes.checkfollow, checkFlocking) ---------------------------------------------------------

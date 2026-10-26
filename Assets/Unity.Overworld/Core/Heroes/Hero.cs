@@ -19,6 +19,8 @@ namespace MindAttic.Overworld.Core
             Mode = definition.Mode;
             Stamina = definition.Stamina;
             Health = definition.Health;
+            Mana = definition.Mana;
+            Status = HeroStatus.Fine;
         }
 
         /// <summary>The hero's place in the party (0 Chrono, 1 Belmont, 2 Flagg).</summary>
@@ -52,10 +54,36 @@ namespace MindAttic.Overworld.Core
         public Facing Facing { get; internal set; }
         public HeroState State { get; internal set; }
         public HeroMode Mode { get; internal set; }
+        /// <summary>Stamina (AP): running needs it, and it is the hero's turn gauge in battle.</summary>
         public int Stamina { get; internal set; }
 
-        /// <summary>Health; a hero at 0 does not flock (checkFlocking). Vitals come with story A10.</summary>
+        /// <summary>Health (HP); a hero at 0 does not flock (checkFlocking).</summary>
         public int Health { get; internal set; }
+
+        /// <summary>Mana (MP).</summary>
+        public int Mana { get; internal set; }
+
+        public int MaxHealth => Definition.MaxHealth;
+        public int MaxMana => Definition.MaxMana;
+        public int MaxStamina => Definition.MaxStamina;
+
+        /// <summary>Exhausted, Fine, Angry or Poisoned (checkStatus); Poisoned stays until it is cured.</summary>
+        public HeroStatus Status { get; internal set; }
+
+        /// <summary>The frame of the status animation shown above the hero (0-based).</summary>
+        public int StatusFrame { get; internal set; }
+
+        /// <summary>The status picture shown above the hero, or null while it is Fine.</summary>
+        public string StatusIcon { get; internal set; }
+
+        /// <summary>When the status animation last advanced, in game seconds.</summary>
+        internal double LastStatusTime { get; set; }
+
+        /// <summary>When the hero last regenerated, in game seconds (lastRegenCheck).</summary>
+        internal double LastRegenTime { get; set; }
+
+        /// <summary>The hero is kneeling to pick something up (no stamina comes back meanwhile); set by the pickup story.</summary>
+        public bool PickingUp { get; internal set; }
 
         /// <summary>The run key is held and the hero had stamina (or the mouse sent it running this tick).</summary>
         public bool Running { get; internal set; }
@@ -188,6 +216,70 @@ namespace MindAttic.Overworld.Core
         public float X { get; }
         public float Y { get; }
         public float Z { get; }
+    }
+
+    /// <summary>
+    /// Sets a hero's vitals, as the script's CHANGE HERO HP / MP / AP / STATUS did (assignment; RECONSTRUCTION 9.2): each
+    /// given value is clamped to 0 and the hero's maximum. Setting the status Poisoned poisons it until it is set Fine;
+    /// Exhausted or Angry give way to the status rule on the next tick, as they did in the original.
+    /// </summary>
+    public sealed class SetHeroVitals : ICommand
+    {
+        public SetHeroVitals(PlayerId player, int hero, int? health = null, int? mana = null, int? stamina = null, HeroStatus? status = null)
+        {
+            Player = player;
+            Hero = hero;
+            Health = health;
+            Mana = mana;
+            Stamina = stamina;
+            Status = status;
+        }
+
+        public PlayerId Player { get; }
+
+        /// <summary>The hero's place in the party.</summary>
+        public int Hero { get; }
+
+        public int? Health { get; }
+        public int? Mana { get; }
+        public int? Stamina { get; }
+        public HeroStatus? Status { get; }
+    }
+
+    /// <summary>A hero's health, mana or stamina changed (it regenerated, ran, was poisoned or was set).</summary>
+    public sealed class HeroVitalsChanged : IGameEvent
+    {
+        public HeroVitalsChanged(long tick, int hero, int health, int mana, int stamina)
+        {
+            Tick = tick;
+            Hero = hero;
+            Health = health;
+            Mana = mana;
+            Stamina = stamina;
+        }
+
+        public long Tick { get; }
+        public int Hero { get; }
+        public int Health { get; }
+        public int Mana { get; }
+        public int Stamina { get; }
+    }
+
+    /// <summary>A hero's status changed (Exhausted, Fine, Angry or Poisoned).</summary>
+    public sealed class HeroStatusChanged : IGameEvent
+    {
+        public HeroStatusChanged(long tick, int hero, HeroStatus status, HeroStatus previous)
+        {
+            Tick = tick;
+            Hero = hero;
+            Status = status;
+            Previous = previous;
+        }
+
+        public long Tick { get; }
+        public int Hero { get; }
+        public HeroStatus Status { get; }
+        public HeroStatus Previous { get; }
     }
 
     /// <summary>A falling hero reached the ground (its depth came back to 0).</summary>

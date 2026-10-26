@@ -16,6 +16,22 @@
     "date": {"x": 390, "y": 25, "font": "fontCalisto", "colour": [128, 255, 255, 0]},
     "time": {"x": 390, "y": 45, "font": "fontCalisto", "colour": [128, 255, 255, 0]}
   },
+  "statusBox": {
+    "_note": "Gui/StatusBox.vb renderStatus (status_box.png is loaded but its draw is commented out, so only the text shows): at (statOffsetX, statOffsetY) = (x, y), the leader's name at +name, written '  Name  ' in white; then 'HP n', 'MP n' and 'AP n' at +value and '  / max' at +maximum, each row rowSpacing lower, in (255, 255 - r, 255, 255 - b) of the world light (r, g, b), so green by day. In team mode the other heroes follow at +teamSpacing each, their names in (255, 255 - r, 255, b).",
+    "x": 5, "y": 1, "font": "fontCalisto",
+    "name": [12, 0],
+    "value": [14, 15],
+    "maximum": [45, 15],
+    "rowSpacing": 15,
+    "teamSpacing": 80
+  },
+  "bars": {
+    "_note": "Gui/HealthBar.vb, ManaBar.vb and StaminaBar.vb: the leader's bars at the bottom left, width x height, the fill drawn first and the bar over it; the fill quad is width x value / max wide (rounded to a whole pixel, as VB's Integer assignment did, never below 0) with the whole fill picture on it. The mana bar reuses health_bar.png.",
+    "width": 75, "height": 14,
+    "health": {"x": 2, "y": 436, "frame": "gfx/gui/health_bar.PNG", "fill": "gfx/gui/health_fill.PNG"},
+    "mana": {"x": 2, "y": 450, "frame": "gfx/gui/health_bar.PNG", "fill": "gfx/gui/mana_fill.PNG"},
+    "stamina": {"x": 2, "y": 464, "frame": "gfx/gui/stamina_bar.PNG", "fill": "gfx/gui/stamina_fill.PNG"}
+  },
   "messages": {
     "_note": "Messages.vb: up to maxMessages waiting (a message added to a full queue replaces the last); the next is shown at the screen centre, x less 6 / 2 per character, once the last shown is more than 'spacing' pixels below the centre or gone; each shown message loses 'fade' alpha and drops 'drift' pixels a tick, starting at alpha 255, and is gone at 0. The period announcements use fontArialNarrow24 in white.",
     "maxMessages": 100,

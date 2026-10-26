@@ -70,6 +70,22 @@
     "cursorOffset": [0.03, -0.05],
     "range": 0.03
   },
+  "vitals": {
+    "_note": "Heroes.checkStatus and checkRegen, Gui/StatusIcon.vb, RECONSTRUCTION 7. Every frame, a hero not Poisoned is Fine, Exhausted with stamina below exhaustedBelow x maxStamina, Angry (over Exhausted) with health below angryBelow x maxHealth; Poisoned stays until cured. In adventure mode, every regenRate seconds (common, 2): not poisoned, a kneeling hero not picking up gains kneelingStamina and a standing one standingStamina (capped at the maximum); poisoned, it loses poisonHealth health instead (floor 0); running, it loses runningStamina stamina (floor 0) either way. The icon is an iconSize square at the hero's position + iconOffset (left edge, vertical centre), each animation's frames advancing every iconRate seconds. The original's Poisoned folder is empty and it showed the Angry frames; the rebuild tints them poisonedTint (BIBLE).",
+    "exhaustedBelow": 0.15,
+    "angryBelow": 0.05,
+    "standingStamina": 1,
+    "kneelingStamina": 2,
+    "runningStamina": 1,
+    "poisonHealth": 1,
+    "iconSize": 0.05,
+    "iconOffset": [0.045, 0.03],
+    "iconRate": 0.3,
+    "exhaustedIcon": ["gfx/status/Exhausted/statusExhausted1.PNG", "gfx/status/Exhausted/statusExhausted2.PNG", "gfx/status/Exhausted/statusExhausted3.PNG", "gfx/status/Exhausted/statusExhausted4.PNG"],
+    "angryIcon": ["gfx/status/Angry/statusAngry1.PNG", "gfx/status/Angry/statusAngry2.PNG", "gfx/status/Angry/statusAngry3.PNG", "gfx/status/Angry/statusAngry4.PNG"],
+    "poisonedIcon": ["gfx/status/Angry/statusAngry1.PNG", "gfx/status/Angry/statusAngry2.PNG", "gfx/status/Angry/statusAngry3.PNG", "gfx/status/Angry/statusAngry4.PNG"],
+    "poisonedTint": [96, 255, 96]
+  },
   "heroes": [
     {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},
     {"id": 1, "name": "Belmont", "start": [0.3, -0.05], "weapon": "Steel Sword", "state": "Standing", "walkRate": 0.1, "walkSpeed": 0.005, "runSpeed": 0.01},

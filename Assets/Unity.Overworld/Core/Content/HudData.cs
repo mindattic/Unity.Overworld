@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace MindAttic.Overworld.Core
@@ -46,6 +47,78 @@ namespace MindAttic.Overworld.Core
     }
 
     /// <summary>
+    /// The status box (Gui/StatusBox.vb renderStatus, RECONSTRUCTION 13): the leader's name and its HP, MP and AP
+    /// against their maximums, then (in team mode) the other heroes' beside it.
+    /// </summary>
+    public sealed class StatusBoxDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public HudFont Font { get; internal set; }
+
+        /// <summary>The name's point from the box's (+12, +0).</summary>
+        public DataPoint Name { get; internal set; }
+
+        /// <summary>The first row's "HP n" point (+14, +15).</summary>
+        public DataPoint Value { get; internal set; }
+
+        /// <summary>The first row's "  / max" point (+45, +15).</summary>
+        public DataPoint Maximum { get; internal set; }
+
+        /// <summary>How much lower each row is (15).</summary>
+        public float RowSpacing { get; internal set; }
+
+        /// <summary>How far right each other hero's column is (80).</summary>
+        public float TeamSpacing { get; internal set; }
+    }
+
+    /// <summary>One of the bottom-left bars: where it is, its frame picture and its fill picture.</summary>
+    public sealed class BarDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public string Frame { get; internal set; }
+        public string Fill { get; internal set; }
+    }
+
+    /// <summary>The three bottom-left bars (Gui/HealthBar.vb, ManaBar.vb, StaminaBar.vb), all the same size.</summary>
+    public sealed class BarsDefinition
+    {
+        public int Width { get; internal set; }
+        public int Height { get; internal set; }
+        public BarDefinition Health { get; internal set; }
+        public BarDefinition Mana { get; internal set; }
+        public BarDefinition Stamina { get; internal set; }
+
+        /// <summary>Every picture of the bars, once each.</summary>
+        public IReadOnlyList<string> Files
+        {
+            get
+            {
+                var list = new List<string>();
+                foreach (var b in new[] { Health, Mana, Stamina })
+                {
+                    if (!list.Contains(b.Frame)) list.Add(b.Frame);
+                    if (!list.Contains(b.Fill)) list.Add(b.Fill);
+                }
+
+                return list;
+            }
+        }
+
+        /// <summary>
+        /// The fill's width for <paramref name="value"/> of <paramref name="max"/>: width x value / max as VB assigned it
+        /// to an Integer (rounded half to even), never below 0.
+        /// </summary>
+        public int FillWidth(int value, int max)
+        {
+            if (max <= 0) return 0;
+            var fill = (int)Math.Round(Width * ((double)value / max), MidpointRounding.ToEven);
+            return fill < 0 ? 0 : fill;
+        }
+    }
+
+    /// <summary>
     /// The heads-up text (hud.json): the virtual screen the original drew on, its fonts, where the clock's lines go on the
     /// HUD and the hero screen, and how messages show.
     /// </summary>
@@ -68,6 +141,12 @@ namespace MindAttic.Overworld.Core
         public HudText HeroScreenTime { get; internal set; }
 
         public MessageTuning Messages { get; internal set; }
+
+        /// <summary>The status box of names and vitals.</summary>
+        public StatusBoxDefinition StatusBox { get; internal set; }
+
+        /// <summary>The health, mana and stamina bars.</summary>
+        public BarsDefinition Bars { get; internal set; }
 
         public HudFont Font(string name)
         {
@@ -108,6 +187,31 @@ namespace MindAttic.Overworld.Core
             data.HeroScreenTime = ReadText(hero, "time", data, fonts);
             hero.Done();
 
+            var box = root.Section("statusBox");
+            data.StatusBox = new StatusBoxDefinition
+            {
+                X = box.Number("x", 0f, data.ScreenWidth),
+                Y = box.Number("y", 0f, data.ScreenHeight),
+                Font = ReadFont(box, fonts),
+                Name = box.Pair("name", 0f, data.ScreenWidth),
+                Value = box.Pair("value", 0f, data.ScreenWidth),
+                Maximum = box.Pair("maximum", 0f, data.ScreenWidth),
+                RowSpacing = box.Number("rowSpacing", 0f, data.ScreenHeight),
+                TeamSpacing = box.Number("teamSpacing", 0f, data.ScreenWidth),
+            };
+            box.Done();
+
+            var bars = root.Section("bars");
+            data.Bars = new BarsDefinition
+            {
+                Width = bars.Integer("width", 1, data.ScreenWidth),
+                Height = bars.Integer("height", 1, data.ScreenHeight),
+            };
+            data.Bars.Health = ReadBar(bars, "health", data);
+            data.Bars.Mana = ReadBar(bars, "mana", data);
+            data.Bars.Stamina = ReadBar(bars, "stamina", data);
+            bars.Done();
+
             var m = root.Section("messages");
             var tuning = new MessageTuning
             {
@@ -126,6 +230,22 @@ namespace MindAttic.Overworld.Core
             data.Messages = tuning;
             root.Done();
             return data;
+        }
+
+        static BarDefinition ReadBar(ContentReader parent, string key, HudData data)
+        {
+            var r = parent.Section(key);
+            var bar = new BarDefinition
+            {
+                X = r.Number("x", 0f, data.ScreenWidth),
+                Y = r.Number("y", 0f, data.ScreenHeight),
+                Frame = r.Text("frame"),
+                Fill = r.Text("fill"),
+            };
+            r.Check(bar.Frame.StartsWith("gfx/", StringComparison.Ordinal), "frame", "must be a path under gfx/");
+            r.Check(bar.Fill.StartsWith("gfx/", StringComparison.Ordinal), "fill", "must be a path under gfx/");
+            r.Done();
+            return bar;
         }
 
         static HudText ReadText(ContentReader parent, string key, HudData data, List<HudFont> fonts)

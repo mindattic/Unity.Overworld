@@ -21,11 +21,16 @@ namespace MindAttic.Overworld.Runtime
         /// <summary>The world cursor is drawn after everything (renderCursor is the frame's last 3D draw; sorting orders stop at 32767).</summary>
         public const int CursorOrder = 30000;
 
+        /// <summary>The status icons are drawn in front of the heroes and every object (renderIcon, layer 4), under the cursor and team button.</summary>
+        public const int StatusIconOrder = CursorOrder - 10;
+
         static readonly int MainTex = Shader.PropertyToID("_MainTex");
 
         readonly List<KeyValuePair<AreaTileDefinition, MeshRenderer>> tiles = new List<KeyValuePair<AreaTileDefinition, MeshRenderer>>();
         readonly Dictionary<(DrawableKind, int), MeshRenderer> objects = new Dictionary<(DrawableKind, int), MeshRenderer>();
         readonly Dictionary<(float, float), Mesh> quads = new Dictionary<(float, float), Mesh>();
+        readonly List<MeshRenderer> statusIcons = new List<MeshRenderer>();
+        readonly List<Material> iconMaterials = new List<Material>();
         TextureLibrary textures;
         Material material;
         MaterialPropertyBlock block;
@@ -69,7 +74,28 @@ namespace MindAttic.Overworld.Runtime
         {
             Party = party;
             game = source;
+            BuildStatusIcons();
             Refresh();
+        }
+
+        /// <summary>The status icon above each hero (StatusIcon.vb), in party order; disabled while the hero is Fine.</summary>
+        public IReadOnlyList<MeshRenderer> StatusIcons => statusIcons;
+
+        /// <summary>One quad per hero, each with its own material so a poisoned hero's icon can be tinted.</summary>
+        void BuildStatusIcons()
+        {
+            if (Party == null || statusIcons.Count > 0) return;
+            var v = Party.Data.Vitals;
+            var root = new GameObject("Status icons").transform;
+            root.SetParent(transform, false);
+            foreach (var hero in Party.Heroes)
+            {
+                var r = NewRenderer("Status " + hero.Name, Quad(v.IconSize, v.IconSize / 2f), null, StatusIconOrder, root);
+                var m = new Material(material) { name = "Overworld status icon " + hero.Name };
+                r.sharedMaterial = m;
+                iconMaterials.Add(m);
+                statusIcons.Add(r);
+            }
         }
 
         /// <summary>Draws <paramref name="cursor"/> from now on: its picture, at its position plus the draw offset, over everything.</summary>
@@ -175,6 +201,8 @@ namespace MindAttic.Overworld.Runtime
                 r.enabled = View.IsVisible(d) && HasTexture(r);
             }
 
+            RefreshStatusIcons(alpha);
+
             if (Cursor != null && CursorRenderer != null)
             {
                 var offset = Cursor.Definition.DrawOffset;
@@ -183,6 +211,30 @@ namespace MindAttic.Overworld.Runtime
                 CursorRenderer.transform.localPosition = new Vector3(x + offset.X, y + offset.Y, Cursor.Z);
                 SetTexture(CursorRenderer, Cursor.File);
                 CursorRenderer.enabled = HasTexture(CursorRenderer);
+            }
+        }
+
+        /// <summary>
+        /// renderIcon: each hero's status picture at its position plus the icon offset (eased like the hero), in the
+        /// world's light; the poisoned animation is also tinted (BIBLE). A Fine hero's icon is hidden (the original drew blank).
+        /// </summary>
+        void RefreshStatusIcons(float alpha)
+        {
+            if (Party == null) return;
+            var v = Party.Data.Vitals;
+            var light = material.color;
+            for (var i = 0; i < statusIcons.Count && i < Party.Heroes.Count; i++)
+            {
+                var hero = Party.Heroes[i];
+                var r = statusIcons[i];
+                var x = Mathf.LerpUnclamped(hero.PreviousX, hero.X, alpha);
+                var y = Mathf.LerpUnclamped(hero.PreviousY, hero.Y, alpha);
+                var z = Mathf.LerpUnclamped(hero.PreviousZ, hero.Z, alpha);
+                r.transform.localPosition = new Vector3(x + v.IconOffset.X, y + v.IconOffset.Y, z);
+                var tint = hero.Status == HeroStatus.Poisoned ? (Color)new Color32(v.PoisonedTint.R, v.PoisonedTint.G, v.PoisonedTint.B, 255) : Color.white;
+                iconMaterials[i].color = light * tint;
+                SetTexture(r, hero.StatusIcon);
+                r.enabled = hero.StatusIcon != null && HasTexture(r);
             }
         }
 
@@ -231,6 +283,7 @@ namespace MindAttic.Overworld.Runtime
             foreach (var m in quads.Values) Release(m);
             if (Backdrop != null) Release(Backdrop.GetComponent<MeshFilter>().sharedMesh);
             Release(material);
+            foreach (var m in iconMaterials) Release(m);
         }
 
         static void Release(Object o)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using MindAttic.Overworld.Core;
@@ -25,6 +26,8 @@ namespace MindAttic.Overworld.Runtime
     /// <c>-overworld-clock &lt;hour:minute[,seconds]&gt;</c> sets the clock to that time of day (the period and light settled at
     /// once, as CHANGE TIME HOUR did) and, given seconds, makes an in-game minute take that many real seconds (0: a minute
     /// every tick, so a day passes in 24 seconds), so captures can show each period, its light and its announcement;
+    /// <c>-overworld-vitals &lt;hero:key=value,...[;hero:...]&gt;</c> sets heroes' vitals as CHANGE HERO did (hp, mp and ap
+    /// numbers, and poisoned or fine), e.g. <c>0:ap=5;1:hp=1;2:poisoned</c>, so captures can show each status animation;
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -44,6 +47,7 @@ namespace MindAttic.Overworld.Runtime
         public const string SoloArgument = "-overworld-solo";
         public const string SelectArgument = "-overworld-select";
         public const string ClockArgument = "-overworld-clock";
+        public const string VitalsArgument = "-overworld-vitals";
 
         public ContentRegistry Content { get; private set; }
         public GameHost Host { get; private set; }
@@ -83,6 +87,7 @@ namespace MindAttic.Overworld.Runtime
             World.LightBy(Clock);
             Hud = HudPresenter.Create(Content.Hud, Clock, Messages);
             Hud.transform.SetParent(transform, false);
+            Hud.ShowVitals(Party, PlayerId.One);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
             Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint, Party, Content.View.TeamButton);
             Input.transform.SetParent(transform, false);
@@ -100,7 +105,8 @@ namespace MindAttic.Overworld.Runtime
             var recalled = ApplyScriptedRecall(args, game);
             var party = ApplyScriptedParty(args, game);
             ApplyScriptedClock(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || capture != null) Input.UseDevices = false;
+            var vitals = ApplyScriptedVitals(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -294,6 +300,63 @@ namespace MindAttic.Overworld.Runtime
             return true;
         }
 
+        /// <summary>Applies <c>-overworld-vitals</c>; true when it was given.</summary>
+        bool ApplyScriptedVitals(string[] args, Game game)
+        {
+            var text = ArgumentAfter(args, VitalsArgument);
+            if (text == null) return false;
+            if (!TryVitals(text, out var commands))
+            {
+                Debug.LogError("Unity.Overworld: " + VitalsArgument + " wants hero:key=value,... groups split by ';' (keys hp, mp, ap; flags poisoned, fine), not '" + text + "'.");
+                return true;
+            }
+
+            foreach (var command in commands)
+            {
+                var result = game.Submit(command);
+                if (!result.Accepted) Debug.LogError("Unity.Overworld: " + VitalsArgument + " was refused: " + result.Reason);
+                else Debug.Log("Unity.Overworld: scripted vitals " + Describe(Party.Heroes[command.Hero]));
+            }
+
+            return true;
+        }
+
+        /// <summary>Reads <c>hero:key=value,...</c> groups split by ';' as player 1's <see cref="SetHeroVitals"/> commands.</summary>
+        public static bool TryVitals(string text, out List<SetHeroVitals> commands)
+        {
+            commands = new List<SetHeroVitals>();
+            foreach (var group in text.Split(';'))
+            {
+                if (group.Trim().Length == 0) continue;
+                var colon = group.IndexOf(':');
+                if (colon < 0 || !int.TryParse(group.Substring(0, colon).Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var hero) || hero < 0) return false;
+                int? hp = null, mp = null, ap = null;
+                HeroStatus? status = null;
+                foreach (var raw in group.Substring(colon + 1).Split(','))
+                {
+                    var item = raw.Trim().ToLowerInvariant();
+                    if (item.Length == 0) continue;
+                    if (item == "poisoned") { status = HeroStatus.Poisoned; continue; }
+                    if (item == "fine") { status = HeroStatus.Fine; continue; }
+                    var eq = item.IndexOf('=');
+                    if (eq < 0 || !int.TryParse(item.Substring(eq + 1), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)) return false;
+                    switch (item.Substring(0, eq))
+                    {
+                        case "hp": hp = value; break;
+                        case "mp": mp = value; break;
+                        case "ap": ap = value; break;
+                        default: return false;
+                    }
+                }
+
+                commands.Add(new SetHeroVitals(PlayerId.One, hero, hp, mp, ap, status));
+            }
+
+            return commands.Count > 0;
+        }
+
+        static string Describe(Hero h) => h.Name + " HP " + h.Health + "/" + h.MaxHealth + " MP " + h.Mana + "/" + h.MaxMana + " AP " + h.Stamina + "/" + h.MaxStamina + " " + h.Status;
+
         /// <summary>Reads <c>hour:minute[,seconds]</c>.</summary>
         public static bool TryClock(string text, out int hour, out int minute, out float? seconds)
         {
@@ -376,7 +439,10 @@ namespace MindAttic.Overworld.Runtime
                               (TeamButton != null ? ", team button showing " + TeamButton.File : ""));
                 if (Party != null)
                     foreach (var hero in Party.Heroes)
+                    {
                         Debug.Log("Unity.Overworld: " + hero + " z " + hero.Z.ToString(CultureInfo.InvariantCulture) + " showing " + hero.Sprite);
+                        Debug.Log("Unity.Overworld: " + Describe(hero) + (hero.StatusIcon != null ? " icon " + hero.StatusIcon : ""));
+                    }
                 if (Viewpoint != null)
                 {
                     var cam = Viewpoint.Camera;

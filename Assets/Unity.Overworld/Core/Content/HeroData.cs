@@ -87,7 +87,7 @@ namespace MindAttic.Overworld.Core
     public sealed class HeroData
     {
         internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, HeroSprites sprites, LocomotionTuning locomotion, FallTuning fall,
-            FollowTuning follow, FlockingTuning flocking, SelectionTuning selection, List<HeroDefinition> heroes)
+            FollowTuning follow, FlockingTuning flocking, SelectionTuning selection, VitalsTuning vitals, List<HeroDefinition> heroes)
         {
             HeroSize = heroSize;
             SpriteSet = spriteSet;
@@ -98,6 +98,7 @@ namespace MindAttic.Overworld.Core
             Follow = follow;
             Flocking = flocking;
             Selection = selection;
+            Vitals = vitals;
             Heroes = heroes;
         }
 
@@ -127,6 +128,9 @@ namespace MindAttic.Overworld.Core
         /// <summary>Which hero the world cursor is over, for a left click to choose the leader.</summary>
         public SelectionTuning Selection { get; }
 
+        /// <summary>How health and stamina regenerate and drain, when a hero is Exhausted or Angry, and the status icons.</summary>
+        public VitalsTuning Vitals { get; }
+
         public IReadOnlyList<HeroDefinition> Heroes { get; }
 
         /// <summary>The party's carrying limit: the sum of every hero's weight limit.</summary>
@@ -155,6 +159,7 @@ namespace MindAttic.Overworld.Core
             var follow = FollowTuning.Read(root.Section("follow"));
             var flocking = FlockingTuning.Read(root.Section("flocking"));
             var selection = SelectionTuning.Read(root.Section("selection"));
+            var vitals = VitalsTuning.Read(root.Section("vitals"));
 
             // Each hero is the common block with its own keys laid over it (Belmont's walk rate and speeds).
             var list = new List<HeroDefinition>();
@@ -178,7 +183,7 @@ namespace MindAttic.Overworld.Core
             }
 
             root.Done();
-            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, fall, follow, flocking, selection, list);
+            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, fall, follow, flocking, selection, vitals, list);
         }
 
         static HeroDefinition ReadCommon(ContentReader c, out float perAgility)

@@ -13,6 +13,9 @@ namespace MindAttic.Overworld.Runtime
     /// view and the fonts scale with its height. The HUD is not lit: it never takes the clock's light.
     /// Built in code (<see cref="Create"/>); reads <see cref="WorldClock"/> and <see cref="MessageBoard"/> and never changes
     /// game state. The hero screen's date and time lines (hud.json "heroScreen") come with that screen (story A20).
+    /// Once <see cref="ShowVitals"/> is called it also writes the status box (the leader's name, HP, MP and AP, and the
+    /// team's beside it, in the inverse of the clock's light as renderStatus did) and draws the health, mana and stamina
+    /// bars at the bottom left (U.OVW-US-A10).
     /// </summary>
     public sealed class HudPresenter : MonoBehaviour
     {
@@ -20,6 +23,10 @@ namespace MindAttic.Overworld.Runtime
         public const int PanelOrder = 10;
 
         readonly List<Label> messageLabels = new List<Label>();
+        readonly List<Label> statusLabels = new List<Label>();
+        readonly Dictionary<BarDefinition, (VisualElement Fill, VisualElement Frame)> bars = new Dictionary<BarDefinition, (VisualElement, VisualElement)>();
+        VisualElement statusLayer;
+        TextureLibrary textures;
         readonly Dictionary<HudFont, Font> fonts = new Dictionary<HudFont, Font>();
         PanelSettings settings;
         VisualElement messageLayer;
@@ -37,6 +44,56 @@ namespace MindAttic.Overworld.Runtime
 
         /// <summary>The labels of the messages shown now, in <see cref="MessageBoard.Shown"/> order (hidden ones beyond).</summary>
         public IReadOnlyList<Label> MessageLabels => messageLabels;
+
+        /// <summary>The party whose vitals the status box and bars show (null until <see cref="ShowVitals"/>).</summary>
+        public Party Party { get; private set; }
+
+        /// <summary>The player whose leader the status box and bars show first.</summary>
+        public PlayerId Player { get; private set; }
+
+        /// <summary>The status box's labels shown now, in <see cref="StatusBoxView.Lines"/> order (hidden ones beyond).</summary>
+        public IReadOnlyList<Label> StatusLabels => statusLabels;
+
+        /// <summary>The fill of one of the bars (its width is the value's share), or null before <see cref="ShowVitals"/>.</summary>
+        public VisualElement BarFill(BarDefinition bar) => bar != null && bars.TryGetValue(bar, out var b) ? b.Fill : null;
+
+        /// <summary>The frame of one of the bars, drawn over its fill.</summary>
+        public VisualElement BarFrame(BarDefinition bar) => bar != null && bars.TryGetValue(bar, out var b) ? b.Frame : null;
+
+        /// <summary>
+        /// Shows <paramref name="party"/>'s vitals from now on: the status box for the hero <paramref name="player"/> leads
+        /// (and the team) and that hero's health, mana and stamina bars.
+        /// </summary>
+        public void ShowVitals(Party party, PlayerId player, TextureLibrary library = null)
+        {
+            Party = party;
+            Player = player;
+            textures = library ?? textures ?? new TextureLibrary();
+            if (bars.Count == 0 && Hud.Bars != null && statusLayer != null)
+            {
+                // Health, mana, then stamina, each fill drawn first and its bar over it (renderHealthBar, rendermanaBar, renderStaminaBar).
+                foreach (var bar in new[] { Hud.Bars.Health, Hud.Bars.Mana, Hud.Bars.Stamina })
+                {
+                    var fill = NewPicture(statusLayer, "fill " + bar.Fill, bar.Fill);
+                    var frame = NewPicture(statusLayer, "bar " + bar.Frame, bar.Frame);
+                    bars[bar] = (fill, frame);
+                }
+            }
+
+            Refresh();
+        }
+
+        VisualElement NewPicture(VisualElement parent, string name, string file)
+        {
+            var e = new VisualElement { name = name, pickingMode = PickingMode.Ignore };
+            e.style.position = Position.Absolute;
+            var texture = textures.Load(file);
+            if (texture != null) e.style.backgroundImage = new StyleBackground(texture);
+            // The original stretched the whole picture over the quad, however wide the fill was.
+            e.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
+            parent.Add(e);
+            return e;
+        }
 
         public static HudPresenter Create(HudData hud, WorldClock clock, MessageBoard messages)
         {
@@ -77,6 +134,12 @@ namespace MindAttic.Overworld.Runtime
             var root = Document.rootVisualElement;
             root.Clear();
             root.pickingMode = PickingMode.Ignore;
+            // The status box and bars come before the clock's lines, as renderStatus wrote them before the bars and messages.
+            statusLayer = new VisualElement { name = "status", pickingMode = PickingMode.Ignore };
+            statusLayer.style.position = Position.Absolute;
+            statusLayer.style.left = 0;
+            statusLayer.style.top = 0;
+            root.Add(statusLayer);
             PeriodLabel = NewLabel(root, "period", Hud.Period);
             TimeLabel = NewLabel(root, "time", Hud.Time);
             messageLayer = new VisualElement { name = "messages", pickingMode = PickingMode.Ignore };
@@ -85,6 +148,8 @@ namespace MindAttic.Overworld.Runtime
             messageLayer.style.top = 0;
             root.Add(messageLayer);
             messageLabels.Clear();
+            statusLabels.Clear();
+            bars.Clear();
         }
 
         void LateUpdate() => Refresh();
@@ -114,6 +179,8 @@ namespace MindAttic.Overworld.Runtime
                 TimeLabel.text = Clock.TimeText;
             }
 
+            RefreshVitals();
+
             var shown = Messages != null ? Messages.Shown : (IReadOnlyList<ShownMessage>)Array.Empty<ShownMessage>();
             for (var i = 0; i < shown.Count; i++)
             {
@@ -128,6 +195,50 @@ namespace MindAttic.Overworld.Runtime
             }
 
             for (var i = shown.Count; i < messageLabels.Count; i++) messageLabels[i].style.display = DisplayStyle.None;
+        }
+
+        void RefreshVitals()
+        {
+            if (Party == null || statusLayer == null) return;
+            var leader = Party.LeaderOf(Player);
+            var light = Clock != null ? Clock.Light : new LightColour(255, 255, 255);
+            var lines = StatusBoxView.Lines(Hud.StatusBox, Party, leader, light);
+            for (var i = 0; i < lines.Count; i++)
+            {
+                if (i == statusLabels.Count) statusLabels.Add(NewLabel(statusLayer, "status " + i, null));
+                var line = lines[i];
+                var label = statusLabels[i];
+                label.text = line.Text;
+                Place(label, line.X, line.Y);
+                Style(label, line.Font);
+                label.style.color = (Color)new Color32(line.Colour.R, line.Colour.G, line.Colour.B, line.Colour.A);
+                label.style.display = DisplayStyle.Flex;
+            }
+
+            for (var i = lines.Count; i < statusLabels.Count; i++) statusLabels[i].style.display = DisplayStyle.None;
+
+            var hero = Party.Heroes[leader];
+            var b = Hud.Bars;
+            if (b == null) return;
+            PlaceBar(b.Health, b, b.FillWidth(hero.Health, hero.MaxHealth));
+            PlaceBar(b.Mana, b, b.FillWidth(hero.Mana, hero.MaxMana));
+            PlaceBar(b.Stamina, b, b.FillWidth(hero.Stamina, hero.MaxStamina));
+        }
+
+        void PlaceBar(BarDefinition bar, BarsDefinition size, int fillWidth)
+        {
+            if (!bars.TryGetValue(bar, out var e)) return;
+            var scale = HorizontalScale;
+            foreach (var part in new[] { e.Fill, e.Frame })
+            {
+                part.style.left = bar.X * scale;
+                part.style.top = bar.Y;
+                part.style.height = size.Height;
+            }
+
+            e.Frame.style.width = size.Width * scale;
+            e.Fill.style.width = fillWidth * scale;
+            e.Fill.style.display = fillWidth > 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         Label NewLabel(VisualElement parent, string name, HudText text)

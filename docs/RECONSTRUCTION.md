@@ -592,7 +592,7 @@ All HUD quads are screen-space (640 x 480 reference). `Write` uses D3DX fonts: A
 |---|---|---|
 | Status box | text at (5,1); `status_box.png` is loaded and sized 96 x 48 but never drawn, so only text shows | Current hero: name (yellow brackets while in hero-select), "HP n / max", "MP", "AP"; in team mode the other two heroes at x offsets +80, +160; in battle, "NN %" recharge or "Ready!" |
 | Day period and time | (5,410) and (5,423) | yellow Calisto |
-| Bars | bottom left: health (y 480-14*3-2), mana (y 480-14*2-2), stamina (y 480-14-2), 75 x 14, fill clipped by percentage | `health_bar` / `health_fill`, `mana_fill`, `stamina_*` (the mana bar reuses `health_bar.png`) |
+| Bars | bottom left at x 2: health (y 480-14*3-2), mana (y 480-14*2-2), stamina (y 480-14-2), 75 x 14; the fill (drawn first, the bar over it) is a quad 75 x value / max wide (VB Integer rounding, floor 0) carrying the whole fill picture, so the picture is squeezed, not clipped | `health_bar` / `health_fill`, `mana_fill`, `stamina_*` (the mana bar reuses `health_bar.png`) |
 | Turn bars | 60 x 13 at (18,59), (96,59), (176,59), (300,59) | Stamina fill per hero; ready bar texture when full; current hero first, then the others if in team mode |
 | Team button | (18,75) 28 x 28 | `icon_solo` / `icon_team`; click toggles |
 | Inventory button | (18,104) 28 x 28 | `inventory_Open` / `inventory_Closed` |
