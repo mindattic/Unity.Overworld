@@ -2,7 +2,8 @@
     "name": "Unity.Overworld.Runtime",
     "rootNamespace": "MindAttic.Overworld.Runtime",
     "references": [
-        "Unity.Overworld.Core"
+        "Unity.Overworld.Core",
+        "Unity.Shared.Core"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

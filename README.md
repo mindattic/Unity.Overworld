@@ -46,3 +46,18 @@ Read-only references, never edited by this project:
 
 - `R:\Projects\_PRE_2022\_PRE_2021\_PRE_2020\_PRE_2017\overhead 2` — the VB.NET / DirectX source project and its build output.
 - `R:\Projects\_PRE_2022\_PRE_2021\_PRE_2020\_PRE_2017\Overworld` — the built copy with its data (books, `world.mdb`, `hero.mdb`), `gfx` and `sfx`.
+
+## Session mute
+
+This repo references `com.mindattic.unity.shared` (`Packages/manifest.json`) for its CLI/automation session
+mute: launched with `-muted` or `MINDATTIC_CLI_MUTED=1`, Unity.Shared's bootstrap turns on
+`Unity.Shared.Core.Profiles.SessionMuted` before the first scene loads, and
+`Assets/Unity.Overworld/Runtime/SessionAudio.cs` zeroes `AudioListener.volume` for that run. The flag is
+session-only and read-only against the player's own settings: nothing is ever written to settings.json, and a
+normal launch afterwards has sound again.
+
+There is no playable build or launch script yet (see Status above — no scenes, no player build pipeline), so
+there is nothing today that a mute flag could silence end-to-end; `SessionAudio` is in place so the mute takes
+effect automatically the moment a scene with audio exists. Once a build and a launch script land (modelled on
+Unity.QuickDuel's `play.ps1`), that script should default to `-muted` + `MINDATTIC_CLI_MUTED=1`, with a
+`-Sound` switch to opt back in.
