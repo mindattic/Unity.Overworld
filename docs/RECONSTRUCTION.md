@@ -615,7 +615,7 @@ Tutorial text (queued at start and after `Reset`, as fading messages, blank line
 
 ### 14.1 Weather (`Weather.vb`, module `Rain`)
 
-2,501 particles (`maxRains` 2500), 0.04 wide (`RainWidth`), 16 px textures, spawned at x in [-3,7], y in [-7,3] from z = -1.5 - 0.01 * index. Mode (cycled by `W`: Snowing, Raining, Clear, FallingLeaves, DustStorm; default Snowing):
+2,501 particles (`maxRains` 2500), 0.04 wide (`RainWidth`; `RainHeight` = 0.02 is setupVertex's half height, so the quad is 0.04 square), 16 px textures, spawned at x in [-3,7] and y in [-8,2] (`startY - worldHeight * rnd`, without the respawn's +1) at z = -1.5 - 0.01 * (index + 1), so particle 0 is at -1.51 and particle 2500 at -26.51: the snow arrives over the first 2,650 frames (44 s at 60 Hz). Mode (cycled by `W`, a `frmMain` KeyDown read only with the console shut, so it repeats while held and works while a script runs: Snowing, Raining, Clear, FallingLeaves, DustStorm; default Snowing):
 
 | Mode | Per-frame motion | Texture |
 |---|---|---|
@@ -625,12 +625,12 @@ Tutorial text (queued at start and after `Reset`, as fading messages, blank line
 | FallingLeaves | one random diagonal of 0.003 * rnd, z +0.01 | `snow1` (no leaf art exists) |
 | DustStorm | x +0.05, z +0.05 | `dust1` |
 
-A particle at z >= 0 respawns at z = -1.1 with a new random x and y (+1). Only particles within render range on x, y and z are drawn. `splash1..4.png` and `snow2.png` are loaded but unused.
+The random draws per particle, in order: Snowing x then y; FallingLeaves `getRndInt(1, 4)` (1 +x +y, 2 -x -y, 3 -x +y, 4 +x -y) then x then y. A particle at z >= 0 respawns at z = -1.1 with a new random x (in [-3,7]) and y (in [-7,3], +1). The texture is set from the mode every frame (Clear keeps the last). Only particles within render range on x, y and z are drawn (`renderRain`, layer 4, after the icons and labels, in index order with the Z-buffer on and no alpha test, so a nearer particle drawn earlier hides a farther one behind its transparent corners). `splash1..4.png` and `snow2.png` are loaded but unused.
 
 ### 14.2 Clouds (`Clouds.vb`)
 
-401 clouds at random x in [-3,7], y in [-7,3] + 1, z = -1.1 - 0.005 * index, drifting right by 0.001 to 0.004 per frame, wrapping at the world edge with a new random y; width 0.2 to 0.8, height half of that; texture `cloud1` or `cloud2` at random (70 x 70);
-the first four are the balloon (`balloon.png`, 128 x 128). `cloud3` and `cloud4` are loaded, unused.
+401 clouds (`maxClouds` 400). The random draws per cloud, in order: x in [-3,7], y in [-7,3] (`(startY - worldHeight * rnd) + 1`), `dX` = 0.003 * rnd + 0.001, width = 0.6 * rnd + 0.2, and `getRndInt(1, 2)` for `cloud1` or `cloud2` (70 x 70); z = -1.1 - 0.005 * index (cloud 0 farthest from the camera at -1.1, cloud 400 at -3.1).
+`setupVertex(Width, Width / 2)` makes each quad width square. The first four are the balloon (`balloon.png`, 128 x 128; the picture is still drawn for them). Each frame (`updateCloud`) x += `dX` (and y += `dY`, never set, so 0); past x = startX + worldWidth (7) a cloud goes to x = startX (-3) with a new random y; the matching test for x < -3 is never reached. `renderCloud` draws those in range on x, y and z after the weather, in index order (farthest first, so back to front). With the camera's Z between -3.5 and -1 and every cloud between -3.1 and -1.1, the clouds hang between the world and the camera: at the nearest zoom (-1) they are all behind it and only zooming out brings them into view. `cloud3` and `cloud4` are loaded, unused.
 
 ### 14.3 Path points (`Path.vb`, P / O keys)
 
