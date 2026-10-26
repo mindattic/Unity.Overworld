@@ -14,7 +14,9 @@ namespace MindAttic.Overworld.Runtime
     /// hero, it leads; on the team button, the team toggles). The rest controls (RECONSTRUCTION 6.4): \ (kneel, lie down,
     /// kneel again) and Enter or the left button while lying down (sleep). The pickup controls (RECONSTRUCTION 8.2):
     /// Enter or the left button (off the team button) held is the pick-up button, and , and . choose the previous and
-    /// next item in reach (the wheel does too, through Core, when any is in reach). Every frame, before the game advances, it sends what the
+    /// next item in reach (the wheel does too, through Core, when any is in reach). The inventory controls (RECONSTRUCTION
+    /// 8.3, 8.5): Delete or a click on the inventory button opens and closes the pack, Backspace drops, Q shows the quick
+    /// bar and 1 to 0 use its slots (the arrows, run key, Enter and right button act on the open pack in Core). Every frame, before the game advances, it sends what the
     /// player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/> commands and the key presses and clicks as
     /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>

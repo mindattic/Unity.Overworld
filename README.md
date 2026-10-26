@@ -28,7 +28,13 @@ health, mana and stamina an hour (no stamina while poisoned), moving the clock o
 beans, and the gold, five-gold and satchels scattered at random. Walk within reach (0.05) and the selected one's name shows over it; `,` and
 `.` (or the wheel) choose among those in reach; Enter or the left button kneels and picks it up: coins pay out at once, the rest
 go into the party's pack, and picked herbs and crops grow back after their growth time. With E on, the cursor over a pickup
-opens the examine box (name, effect, description, weight and value). The stories that make the rest play follow in build order.
+opens the examine box (name, effect, description, weight and value). Delete (or the inventory button under the team button)
+opens the pack: its stacks ten to a row with their counts, the weight against the party's 28.5 and the gold; the arrows (or the
+wheel) move the cursor, the run key marks a stack and swaps it with the next one chosen, Backspace (or the right button) drops one
+by the leader, where it can be picked up again, and Enter (or a click) uses it: solo on the leader, in team mode a satchel, draught
+or book at once and anything else on the hero chosen with left and right and Enter. Q shows the quick bar of the first ten stacks,
+and 1 to 0 use them. A pack heavier than 28.5 burdens the party: the heroes kneel and "You are overburdened" shows until something
+is dropped. The stories that make the rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
 `-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
 hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
@@ -43,7 +49,13 @@ sets vitals as CHANGE HERO did (`hp`, `mp`, `ap`, and `poisoned` or `fine`; e.g.
 `-overworld-sleep-until <hour>[,<seconds>]` sleeps until that hour as the Moon Berry (22) and Morningstar (5) do;
 `-overworld-seed <n>` fixes the random scatter of the gold and satchels; `-overworld-place <x>,<y>` puts the leader there;
 `-overworld-reach <pickup>[,<seconds>]` puts the leader beside that pickup (0 to 372) and selects it, `-overworld-pickup <pickup>[,<seconds>]`
-then holds the pick-up button, and `-overworld-examine-pickup <pickup>[,<seconds>]` opens the examine box over it; a scripted run never takes the real mouse.
+then holds the pick-up button, and `-overworld-examine-pickup <pickup>[,<seconds>]` opens the examine box over it;
+`-overworld-give <pickup>[*<count>],...` puts those pickups' items into the pack (e.g. `0*3,201*2,105`), `-overworld-quickbar` shows the
+quick bar, `-overworld-inventory <slot>[,<seconds>]` opens the panel on that stack, `-overworld-swap <from>,<to>[,<seconds>]` swaps two
+stacks with the run key, `-overworld-drop <slot>[*<count>][,<seconds>]` drops from a stack (Backspace), `-overworld-use <slot>[:<hero>][,<seconds>]`
+and `-overworld-quick <key>[:<hero>][,<seconds>]` use a stack from the panel or a number key (choosing that hero when the item asks for
+its target, or leaving the target marked without one), and `-overworld-pickup-drop <drop>[,<seconds>]` picks a dropped item up again;
+a scripted run never takes the real mouse.
 
 ## Why
 
