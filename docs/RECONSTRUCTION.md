@@ -528,7 +528,7 @@ writes "name : scriptName" at (100,100) and runs the script each frame.
 - Each frame `checkQuests` evaluates the **current** main quest (`currQuest`) and `checkSubquests` every active subquest. A completed objective adds its Exp and runs its end script; when all objectives are complete the quest adds its Exp, runs its end script, and the next quest becomes
   Active (stays on the last one; `currQuest < maxQuest`), running its start script. (At the last quest the status is set Active again, so its quest Exp is re-awarded every frame; defect.) Experience is a counter; nothing consumes it.
 - `Experience` and `Gold` are globals; gold is spent nowhere (there are no shops).
-- Quest screen (Page Down; 579 x 420 `quest_screen_main|subquests|completed.png` at (20,20)): up/down switch the category (Main, Subquests, Finished), right enters the subquest list or details, left backs out. The main page shows the quest text and each objective ("~ text" open, "X text" done); the Finished page lists
+- Quest screen (Page Down; `quest_screen_main|subquests|completed.png`, loaded at 579 x 420, drawn on a 600 x 430 quad at (20,20); text in fontArial, the title at +(160, 25) and line n at +(160, 60 + 20 n)): up/down switch the category (Main, Subquests, Finished), right enters the subquest list or details, left backs out. The main page shows the quest text and each objective ("~ text" open, "X text" done); the Finished page lists
   successful quests ("o text"). `showQuestPoints` draws a 3D "\*" at the position of every incomplete main-quest objective and every active subquest's objective.
 
 ## 11. Books (`Book.vb`)

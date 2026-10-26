@@ -40,7 +40,7 @@ pipe, `=` is Shift and the `+` key), Enter runs it and shuts the console, Esc, F
 back. Every item's effect, the Rune's teleport and the quests' end scripts run through the same interpreter; a command it does not
 understand shows "Script failed to execute." and a number that is not one "Script failed to run.". While the console is open, or
 a script walks a hero (`MOVE HERO TO x,y,z`, `CHANGE HERO AI WALKLEFT` until `CHANGE HERO AI STOP`), the keys and mouse do not
-move the party. The stories that make the rest play follow in build order.
+move the party. The original's quests run as it ran them: Farmer Brinn's north and south fields, the centre field, the west and east pair (going east sets the clock to 6 PM) and the far west, one at a time, and the two subquests (way south, far north) alongside; walking the leader into an objective's range completes it and pays its experience (100 to 1200; each quest 350 to 3500 more once all its objectives are done) into the party's, and a white `*` marks every objective not yet reached. Page Down opens the quest screen: up and down choose Quests, Subquests or Completed, right enters the subquest list and then shows the chosen one, left backs out. The stories that make the rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
 `-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
 hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
@@ -63,6 +63,7 @@ and `-overworld-quick <key>[:<hero>][,<seconds>]` use a stack from the panel or 
 its target, or leaving the target marked without one), and `-overworld-pickup-drop <drop>[,<seconds>]` picks a dropped item up again;
 `-overworld-script "<script>"` types a script into the console key by key and presses Enter, `-overworld-console "<text>"` types
 text and leaves the console open (for a capture of the prompt), both after `-overworld-script-after <seconds>`;
+`-overworld-objective <q:o|s:n:o>[+...][,<seconds>]` completes those objectives in turn (main quest q's objective o, or subquest n's), the leader placed on each but walking into the last, and `-overworld-quest-screen <main|subquests|subquest:n|finished>[,<seconds>]` opens the quest screen on that page;
 a scripted run never takes the real mouse.
 
 ## Why
