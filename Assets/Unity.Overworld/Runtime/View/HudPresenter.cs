@@ -164,6 +164,12 @@ namespace MindAttic.Overworld.Runtime
             messageLayer.style.top = 0;
             root.Add(messageLayer);
             examineLayer = NewLayer(root, "examine");
+            // renderQuestScreen came after the examine box and before renderMessages.
+            questLayer = NewLayer(root, "quest screen");
+            messageLayer.BringToFront();
+            questLabels.Clear();
+            markerLabels.Clear();
+            QuestPicture = null;
             messageLabels.Clear();
             statusLabels.Clear();
             bars.Clear();
@@ -685,6 +691,109 @@ namespace MindAttic.Overworld.Runtime
             PlaceWorldLabel(TargetName, hero.Name, x, y, l.EmHeight(t.NameScale), colour);
         }
 
+        // ---- the quests (U.OVW-US-A15): the quest screen and the objectives' markers ----------------------------------
+
+        VisualElement questLayer;
+        readonly List<Label> questLabels = new List<Label>();
+        readonly List<Label> markerLabels = new List<Label>();
+        PlayerId questPlayer;
+        string questPictureFile;
+
+        /// <summary>The quests shown (null until <see cref="ShowQuests"/>).</summary>
+        public QuestLog Quests { get; private set; }
+
+        /// <summary>The quest screen's picture (the page's), shown while the screen is open.</summary>
+        public VisualElement QuestPicture { get; private set; }
+
+        /// <summary>The picture the quest screen shows now.</summary>
+        public string QuestPictureFile => questPictureFile;
+
+        /// <summary>The quest screen's lines shown now, in draw order (hidden ones beyond).</summary>
+        public IReadOnlyList<Label> QuestLabels => questLabels;
+
+        /// <summary>The "*" markers shown now, one per incomplete objective in <see cref="QuestLog.Markers"/> order (hidden ones beyond).</summary>
+        public IReadOnlyList<Label> MarkerLabels => markerLabels;
+
+        /// <summary>
+        /// Shows <paramref name="quests"/> for <paramref name="player"/> from now on: the quest screen while it is open, and
+        /// a "*" in 3D text at every incomplete objective (showQuestPoints, open or not), in the world's light, as the
+        /// pickups' names are drawn. Call after <see cref="ShowPickups"/> (the markers share its 3D-text font and world).
+        /// </summary>
+        public void ShowQuests(QuestLog quests, PlayerId player, TextureLibrary library = null)
+        {
+            Quests = quests ?? throw new ArgumentNullException(nameof(quests));
+            questPlayer = player;
+            textures = library ?? textures ?? new TextureLibrary();
+            if (QuestPicture == null && questLayer != null && Hud.QuestScreen != null)
+            {
+                QuestPicture = NewPicture(questLayer, "quest screen", Hud.QuestScreen.MainPicture);
+                questPictureFile = Hud.QuestScreen.MainPicture;
+                questLayer.style.display = DisplayStyle.None;
+            }
+
+            Refresh();
+        }
+
+        void RefreshQuests()
+        {
+            if (Quests == null || QuestPicture == null) return;
+            var def = Hud.QuestScreen;
+            RefreshMarkers(def);
+            var v = Quests.For(questPlayer);
+            if (!v.Open)
+            {
+                questLayer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            questLayer.style.display = DisplayStyle.Flex;
+            var file = def.Picture(v.Page);
+            if (file != questPictureFile)
+            {
+                questPictureFile = file;
+                SetPicture(QuestPicture, file);
+            }
+
+            PlaceBox(QuestPicture, def.X, def.Y, def.Width, def.Height);
+            var lines = def.Lines(Quests, v);
+            for (var i = 0; i < lines.Count; i++)
+            {
+                if (i == questLabels.Count)
+                {
+                    var label = NewLabel(questLayer, "quest line " + i, null);
+                    Style(label, def.Font);
+                    questLabels.Add(label);
+                }
+
+                var (text, at, colour) = lines[i];
+                questLabels[i].text = text;
+                Place(questLabels[i], at.X, at.Y);
+                questLabels[i].style.color = (Color)new Color32(colour.R, colour.G, colour.B, colour.A);
+                questLabels[i].style.display = DisplayStyle.Flex;
+            }
+
+            for (var i = lines.Count; i < questLabels.Count; i++) questLabels[i].style.display = DisplayStyle.None;
+        }
+
+        /// <summary>showQuestPoints: renderText's "*" (scale 0.02, centred) at every incomplete objective, in the world's light.</summary>
+        void RefreshMarkers(QuestScreenDefinition def)
+        {
+            if (Pickups == null || labelLayer == null) return;
+            var markers = Quests.Markers;
+            var shown = World != null && World.Camera != null;
+            var l = Pickups.Data.Label;
+            var colour = shown ? World.Tint : Color.white;
+            colour.a = 1f;
+            for (var i = 0; i < markers.Count; i++)
+            {
+                if (i == markerLabels.Count) markerLabels.Add(NewWorldLabel("quest marker " + i));
+                if (shown) PlaceWorldLabel(markerLabels[i], def.Marker, markers[i].X, markers[i].Y, l.EmHeight(def.MarkerScale), colour);
+                else markerLabels[i].style.display = DisplayStyle.None;
+            }
+
+            for (var i = markers.Count; i < markerLabels.Count; i++) markerLabels[i].style.display = DisplayStyle.None;
+        }
+
         void LateUpdate() => Refresh();
 
         static VisualElement NewLayer(VisualElement root, string name)
@@ -726,6 +835,7 @@ namespace MindAttic.Overworld.Runtime
             RefreshRest();
             RefreshPickups();
             RefreshInventory();
+            RefreshQuests();
             RefreshConsole();
 
             var shown = Messages != null ? Messages.Shown : (IReadOnlyList<ShownMessage>)Array.Empty<ShownMessage>();

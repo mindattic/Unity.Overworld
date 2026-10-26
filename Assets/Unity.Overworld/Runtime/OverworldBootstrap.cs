@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using MindAttic.Overworld.Core;
 using UnityEngine;
 
@@ -41,7 +42,8 @@ namespace MindAttic.Overworld.Runtime
     /// the inventory's <c>-overworld-give</c>, <c>-overworld-quickbar</c>, <c>-overworld-inventory</c>, <c>-overworld-swap</c>,
     /// <c>-overworld-drop</c>, <c>-overworld-use</c>, <c>-overworld-quick</c> and <c>-overworld-pickup-drop</c> (see
     /// <see cref="ApplyScriptedInventory"/>); the console's <c>-overworld-script</c>, <c>-overworld-console</c> and
-    /// <c>-overworld-script-after</c> (see <see cref="ApplyScriptedConsole"/>);
+    /// <c>-overworld-script-after</c> (see <see cref="ApplyScriptedConsole"/>); the quests' <c>-overworld-objective</c> and
+    /// <c>-overworld-quest-screen</c> (see <see cref="ApplyScriptedQuests"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -85,6 +87,10 @@ namespace MindAttic.Overworld.Runtime
         public Pickups Pickups { get; private set; }
         public InventoryControl Inventory { get; private set; }
         public ScriptInterpreter Scripts { get; private set; }
+        public QuestLog Quests { get; private set; }
+
+        public const string QuestScreenArgument = "-overworld-quest-screen";
+        public const string ObjectiveArgument = "-overworld-objective";
 
         public const string ScriptArgument = "-overworld-script";
         public const string ConsoleArgument = "-overworld-console";
@@ -123,6 +129,9 @@ namespace MindAttic.Overworld.Runtime
             Scripts = new ScriptInterpreter(Content.Scripts, Party, Pickups.Inventory) { Pack = Inventory, View = Control }.Install(game);
             Pickups.Scripts = Scripts;
             Inventory.Scripts = Scripts;
+            // checkQuests and checkSubquests ran after getInput and before updateHero: the quests step before the party,
+            // their scripts (HERO the item target, selectedHero) through the interpreter.
+            Quests = new QuestLog(Content.Quests, Party) { Scripts = Scripts, ScriptHero = Scripts.TargetOf }.Install(game);
             Party.Install(game);
             Control.Install(game);
             // getMouse's wheel: the open pack or the target being chosen, then the items in reach, then the zoom.
@@ -155,6 +164,7 @@ namespace MindAttic.Overworld.Runtime
             Hud.ShowVitals(Party, PlayerId.One);
             Hud.ShowPickups(Pickups, Viewpoint, World, PlayerId.One);
             Hud.ShowInventory(Inventory, PlayerId.One);
+            Hud.ShowQuests(Quests, PlayerId.One);
             Hud.ShowConsole(Scripts, PlayerId.One);
             World.ShowTarget(Inventory, PlayerId.One, Content.Hud.Target);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
@@ -181,7 +191,8 @@ namespace MindAttic.Overworld.Runtime
             var picked = ApplyScriptedPickups(args, game);
             var packed = ApplyScriptedInventory(args, game);
             var typed = ApplyScriptedConsole(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || seeded || capture != null) Input.UseDevices = false;
+            var quested = ApplyScriptedQuests(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -844,6 +855,137 @@ namespace MindAttic.Overworld.Runtime
             return true;
         }
 
+        /// <summary>
+        /// Applies the quests' scripted arguments; true when any was given: <c>-overworld-objective &lt;item+item...[,seconds]&gt;</c>
+        /// completes objectives in turn, each item <c>q:o</c> (main quest q's objective o) or <c>s:n:o</c> (subquest n's):
+        /// the leader is placed on every one but the last, which it walks into (placed 0.2 below and left of it, then the
+        /// move button held toward it), so a capture shows the walk and the marker going; <c>-overworld-quest-screen
+        /// &lt;main|subquests|subquest:n|finished[,seconds]&gt;</c> presses Page Down and the arrows to show that page.
+        /// </summary>
+        bool ApplyScriptedQuests(string[] args, Game game)
+        {
+            var any = false;
+            var objective = ArgumentAfter(args, ObjectiveArgument);
+            if (objective != null)
+            {
+                any = true;
+                if (TryObjectives(objective, Quests, out var items, out var seconds)) StartCoroutine(ObjectivesAfter(game, items, seconds));
+                else Debug.LogError("Unity.Overworld: " + ObjectiveArgument + " wants q:o or s:n:o items joined by +, and optionally the seconds to wait, not '" + objective + "'.");
+            }
+
+            var screen = ArgumentAfter(args, QuestScreenArgument);
+            if (screen != null)
+            {
+                any = true;
+                if (TryQuestScreen(screen, out var keys, out var seconds)) StartCoroutine(QuestScreenAfter(game, keys, seconds));
+                else Debug.LogError("Unity.Overworld: " + QuestScreenArgument + " wants main, subquests, subquest:n or finished, and optionally the seconds to wait, not '" + screen + "'.");
+            }
+
+            return any;
+        }
+
+        /// <summary>Reads <c>item+item...[,seconds]</c>, each item <c>q:o</c> or <c>s:n:o</c>, as the objectives of <paramref name="quests"/>.</summary>
+        public static bool TryObjectives(string text, QuestLog quests, out List<Objective> items, out float seconds)
+        {
+            items = new List<Objective>();
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            if (parts.Length == 2 && !(float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f)) return false;
+            foreach (var raw in parts[0].Split('+'))
+            {
+                var f = raw.Trim().Split(':');
+                var sub = f.Length == 3 && f[0].Trim().ToLowerInvariant() == "s";
+                if (!(f.Length == 2 || sub)) return false;
+                var list = sub ? quests.Subquests : quests.Quests;
+                var at = sub ? 1 : 0;
+                if (!int.TryParse(f[at].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var q) || q < 0 || q >= list.Count) return false;
+                if (!int.TryParse(f[at + 1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var o) || o < 0 || o >= list[q].Objectives.Count) return false;
+                items.Add(list[q].Objectives[o]);
+            }
+
+            return items.Count > 0;
+        }
+
+        /// <summary>Reads <c>main|subquests|subquest:n|finished[,seconds]</c> as the arrows that show that page once the screen opens.</summary>
+        public static bool TryQuestScreen(string text, out List<QuestKey> keys, out float seconds)
+        {
+            keys = new List<QuestKey>();
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            if (parts.Length == 2 && !(float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f)) return false;
+            var what = parts[0].Trim().ToLowerInvariant();
+            if (what == "main") return true;
+            keys.Add(QuestKey.Down);
+            if (what == "subquests") return true;
+            if (what == "finished")
+            {
+                keys.Add(QuestKey.Down);
+                return true;
+            }
+
+            if (!what.StartsWith("subquest:", StringComparison.Ordinal) ||
+                !int.TryParse(what.Substring(9), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) || n < 0) return false;
+            keys.Add(QuestKey.Right);
+            for (var i = 0; i < n; i++) keys.Add(QuestKey.Down);
+            keys.Add(QuestKey.Right);
+            return true;
+        }
+
+        IEnumerator ObjectivesAfter(Game game, List<Objective> items, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var leader = Party.LeaderOf(PlayerId.One);
+            for (var i = 0; i < items.Count; i++)
+            {
+                var o = items[i];
+                var last = i == items.Count - 1;
+                var at = last ? Quests.StandingAt(o.X - 0.2f, o.Y - 0.2f) : Quests.StandingAt(o.X, o.Y);
+                var placed = game.Submit(new PlaceHero(PlayerId.One, leader, at.X, at.Y));
+                if (!placed.Accepted)
+                {
+                    Debug.LogError("Unity.Overworld: placing the leader by " + o + " was refused: " + placed.Reason);
+                    yield break;
+                }
+
+                // Chosen again, so the camera centres on where it now stands.
+                game.Submit(new SelectHero(PlayerId.One, leader));
+                yield return NextTick(game);
+                if (!last) continue;
+                // The move button heads the leader's point for the cursor plus the locomotion's offset: aim it at the objective.
+                var offset = Party.Data.Locomotion.CursorOffset;
+                Input.Scripted = MoveInput.Toward(o.X - offset.X, o.Y - offset.Y);
+                var start = Time.realtimeSinceStartup;
+                while (!o.Complete && Time.realtimeSinceStartup - start < 10f) yield return null;
+                Input.Scripted = default(MoveInput);
+            }
+
+            Debug.Log("Unity.Overworld: scripted objectives; " + DescribeQuests());
+        }
+
+        IEnumerator QuestScreenAfter(Game game, List<QuestKey> keys, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            if (!Quests.For(PlayerId.One).Open) game.Submit(new ToggleQuestScreen(PlayerId.One));
+            foreach (var key in keys)
+            {
+                var r = game.Submit(new PressQuestKey(PlayerId.One, key));
+                if (!r.Accepted) Debug.LogError("Unity.Overworld: " + QuestScreenArgument + " " + key + " was refused: " + r.Reason);
+            }
+
+            var v = Quests.For(PlayerId.One);
+            Debug.Log("Unity.Overworld: scripted quest screen " + v.Page + (v.Subquest >= 0 ? " subquest " + v.Subquest : ""));
+        }
+
+        string DescribeQuests()
+        {
+            var v = Quests.For(PlayerId.One);
+            return "experience " + Party.Experience + ", current " + Quests.Current + ", objectives [" +
+                   string.Join(", ", Quests.Quests.SelectMany(q => q.Objectives).Concat(Quests.Subquests.SelectMany(q => q.Objectives))) + "], subquests [" +
+                   string.Join(", ", Quests.Subquests) + "], screen " + (v.Open ? "open on " + v.Page + (v.Subquest >= 0 ? " subquest " + v.Subquest : "") : "shut");
+        }
+
         string DescribeScripts()
         {
             var s = Scripts.For(PlayerId.One);
@@ -982,6 +1124,12 @@ namespace MindAttic.Overworld.Runtime
                     Debug.Log("Unity.Overworld: scripts " + DescribeScripts() +
                               (Hud != null && Hud.ConsoleLabel != null && Hud.ConsoleLabel.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex
                                   ? ", prompt '" + Hud.ConsoleLabel.text + "'" : ""));
+
+                if (Quests != null)
+                    Debug.Log("Unity.Overworld: quests " + DescribeQuests() +
+                              (Hud != null ? "; markers " + Hud.MarkerLabels.Count(l => l.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex) +
+                                             (Quests.For(PlayerId.One).Open ? "; screen " + Hud.QuestPictureFile + " [" + string.Join(" | ", Hud.QuestLabels.Where(l => l.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex).Select(l => l.text)) + "]" : "")
+                                  : ""));
 
                 if (Clock != null)
                 {
