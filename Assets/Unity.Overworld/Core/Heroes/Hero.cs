@@ -89,8 +89,20 @@ namespace MindAttic.Overworld.Core
         public bool Running { get; internal set; }
 
         public bool Kneeling { get; internal set; }
+
+        /// <summary>Lying down (the rest key's second press, or a sleeping draught): the sleep picture and the hours chooser.</summary>
         public bool Laying { get; internal set; }
+
         public bool Burdened { get; internal set; }
+
+        /// <summary>
+        /// The hours a sleep will last (the original's sleepHours, one per player here: the chooser of the hero a player
+        /// leads), set with the arrows while laid and back to the fewest after each sleep.
+        /// </summary>
+        public int SleepHours { get; internal set; } = 1;
+
+        /// <summary>When the hours chooser last checked the arrows, in game seconds (lastSleepCheck).</summary>
+        internal double LastSleepTime { get; set; }
 
         /// <summary>The held-direction flags (moveLeft/Right/Up/Down): kept while the move button is held.</summary>
         public bool MoveLeft { get; internal set; }

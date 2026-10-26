@@ -32,6 +32,12 @@
     "mana": {"x": 2, "y": 450, "frame": "gfx/gui/health_bar.PNG", "fill": "gfx/gui/mana_fill.PNG"},
     "stamina": {"x": 2, "y": 464, "frame": "gfx/gui/stamina_bar.PNG", "fill": "gfx/gui/stamina_fill.PNG"}
   },
+  "rest": {
+    "_note": "Engine.showRestText: while the leader is laid and kneeling, 'Rest for n hour?' (n = 1) or 'Rest for n hours?' is written at (iWidth / 2 - 100, iHeight / 2 - 20) in fontArialNarrow24, (255, 255, 255, 255). The HUD is not dimmed by a sleep's fade.",
+    "prompt": {"x": 220, "y": 220, "font": "fontArialNarrow24", "colour": [255, 255, 255, 255]},
+    "one": "Rest for {0} hour?",
+    "many": "Rest for {0} hours?"
+  },
   "messages": {
     "_note": "Messages.vb: up to maxMessages waiting (a message added to a full queue replaces the last); the next is shown at the screen centre, x less 6 / 2 per character, once the last shown is more than 'spacing' pixels below the centre or gone; each shown message loses 'fade' alpha and drops 'drift' pixels a tick, starting at alpha 255, and is gone at 0. The period announcements use fontArialNarrow24 in white.",
     "maxMessages": 100,

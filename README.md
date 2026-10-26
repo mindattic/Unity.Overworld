@@ -21,7 +21,10 @@ period's name drifts down from the centre as it begins. Each hero has 50 health,
 12 and 60): every 2 seconds standing gives back a point of stamina, kneeling two, running takes one, and poison takes a point of
 health; the status box at the top left shows the leader's (and the team's) HP, MP and AP, the three bars at the bottom left fill
 by the leader's, and an Exhausted, Angry or (green) Poisoned animation plays above a hero below 15 percent stamina, below 5 percent
-health or poisoned. The stories that make the rest play follow in build order.
+health or poisoned. `\` rests: once kneels, again lies down ("Rest for 1 hour?" at the centre; the arrows set 1 to 24 hours),
+again kneels; Enter or a left click while lying down sleeps, fading the world to black, giving every hero an eighth of its maximum
+health, mana and stamina an hour (no stamina while poisoned), moving the clock on and fading back in. The stories that make the
+rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
 `-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
 hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
@@ -32,7 +35,8 @@ or after that many seconds, so it falls in from z -1; `-overworld-solo` starts w
 `-overworld-select <hero|next|previous>[,<seconds>]` makes Chrono (0), Belmont (1) or Flagg (2) the leader, or steps as `]` / `[`
 do; `-overworld-clock <h:mm>[,<seconds>]` sets the time of day (period and light settled at once) and, given seconds, how many
 real seconds a minute takes (0: a minute every 60 Hz tick, a day in 24 seconds); `-overworld-vitals <hero>:<key=value,...>[;...]`
-sets vitals as CHANGE HERO did (`hp`, `mp`, `ap`, and `poisoned` or `fine`; e.g. `0:ap=5;1:hp=1;2:poisoned`); a scripted run never takes the real mouse.
+sets vitals as CHANGE HERO did (`hp`, `mp`, `ap`, and `poisoned` or `fine`; e.g. `0:ap=5;1:hp=1;2:poisoned`); `-overworld-rest <kneel|lay|hours>[,<seconds>]` kneels, lies down or sleeps that many hours, and
+`-overworld-sleep-until <hour>[,<seconds>]` sleeps until that hour as the Moon Berry (22) and Morningstar (5) do; a scripted run never takes the real mouse.
 
 ## Why
 

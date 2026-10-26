@@ -11,7 +11,8 @@ namespace MindAttic.Overworld.Runtime
     /// DirectInput mouse was, and its motion drives the world cursor), the wheel and the middle button (zoom), Shift (fast
     /// edge scroll), E (examine), F (free camera), X / Z (isometric) and numpad 4 / 6 / 8 / 2 (strafe). The party controls
     /// (RECONSTRUCTION 4.7, 5.1 and 13): [ and ] (the previous and next hero), ' (team / solo), and the left button (on a
-    /// hero, it leads; on the team button, the team toggles). Every frame, before the game advances, it sends what the
+    /// hero, it leads; on the team button, the team toggles). The rest controls (RECONSTRUCTION 6.4): \ (kneel, lie down,
+    /// kneel again) and Enter or the left button while lying down (sleep). Every frame, before the game advances, it sends what the
     /// player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/> commands and the key presses and clicks as
     /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>
@@ -20,7 +21,7 @@ namespace MindAttic.Overworld.Runtime
     {
         InputAction left, right, up, down, run, move, point;
         InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
-        InputAction previousHero, nextHero, team, select;
+        InputAction previousHero, nextHero, team, select, rest, confirm;
         Vector2? scriptedMouse;
         int scriptedWheelSent;
 
@@ -101,6 +102,8 @@ namespace MindAttic.Overworld.Runtime
             nextHero = Button("NextHero", "<Keyboard>/rightBracket");
             team = Button("Team", "<Keyboard>/quote");
             select = Button("Select", "<Mouse>/leftButton");
+            rest = Button("Rest", "<Keyboard>/backslash");
+            confirm = Button("Confirm", "<Keyboard>/enter", "<Keyboard>/numpadEnter");
         }
 
         static InputAction Button(string name, params string[] bindings)
@@ -130,7 +133,7 @@ namespace MindAttic.Overworld.Runtime
         {
             left, right, up, down, run, move, point,
             motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown,
-            previousHero, nextHero, team, select,
+            previousHero, nextHero, team, select, rest, confirm,
         };
 
         void Update()
@@ -153,7 +156,19 @@ namespace MindAttic.Overworld.Runtime
             if (previousHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, -1));
             if (nextHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, 1));
             if (team.WasPressedThisFrame()) Game.Submit(new ToggleTeam(Player));
+            if (rest.WasPressedThisFrame()) Game.Submit(new Rest(Player));
+            Confirm(confirm.WasPressedThisFrame() || select.WasPressedThisFrame());
             Click(select.IsPressed(), select.WasPressedThisFrame());
+        }
+
+        /// <summary>
+        /// Enter or the left button (actionPickup's "Initiate Sleep"): pressed while the hero this player leads lies down,
+        /// the party sleeps the hours chosen.
+        /// </summary>
+        public void Confirm(bool pressed)
+        {
+            if (!pressed || Party == null) return;
+            if (Party.Heroes[Party.LeaderOf(Player)].Laying) Game.Submit(new Sleep(Player));
         }
 
         /// <summary>

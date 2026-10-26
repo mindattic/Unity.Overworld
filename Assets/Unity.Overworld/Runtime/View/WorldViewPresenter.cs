@@ -69,6 +69,19 @@ namespace MindAttic.Overworld.Runtime
             Refresh();
         }
 
+        /// <summary>The sleep whose fade dims the world (null: never dimmed).</summary>
+        public SleepCycle Sleep { get; private set; }
+
+        /// <summary>
+        /// Dims the world by <paramref name="sleep"/>'s ambient from now on: the light is multiplied by it, so a sleep
+        /// fades the world to black and back (Sun.checkSleep's device ambient, RECONSTRUCTION 6.4); the HUD is not dimmed.
+        /// </summary>
+        public void DimBy(SleepCycle sleep)
+        {
+            Sleep = sleep;
+            Refresh();
+        }
+
         /// <summary>Draws <paramref name="party"/>'s heroes from now on, placed between their last two ticks of <paramref name="source"/>.</summary>
         public void Follow(Party party, Game source)
         {
@@ -180,9 +193,10 @@ namespace MindAttic.Overworld.Runtime
                 new Vector3(cam.PreviousX, cam.PreviousY, cam.PreviousZ), new Vector3(cam.X, cam.Y, cam.Z), alpha);
             Camera.transform.localRotation = Quaternion.identity;
 
-            if (Daylight != null)
+            if (Daylight != null || Sleep != null)
             {
-                var light = Daylight.Light;
+                var light = Daylight != null ? Daylight.Light : new LightColour(255, 255, 255);
+                if (Sleep != null) light = Sleep.Lit(light);
                 material.color = new Color32(light.R, light.G, light.B, 255);
             }
 

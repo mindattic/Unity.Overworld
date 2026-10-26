@@ -15,7 +15,7 @@ namespace MindAttic.Overworld.Runtime
     /// game state. The hero screen's date and time lines (hud.json "heroScreen") come with that screen (story A20).
     /// Once <see cref="ShowVitals"/> is called it also writes the status box (the leader's name, HP, MP and AP, and the
     /// team's beside it, in the inverse of the clock's light as renderStatus did) and draws the health, mana and stamina
-    /// bars at the bottom left (U.OVW-US-A10).
+    /// bars at the bottom left (U.OVW-US-A10), and the rest prompt while that leader lies down (U.OVW-US-A11).
     /// </summary>
     public sealed class HudPresenter : MonoBehaviour
     {
@@ -41,6 +41,12 @@ namespace MindAttic.Overworld.Runtime
 
         /// <summary>The time on the HUD.</summary>
         public Label TimeLabel { get; private set; }
+
+        /// <summary>
+        /// The rest prompt ("Rest for n hours?"), shown while the hero <see cref="Player"/> leads lies down (and kneels), as
+        /// showRestText wrote it; hidden otherwise or before <see cref="ShowVitals"/>.
+        /// </summary>
+        public Label RestLabel { get; private set; }
 
         /// <summary>The labels of the messages shown now, in <see cref="MessageBoard.Shown"/> order (hidden ones beyond).</summary>
         public IReadOnlyList<Label> MessageLabels => messageLabels;
@@ -142,6 +148,8 @@ namespace MindAttic.Overworld.Runtime
             root.Add(statusLayer);
             PeriodLabel = NewLabel(root, "period", Hud.Period);
             TimeLabel = NewLabel(root, "time", Hud.Time);
+            RestLabel = Hud.Rest != null ? NewLabel(root, "rest", Hud.Rest) : null;
+            if (RestLabel != null) RestLabel.style.display = DisplayStyle.None;
             messageLayer = new VisualElement { name = "messages", pickingMode = PickingMode.Ignore };
             messageLayer.style.position = Position.Absolute;
             messageLayer.style.left = 0;
@@ -180,6 +188,7 @@ namespace MindAttic.Overworld.Runtime
             }
 
             RefreshVitals();
+            RefreshRest();
 
             var shown = Messages != null ? Messages.Shown : (IReadOnlyList<ShownMessage>)Array.Empty<ShownMessage>();
             for (var i = 0; i < shown.Count; i++)
@@ -223,6 +232,21 @@ namespace MindAttic.Overworld.Runtime
             PlaceBar(b.Health, b, b.FillWidth(hero.Health, hero.MaxHealth));
             PlaceBar(b.Mana, b, b.FillWidth(hero.Mana, hero.MaxMana));
             PlaceBar(b.Stamina, b, b.FillWidth(hero.Stamina, hero.MaxStamina));
+        }
+
+        void RefreshRest()
+        {
+            if (RestLabel == null) return;
+            var hero = Party != null ? Party.Heroes[Party.LeaderOf(Player)] : null;
+            if (hero == null || !hero.Laying || !hero.Kneeling)
+            {
+                RestLabel.style.display = DisplayStyle.None;
+                return;
+            }
+
+            RestLabel.text = Hud.RestText(hero.SleepHours);
+            Place(RestLabel, Hud.Rest.X, Hud.Rest.Y);
+            RestLabel.style.display = DisplayStyle.Flex;
         }
 
         void PlaceBar(BarDefinition bar, BarsDefinition size, int fillWidth)

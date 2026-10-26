@@ -36,6 +36,43 @@ namespace MindAttic.Overworld.Core
         public int Step { get; }
     }
 
+    /// <summary>
+    /// The rest key (\, Input.actionRest, RECONSTRUCTION 6.4) for the hero <see cref="Player"/> leads, not in battle mode:
+    /// it stops running; standing, it kneels; kneeling, it lies down; lying down, it kneels again. A hero lies until it
+    /// rises with the rest key, and kneels until it moves.
+    /// </summary>
+    public sealed class Rest : ICommand
+    {
+        public Rest(PlayerId player) { Player = player; }
+        public PlayerId Player { get; }
+    }
+
+    /// <summary>A hero knelt, lay down or got up.</summary>
+    public sealed class HeroRestChanged : IGameEvent
+    {
+        public HeroRestChanged(long tick, int hero, bool kneeling, bool laying)
+        {
+            Tick = tick;
+            Hero = hero;
+            Kneeling = kneeling;
+            Laying = laying;
+        }
+
+        public long Tick { get; }
+        public int Hero { get; }
+        public bool Kneeling { get; }
+        public bool Laying { get; }
+    }
+
+    /// <summary>A laid hero's sleep was set to another number of hours with the arrows.</summary>
+    public sealed class SleepHoursChanged : IGameEvent
+    {
+        public SleepHoursChanged(long tick, int hero, int hours) { Tick = tick; Hero = hero; Hours = hours; }
+        public long Tick { get; }
+        public int Hero { get; }
+        public int Hours { get; }
+    }
+
     /// <summary>Following was turned on (team) or off (solo).</summary>
     public sealed class TeamChanged : IGameEvent
     {

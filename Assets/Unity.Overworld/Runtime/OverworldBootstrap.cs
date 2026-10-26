@@ -28,6 +28,10 @@ namespace MindAttic.Overworld.Runtime
     /// every tick, so a day passes in 24 seconds), so captures can show each period, its light and its announcement;
     /// <c>-overworld-vitals &lt;hero:key=value,...[;hero:...]&gt;</c> sets heroes' vitals as CHANGE HERO did (hp, mp and ap
     /// numbers, and poisoned or fine), e.g. <c>0:ap=5;1:hp=1;2:poisoned</c>, so captures can show each status animation;
+    /// <c>-overworld-rest &lt;kneel|lay|hours[,seconds]&gt;</c> presses the rest key once (kneel) or twice (lay, showing the
+    /// prompt), or lays the leader down and sleeps that many hours (1 to 24), at once or after that many seconds;
+    /// <c>-overworld-sleep-until &lt;hour[,seconds]&gt;</c> lays the leader down and sleeps until that hour (0 to 23) as the
+    /// Moon Berry (22) and Morningstar (5) do;
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -48,6 +52,8 @@ namespace MindAttic.Overworld.Runtime
         public const string SelectArgument = "-overworld-select";
         public const string ClockArgument = "-overworld-clock";
         public const string VitalsArgument = "-overworld-vitals";
+        public const string RestArgument = "-overworld-rest";
+        public const string SleepUntilArgument = "-overworld-sleep-until";
 
         public ContentRegistry Content { get; private set; }
         public GameHost Host { get; private set; }
@@ -60,6 +66,7 @@ namespace MindAttic.Overworld.Runtime
         public WorldClock Clock { get; private set; }
         public MessageBoard Messages { get; private set; }
         public HudPresenter Hud { get; private set; }
+        public SleepCycle Sleep { get; private set; }
 
         /// <summary>The content folder of this build (or of the project, in the editor).</summary>
         public static string ContentDirectory => Path.Combine(Application.streamingAssetsPath, "Content");
@@ -72,7 +79,10 @@ namespace MindAttic.Overworld.Runtime
             Control = new CameraControl(Content.View, Party).Install(game);
             // renderTime ran before renderMessages, so the clock steps before the board: an announcement shows on its minute.
             Messages = new MessageBoard(Content.Hud);
-            Clock = new WorldClock(Content.Time, Content.Heroes.Locomotion.GameSpeed, Messages).Install(game);
+            Clock = new WorldClock(Content.Time, Content.Heroes.Locomotion.GameSpeed, Messages);
+            // checkSleep ran in renderTime after the heroes and before the minute: the sleep steps between party and clock.
+            Sleep = new SleepCycle(Party, Clock).Install(game);
+            Clock.Install(game);
             Messages.Install(game);
             var joined = game.Submit(new JoinGame(PlayerId.One));
             if (!joined.Accepted) Debug.LogError("Unity.Overworld: player 1 could not join: " + joined.Reason);
@@ -85,6 +95,7 @@ namespace MindAttic.Overworld.Runtime
             World.Follow(Party, game);
             World.ShowCursor(Viewpoint.Cursor);
             World.LightBy(Clock);
+            World.DimBy(Sleep);
             Hud = HudPresenter.Create(Content.Hud, Clock, Messages);
             Hud.transform.SetParent(transform, false);
             Hud.ShowVitals(Party, PlayerId.One);
@@ -106,7 +117,8 @@ namespace MindAttic.Overworld.Runtime
             var party = ApplyScriptedParty(args, game);
             ApplyScriptedClock(args, game);
             var vitals = ApplyScriptedVitals(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || capture != null) Input.UseDevices = false;
+            var rested = ApplyScriptedRest(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -355,6 +367,91 @@ namespace MindAttic.Overworld.Runtime
             return commands.Count > 0;
         }
 
+        /// <summary>Applies <c>-overworld-rest</c> and <c>-overworld-sleep-until</c>; true when either was given.</summary>
+        bool ApplyScriptedRest(string[] args, Game game)
+        {
+            var any = false;
+            var rest = ArgumentAfter(args, RestArgument);
+            if (rest != null)
+            {
+                any = true;
+                if (TryRest(rest, out var presses, out var hours, out var seconds)) StartCoroutine(RestAfter(game, presses, hours, seconds));
+                else Debug.LogError("Unity.Overworld: " + RestArgument + " wants kneel, lay or the hours to sleep (1 to 24), and optionally the seconds to wait, not '" + rest + "'.");
+            }
+
+            var until = ArgumentAfter(args, SleepUntilArgument);
+            if (until != null)
+            {
+                any = true;
+                if (TrySleepUntil(until, out var hour, out var wait)) StartCoroutine(SleepUntilAfter(game, hour, wait));
+                else Debug.LogError("Unity.Overworld: " + SleepUntilArgument + " wants the hour to wake (0 to 23), and optionally the seconds to wait, not '" + until + "'.");
+            }
+
+            return any;
+        }
+
+        /// <summary>
+        /// Reads <c>kneel|lay|hours[,seconds]</c>: the rest-key presses (1 kneels, 2 lays down) and, for a number, the hours
+        /// to sleep once laid (null for kneel and lay).
+        /// </summary>
+        public static bool TryRest(string text, out int presses, out int? hours, out float seconds)
+        {
+            presses = 0;
+            hours = null;
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            if (parts.Length == 2 && !(float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f)) return false;
+            var what = parts[0].Trim().ToLowerInvariant();
+            if (what == "kneel") presses = 1;
+            else if (what == "lay") presses = 2;
+            else if (int.TryParse(what, NumberStyles.Integer, CultureInfo.InvariantCulture, out var h) && h >= 1 && h <= 24)
+            {
+                presses = 2;
+                hours = h;
+            }
+
+            return presses > 0;
+        }
+
+        /// <summary>Reads <c>hour[,seconds]</c>, the hour 0 to 23.</summary>
+        public static bool TrySleepUntil(string text, out int hour, out float seconds)
+        {
+            hour = 0;
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            if (parts.Length == 2 && !(float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f)) return false;
+            return int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out hour) && hour >= 0 && hour <= 23;
+        }
+
+        IEnumerator RestAfter(Game game, int presses, int? hours, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            for (var i = 0; i < presses; i++)
+            {
+                var result = game.Submit(new Rest(PlayerId.One));
+                if (result.Accepted) continue;
+                Debug.LogError("Unity.Overworld: " + RestArgument + " was refused: " + result.Reason);
+                yield break;
+            }
+
+            var leader = Party.Leader(PlayerId.One);
+            Debug.Log("Unity.Overworld: scripted rest, " + leader.Name + (leader.Laying ? " lying down" : " kneeling"));
+            if (!hours.HasValue) yield break;
+            var sleep = game.Submit(new Sleep(PlayerId.One, hours));
+            if (sleep.Accepted) Debug.Log("Unity.Overworld: scripted sleep of " + hours + " hour(s) from " + Clock.TimeText);
+            else Debug.LogError("Unity.Overworld: " + RestArgument + " sleep was refused: " + sleep.Reason);
+        }
+
+        IEnumerator SleepUntilAfter(Game game, int hour, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var result = game.Submit(new SleepUntil(PlayerId.One, Party.LeaderOf(PlayerId.One), hour));
+            if (result.Accepted) Debug.Log("Unity.Overworld: scripted sleep until " + hour + ":00 from " + Clock.TimeText);
+            else Debug.LogError("Unity.Overworld: " + SleepUntilArgument + " was refused: " + result.Reason);
+        }
+
         static string Describe(Hero h) => h.Name + " HP " + h.Health + "/" + h.MaxHealth + " MP " + h.Mana + "/" + h.MaxMana + " AP " + h.Stamina + "/" + h.MaxStamina + " " + h.Status;
 
         /// <summary>Reads <c>hour:minute[,seconds]</c>.</summary>
@@ -453,6 +550,9 @@ namespace MindAttic.Overworld.Runtime
 
                 if (Clock != null)
                 {
+                    if (Sleep != null) Debug.Log("Unity.Overworld: ambient " + Sleep.Ambient + (Sleep.Sleeping ? " sleeping" : "") +
+                                                 (Hud != null && Hud.RestLabel != null && Hud.RestLabel.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex
+                                                     ? ", prompt '" + Hud.RestLabel.text + "'" : ""));
                     Debug.Log("Unity.Overworld: clock " + Clock.TimeText + " " + Clock.Period.Name + ", " + Clock.DateText + ", light " + Clock.Light);
                     foreach (var m in Messages.Shown) Debug.Log("Unity.Overworld: message " + m);
                 }

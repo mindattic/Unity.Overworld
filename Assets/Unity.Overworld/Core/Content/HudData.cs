@@ -148,6 +148,19 @@ namespace MindAttic.Overworld.Core
         /// <summary>The health, mana and stamina bars.</summary>
         public BarsDefinition Bars { get; internal set; }
 
+        /// <summary>Where and how the rest prompt is written while the leader lies down (Engine.showRestText).</summary>
+        public HudText Rest { get; internal set; }
+
+        /// <summary>The rest prompt for one hour ("Rest for {0} hour?").</summary>
+        public string RestOne { get; internal set; }
+
+        /// <summary>The rest prompt for more hours ("Rest for {0} hours?").</summary>
+        public string RestMany { get; internal set; }
+
+        /// <summary>The rest prompt for a sleep of <paramref name="hours"/>: the one-hour text at 1, the plural otherwise.</summary>
+        public string RestText(int hours) =>
+            string.Format(System.Globalization.CultureInfo.InvariantCulture, hours == 1 ? RestOne : RestMany, hours);
+
         public HudFont Font(string name)
         {
             foreach (var f in Fonts) if (f.Name == name) return f;
@@ -211,6 +224,14 @@ namespace MindAttic.Overworld.Core
             data.Bars.Mana = ReadBar(bars, "mana", data);
             data.Bars.Stamina = ReadBar(bars, "stamina", data);
             bars.Done();
+
+            var rest = root.Section("rest");
+            data.Rest = ReadText(rest, "prompt", data, fonts);
+            data.RestOne = rest.Text("one");
+            data.RestMany = rest.Text("many");
+            rest.Check(data.RestOne.Contains("{0}"), "one", "must hold {0} for the hours");
+            rest.Check(data.RestMany.Contains("{0}"), "many", "must hold {0} for the hours");
+            rest.Done();
 
             var m = root.Section("messages");
             var tuning = new MessageTuning

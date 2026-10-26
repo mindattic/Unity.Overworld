@@ -14,7 +14,8 @@ namespace MindAttic.Overworld.Core
     /// velocity times the game speed. Before its AI each hero's status is checked and it regenerates (checkStatus,
     /// checkRegen; U.OVW-US-A10, RECONSTRUCTION 7), and after its move its status animation steps (renderIcon).
     /// Installed on a <see cref="Game"/>, which then accepts <see cref="SetMoveInput"/>, <see cref="RecallHero"/>,
-    /// <see cref="ToggleTeam"/>, <see cref="SelectHero"/>, <see cref="CycleLeader"/> and <see cref="SetHeroVitals"/>;
+    /// <see cref="ToggleTeam"/>, <see cref="SelectHero"/>, <see cref="CycleLeader"/>, <see cref="SetHeroVitals"/> and
+    /// <see cref="Rest"/> (a laid hero chooses its sleep's hours with the arrows; <see cref="SleepCycle"/> sleeps);
     /// presentation reads <see cref="Heroes"/> and <see cref="Team"/>.
     /// </summary>
     /// <remarks>
@@ -36,8 +37,8 @@ namespace MindAttic.Overworld.Core
         {
             Data = data ?? throw new ArgumentNullException(nameof(data));
             if (data.Sprites == null || data.Locomotion == null || data.Fall == null || data.Follow == null || data.Flocking == null || data.Selection == null ||
-                data.Vitals == null)
-                throw new ArgumentException("The hero data has no sprites, locomotion, fall, follow, flocking, selection or vitals.", nameof(data));
+                data.Vitals == null || data.Rest == null)
+                throw new ArgumentException("The hero data has no sprites, locomotion, fall, follow, flocking, selection, vitals or rest.", nameof(data));
             Walls = walls;
             this.random = random ?? new Random();
             Team = data.Follow.TeamAtStart;
@@ -45,6 +46,7 @@ namespace MindAttic.Overworld.Core
             {
                 var hero = new Hero(i, data.Heroes[i]);
                 hero.Sprite = data.Sprites.Stand(hero.Facing);
+                hero.SleepHours = data.Rest.MinHours;
                 heroes.Add(hero);
             }
         }
@@ -70,8 +72,26 @@ namespace MindAttic.Overworld.Core
             game.Register<SelectHero>(HandleSelect);
             game.Register<CycleLeader>(HandleCycle);
             game.Register<SetHeroVitals>(HandleVitals);
+            game.Register<Rest>(HandleRest);
             game.AddSystem(this);
             return this;
+        }
+
+        /// <summary>
+        /// actionRest: not in battle mode, the leader stops running, then a standing hero kneels, a kneeling one lies down
+        /// and a laid one kneels again; either way its AI is Kneeling. (A hero laid by a draught without kneeling matches
+        /// none of the three and only kneels its AI, as in the original.)
+        /// </summary>
+        CommandResult HandleRest(Game game, Rest command)
+        {
+            var hero = Leader(command.Player);
+            if (hero.Mode == HeroMode.Battle) return CommandResult.Reject(hero.Name + " is in battle; a hero rests in adventure mode.");
+            hero.Running = false;
+            if (!hero.Kneeling && !hero.Laying) hero.Kneeling = true;
+            else if (hero.Kneeling && !hero.Laying) hero.Laying = true;
+            else if (hero.Kneeling && hero.Laying) hero.Laying = false;
+            hero.State = HeroState.Kneeling;
+            return CommandResult.Accept(new HeroRestChanged(game.Tick, hero.Index, hero.Kneeling, hero.Laying));
         }
 
         /// <summary>
@@ -271,7 +291,7 @@ namespace MindAttic.Overworld.Core
                 switch (hero.State)
                 {
                     case HeroState.Kneeling:
-                        Kneel(hero);
+                        Kneel(hero, now, tick, events);
                         break;
                     case HeroState.Standing:
                         Stand(hero);
@@ -636,12 +656,27 @@ namespace MindAttic.Overworld.Core
             hero.Sprite = Sprites.Stand(hero.Facing);
         }
 
-        /// <summary>aiKneeling: still, the kneeling picture of the facing, or the laid-down one while laying.</summary>
-        void Kneel(Hero hero)
+        /// <summary>
+        /// aiKneeling: still, the kneeling picture of the facing, or the laid-down one while laying; laid, once more than
+        /// the chooser's rate has passed since its last check, a held left or down arrow takes an hour off its sleep and
+        /// right or up adds one, within the fewest and most hours.
+        /// </summary>
+        void Kneel(Hero hero, double now, long tick, ICollection<IGameEvent> events)
         {
             hero.DX = 0f;
             hero.DY = 0f;
             hero.Sprite = hero.Laying ? Sprites.Sleep(hero.Facing) : Sprites.Kneel(hero.Facing);
+            if (!hero.Laying) return;
+
+            var rest = Data.Rest;
+            if (!(now > hero.LastSleepTime + rest.ChooserRate)) return;
+            var hours = hero.SleepHours;
+            if (hero.MoveLeft || hero.MoveDown) hours = Math.Max(rest.MinHours, hours - 1);
+            if (hero.MoveRight || hero.MoveUp) hours = Math.Min(rest.MaxHours, hours + 1);
+            hero.LastSleepTime = now;
+            if (hours == hero.SleepHours) return;
+            hero.SleepHours = hours;
+            events.Add(new SleepHoursChanged(tick, hero.Index, hours));
         }
 
         /// <summary>

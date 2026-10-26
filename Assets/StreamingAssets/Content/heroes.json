@@ -86,6 +86,14 @@
     "poisonedIcon": ["gfx/status/Angry/statusAngry1.PNG", "gfx/status/Angry/statusAngry2.PNG", "gfx/status/Angry/statusAngry3.PNG", "gfx/status/Angry/statusAngry4.PNG"],
     "poisonedTint": [96, 255, 96]
   },
+  "rest": {
+    "_note": "Input.actionRest, Heroes.aiKneeling, Sun.checkSleep, RECONSTRUCTION 6.4. The rest key kneels a standing hero, lays a kneeling one down and lifts a laid one back to kneeling. While laid, a held left or down arrow takes an hour off the sleep and right or up adds one, between minHours and maxHours, once more than chooserRate seconds have passed since the last check. Confirming while laid sleeps: every ambient channel falls fadeStep a tick to black; then every hero gains maximum x hours x restorePerHour health and mana (and stamina unless Poisoned), rounded as VB assigned a Double to an Integer and capped at the maximum, the clock moves on the hours, the hours return to minHours and the sleeper stands; then the ambient rises fadeStep a tick back to white.",
+    "minHours": 1,
+    "maxHours": 24,
+    "chooserRate": 0.08,
+    "restorePerHour": 0.125,
+    "fadeStep": 5
+  },
   "heroes": [
     {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},
     {"id": 1, "name": "Belmont", "start": [0.3, -0.05], "weapon": "Steel Sword", "state": "Standing", "walkRate": 0.1, "walkSpeed": 0.005, "runSpeed": 0.01},

@@ -179,19 +179,39 @@ namespace MindAttic.Overworld.Core
         {
             if (c.Hour < 0 || c.Hour > 23) return CommandResult.Reject("The hour must be 0 to 23, not " + c.Hour + ".");
             if (c.Minute.HasValue && (c.Minute < 0 || c.Minute > 59)) return CommandResult.Reject("The minute must be 0 to 59, not " + c.Minute + ".");
-            var minute = c.Minute ?? Now.Minute;
-            var day = Now.Date;
-            if (new TimeSpan(c.Hour, minute, 0) < Now.TimeOfDay) day = day.AddDays(1);
-            Now = day.Add(new TimeSpan(c.Hour, minute, 0));
-
-            var events = new List<IGameEvent> { new ClockSet(game.Tick, c.Player, Now) };
-            if (c.Settle)
-            {
-                CheckPeriod(game.Tick, events);
-                Light = Period.Colour;
-            }
-
+            var events = new List<IGameEvent>();
+            SetHour(c.Player, c.Hour, c.Minute, c.Settle, game.Tick, events);
             return CommandResult.Accept(events.ToArray());
+        }
+
+        /// <summary>
+        /// setHour (and, settled, checkDayperiod and setDayColor): the clock moves to <paramref name="hour"/> and the
+        /// minute given or shown, today, or tomorrow when that is earlier than now. For <see cref="SetClock"/> and for a
+        /// sleep that ends at an hour (<see cref="SleepUntil"/>). The hour and minute must be valid.
+        /// </summary>
+        internal void SetHour(PlayerId player, int hour, int? minute, bool settle, long tick, ICollection<IGameEvent> events)
+        {
+            var m = minute ?? Now.Minute;
+            var day = Now.Date;
+            if (new TimeSpan(hour, m, 0) < Now.TimeOfDay) day = day.AddDays(1);
+            Now = day.Add(new TimeSpan(hour, m, 0));
+            events.Add(new ClockSet(tick, player, Now));
+            if (!settle) return;
+            CheckPeriod(tick, events);
+            Light = Period.Colour;
+        }
+
+        /// <summary>
+        /// checkSleep's theTime.AddHours, checkDayperiod and setDayColor: the clock moves on <paramref name="by"/>, the
+        /// period is the one the new hour is in (announced when it lands on a period's first minute) and the light is that
+        /// period's colour at once. For the end of a sleep (<see cref="SleepCycle"/>).
+        /// </summary>
+        internal void Advance(PlayerId player, TimeSpan by, long tick, ICollection<IGameEvent> events)
+        {
+            Now = Now.Add(by);
+            events.Add(new ClockSet(tick, player, Now));
+            CheckPeriod(tick, events);
+            Light = Period.Colour;
         }
 
         CommandResult HandleRatio(Game game, SetTimeRatio c)
