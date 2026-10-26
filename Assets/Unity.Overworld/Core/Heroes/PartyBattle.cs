@@ -74,38 +74,31 @@ namespace MindAttic.Overworld.Core
     /// </summary>
     public sealed partial class Party
     {
-        readonly HashSet<PlayerId> ringMenus = new HashSet<PlayerId>();
-
-        /// <summary>
-        /// True while a player's battle ring menu is open (bRingMenu): entering battle opens it, leaving shuts it. While it
-        /// is open the arrows only mark the direction held (they turn the ring), the move button does not head for the
-        /// cursor and the pick-up button does not kneel. Choosing from it is the ring menu story's (A19).
-        /// </summary>
-        public bool RingMenuOpen(PlayerId player) => ringMenus.Contains(player);
-
-        /// <summary>Opens or shuts a player's ring menu (its Move and Item entries shut it; the ring menu story, A19).</summary>
-        internal void SetRingMenu(PlayerId player, bool open)
-        {
-            if (open) ringMenus.Add(player);
-            else ringMenus.Remove(player);
-        }
-
         static float MoveDistanceFor(Hero hero) => hero.MaxStamina > 0 ? hero.MoveDistanceMax * ((float)hero.Stamina / hero.MaxStamina) : 0f;
+
+        /// <summary>The move distance set to what the hero's gauge allows now (agility x 0.05 x stamina / maximum).</summary>
+        internal static void SyncMoveDistance(Hero hero) => hero.MoveDistance = MoveDistanceFor(hero);
 
         CommandResult HandleBattle(Game game, ToggleBattle command)
         {
             var leader = Leader(command.Player);
             var changed = new List<int> { leader.Index };
             var entering = leader.Mode == HeroMode.Adventure;
+            var ring = RingOf(command.Player);
+            // bNoOneReady is the battle's; leaving forgets it (the original kept it, and its first full hero then drew and
+            // opened the ring in adventure mode; BIBLE).
+            ring.NoOneReady = false;
             if (entering)
             {
-                ringMenus.Add(command.Player);
+                ring.Open = true;
                 leader.Mode = HeroMode.Battle;
                 EnterStance(leader);
             }
             else
             {
-                ringMenus.Remove(command.Player);
+                ring.Open = false;
+                ring.ShowMove = false;
+                ring.ShowAttack = false;
                 LeaveBattle(leader);
             }
 
@@ -130,8 +123,10 @@ namespace MindAttic.Overworld.Core
             }
 
             var events = new List<IGameEvent> { new BattleToggled(game.Tick, command.Player, leader.Index, entering, changed) };
-            // Leaving also hides the quick bar and the ring's range circles (the circles come with the ring menu, A19).
-            if (!entering) BattleLeft?.Invoke(command.Player, game.Tick, events);
+            // Entering resets the ring (its Move entry at the top, the move circle shown); leaving hides the quick bar and
+            // the range circles.
+            if (entering) ResetRing(command.Player, ring, game.Tick, events);
+            else BattleLeft?.Invoke(command.Player, game.Tick, events);
             return CommandResult.Accept(events.ToArray());
         }
 

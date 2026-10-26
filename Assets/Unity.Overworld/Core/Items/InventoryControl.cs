@@ -362,6 +362,8 @@ namespace MindAttic.Overworld.Core
             Party.Pack = Inventory;
             Party.Rested = Close;
             Party.BattleLeft = HideQuickBar;
+            Party.QuickBarShown = ShowQuickBar;
+            Party.OpenPack = OpenForRing;
             game.AddSystem(this);
             return this;
         }
@@ -387,12 +389,23 @@ namespace MindAttic.Overworld.Core
         }
 
         /// <summary>actionBattleToggle on leaving battle: bQuickBar = False.</summary>
-        void HideQuickBar(PlayerId player, long tick, ICollection<IGameEvent> events)
+        void HideQuickBar(PlayerId player, long tick, ICollection<IGameEvent> events) => ShowQuickBar(player, false, tick, events);
+
+        /// <summary>The ring's highlight (checkRingEffect): the Item entry shows the quick bar, any other hides it.</summary>
+        void ShowQuickBar(PlayerId player, bool shown, long tick, ICollection<IGameEvent> events)
         {
             var v = For(player);
-            if (!v.QuickBar) return;
-            v.QuickBar = false;
-            events.Add(new QuickBarToggled(tick, player, false));
+            if (v.QuickBar == shown) return;
+            v.QuickBar = shown;
+            events.Add(new QuickBarToggled(tick, player, shown));
+        }
+
+        /// <summary>The ring's Item entry (actionRingSelect): with items in the pack it opens; false when it is empty.</summary>
+        bool OpenForRing(PlayerId player, long tick, ICollection<IGameEvent> events)
+        {
+            if (Inventory.Items.Count == 0) return false;
+            SetOpen(player, true, tick, events);
+            return true;
         }
 
         CommandResult HandleQuickBar(Game game, ToggleQuickBar c)
@@ -474,7 +487,8 @@ namespace MindAttic.Overworld.Core
 
                 var input = Party.InputOf(player);
                 if (Pressed(input.Run, ref v.RunHeld) && v.Open) foreach (var e in Swap(player, tick)) events.Add(e);
-                if (Pressed(input.PickUp, ref v.UseHeld)) Use(game, player, true, tick, events);
+                // The press that chose from the battle's ring (opening the pack) does not also use from it.
+                if (Pressed(input.PickUp, ref v.UseHeld) && !Party.RingChoiceHeld(player)) Use(game, player, true, tick, events);
                 if (Pressed(input.Move, ref v.MoveHeld) && v.Open) foreach (var e in Drop(player, tick)) events.Add(e);
                 if (Pressed(input.Left, ref v.LeftHeld)) Arrow(player, -1, 0, tick, events);
                 if (Pressed(input.Right, ref v.RightHeld)) Arrow(player, 1, 0, tick, events);
@@ -580,8 +594,8 @@ namespace MindAttic.Overworld.Core
         }
 
         /// <summary>
-        /// actionDrop and checkDrop: the choosing of a target stops; in battle mode the panel closes (the ring menu is
-        /// battle's, story A18); in adventure mode with the panel open one of the cursor's stack falls by the leader, or
+        /// actionDrop and checkDrop: the choosing of a target stops; in battle mode the panel closes and the ring menu
+        /// opens reset (the battle's cancel); in adventure mode with the panel open one of the cursor's stack falls by the leader, or
         /// with an empty pack the panel closes.
         /// </summary>
         IGameEvent[] Drop(PlayerId player, long tick)
@@ -598,6 +612,7 @@ namespace MindAttic.Overworld.Core
             if (leader.Mode == HeroMode.Battle)
             {
                 if (v.Open) Close(player, tick, events);
+                Party.CancelToRing(player, tick, events);
                 return events.ToArray();
             }
 
@@ -710,7 +725,8 @@ namespace MindAttic.Overworld.Core
         /// <summary>
         /// checkUseItem: the cursor's item's script runs on the target; unless the item is Reusable one of it leaves the
         /// pack. A script that fails (the Rusty Sword's WEAPON, until the weapon story) is reported by the runner and the item stays.
-        /// (Battle mode's stamina cost and return to the ring menu come with the battle story, A18.)
+        /// In battle mode the leader pays 10 percent of its gauge, the items' target goes back to the leader, the panel closes
+        /// and the ring menu comes back.
         /// </summary>
         void ApplyUse(Game game, PlayerId player, long tick, ICollection<IGameEvent> events)
         {
@@ -736,6 +752,11 @@ namespace MindAttic.Overworld.Core
             }
 
             events.Add(new ItemUsed(tick, player, v.Target, stack.Name, consumed));
+
+            if (Party.Leader(player).Mode != HeroMode.Battle) return;
+            Party.PayForItem(player, tick, events);
+            v.Target = Party.LeaderOf(player);
+            Close(player, tick, events);
         }
 
         int IndexOf(InventoryItem stack)

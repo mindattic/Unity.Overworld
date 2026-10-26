@@ -286,15 +286,36 @@ namespace MindAttic.Overworld.Tests
             Assert.IsTrue(game.Submit(new SetMoveInput(PlayerId.One, MoveInput.Arrows(left: true))).Accepted);
             Steps(20);
             Assert.AreEqual(x, chrono.X);
-            Assert.AreEqual(HeroState.Battle, chrono.State);
             Assert.IsTrue(chrono.MoveLeft, "the arrow is marked (it turns the ring)");
+            Assert.IsTrue(raised.OfType<RingTurned>().Any(), "the held arrow turned the ring");
             Assert.IsTrue(game.Submit(new SetMoveInput(PlayerId.One, MoveInput.Toward(chrono.X - 0.5f, chrono.Y))).Accepted);
             Steps(20);
             Assert.AreEqual(x, chrono.X);
             Assert.IsTrue(game.Submit(new SetMoveInput(PlayerId.One, default(MoveInput).WithPickUp(true))).Accepted);
             Steps(5);
             Assert.IsFalse(chrono.PickingUp);
-            Assert.AreEqual(HeroState.Battle, chrono.State);
+            Assert.AreNotEqual(HeroState.Kneeling, chrono.State);
+        }
+
+        [Test]
+        public void ARechargingLeaderEnteringDrawsForTheRingThenKneelsAtItsRefill()
+        {
+            Stamina(0, 10);
+            End();
+            game.Step();
+            // Leave and enter again before the next refill check is due: the ring's Move entry stands the leader up into
+            // its draw (resetRing's checkRingEffect, as in the original); the refill check kneels it again.
+            End();
+            End();
+            Assert.AreEqual(HeroState.Drawing, chrono.State);
+            Assert.AreEqual(BattleAction.Recharging, chrono.BattleAction);
+            game.Step();
+            Assert.AreEqual(11, chrono.Stamina, "no refill yet");
+            Assert.AreEqual(HeroState.Drawing, chrono.State);
+            Steps(RefillTicks);
+            Assert.AreEqual(12, chrono.Stamina);
+            Assert.AreEqual(HeroState.Kneeling, chrono.State);
+            Assert.IsTrue(chrono.Kneeling);
         }
 
         [Test]
@@ -303,13 +324,11 @@ namespace MindAttic.Overworld.Tests
             Stamina(0, 10);
             End();
             game.Step();
-            // Leave and enter again before the next refill check is due: KeysUp kneels it, not the refill.
-            End();
-            End();
-            Assert.AreEqual(HeroState.Standing, chrono.State);
-            Assert.AreEqual(BattleAction.Recharging, chrono.BattleAction);
+            // With the ring shut and the hero standing (as after leaving a ring), KeysUp kneels a recharging leader.
+            party.SetRingMenu(PlayerId.One, false);
+            chrono.Kneeling = false;
+            chrono.State = HeroState.Standing;
             game.Step();
-            Assert.AreEqual(11, chrono.Stamina, "no refill yet");
             Assert.AreEqual(HeroState.Kneeling, chrono.State);
             Assert.IsTrue(chrono.Kneeling);
         }

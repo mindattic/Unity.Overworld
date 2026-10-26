@@ -219,8 +219,11 @@ namespace MindAttic.Overworld.Runtime
             if (nextBook.WasPressedThisFrame()) Game.Submit(new NextBook(Player));
             for (var i = 0; i < quickKeys.Length; i++)
                 if (quickKeys[i].WasPressedThisFrame()) Game.Submit(new QuickUse(Player, i));
+            // getMouse's middle button in battle mode is actionDrop: the battle's cancel back to the ring.
+            if (zoom.WasPressedThisFrame() && Party != null && Party.Leader(Player).Mode == HeroMode.Battle) Game.Submit(new DropItem(Player));
             if (swallowConfirm) return;
             Confirm(confirm.WasPressedThisFrame() || select.WasPressedThisFrame());
+            ChooseFromRing(confirm.WasPressedThisFrame(), select.WasPressedThisFrame());
             Click(select.IsPressed(), select.WasPressedThisFrame());
         }
 
@@ -312,6 +315,19 @@ namespace MindAttic.Overworld.Runtime
             // With the pack open or an item's target being chosen, Enter uses (Core reads it from the held button).
             if (Inventory != null && Inventory.FocusOf(Player) != InputFocus.World) return;
             if (Party.Heroes[Party.LeaderOf(Player)].Laying) Game.Submit(new Sleep(Player));
+        }
+
+        /// <summary>
+        /// actionPickup's actionRingSelect: Enter, or the left button off a hero (overHero) and off the team and inventory
+        /// buttons, pressed with the battle's ring menu open chooses its top entry. Pressed on a hero, the left button chooses
+        /// the hero instead (<see cref="Click"/>).
+        /// </summary>
+        public void ChooseFromRing(bool enter, bool leftButton)
+        {
+            if (Party == null || !Party.RingMenuOpen(Player)) return;
+            if (!enter && !(leftButton && PickUpHeld(false, true))) return;
+            if (Viewpoint != null && select.IsPressed() && Party.HeroAt(Viewpoint.Cursor.X, Viewpoint.Cursor.Y) >= 0) return;
+            Game.Submit(new Core.ChooseFromRing(Player));
         }
 
         /// <summary>The party's pack: what the keys work on, and the inventory button the left button toggles (null: none).</summary>

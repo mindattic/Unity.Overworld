@@ -31,10 +31,18 @@ namespace MindAttic.Overworld.Runtime
         /// <summary>The tent is drawn after the tiles and before the pickups (renderTent, first of layer 1).</summary>
         public const int TentOrder = TilesOrder + 50;
 
-        /// <summary>The weather, then the clouds, are layer 4's last draws (renderRain, renderCloud): after the status icons, under the HUD's quads and the cursor.</summary>
-        public const int WeatherOrder = StatusIconOrder + 1;
+        /// <summary>The ring menu's select frame, then its icons, come after the status icons (renderRingIcon, layer 4).</summary>
+        public const int RingSelectOrder = StatusIconOrder + 1;
 
-        public const int CloudsOrder = StatusIconOrder + 2;
+        public const int RingIconsOrder = StatusIconOrder + 2;
+
+        /// <summary>The weather, then the clouds, are layer 4's last draws (renderRain, renderCloud): after the status icons and the ring, under the HUD's quads and the cursor.</summary>
+        public const int WeatherOrder = StatusIconOrder + 3;
+
+        public const int CloudsOrder = StatusIconOrder + 4;
+
+        /// <summary>The range circles' dots are drawn behind the heroes, after the pickups and drops (renderCircle, layer 1).</summary>
+        public const int CircleOrder = ObjectsOrder - 1;
 
         static readonly int MainTex = Shader.PropertyToID("_MainTex");
 
@@ -177,7 +185,7 @@ namespace MindAttic.Overworld.Runtime
                 }
 
                 var size = Pickups.Data.ItemSize;
-                var order = Mathf.Min(PickupsOrder + Pickups.All.Count + dropRenderers.Count, ObjectsOrder - 1);
+                var order = Mathf.Min(PickupsOrder + Pickups.All.Count + dropRenderers.Count, CircleOrder - 1);
                 dropRenderers.Add(NewRenderer("Drop " + dropRenderers.Count, Quad(size, size / 2f), null, order, dropRoot));
             }
 
@@ -231,6 +239,78 @@ namespace MindAttic.Overworld.Runtime
             var y = Mathf.LerpUnclamped(hero.PreviousY, hero.Y, alpha);
             TargetRenderer.transform.localPosition = new Vector3(x, y, 0f);
             TargetRenderer.enabled = View.Camera.InRange(x, y) && HasTexture(TargetRenderer);
+        }
+
+        readonly List<MeshRenderer> ringIcons = new List<MeshRenderer>();
+        readonly List<MeshRenderer> circleDots = new List<MeshRenderer>();
+        PlayerId ringPlayer;
+
+        /// <summary>The ring menu drawn (null: none), once <see cref="ShowRing"/> is called.</summary>
+        public RingMenu Ring { get; private set; }
+
+        /// <summary>The ring's select frame (ring_select.png).</summary>
+        public MeshRenderer RingSelectRenderer { get; private set; }
+
+        /// <summary>The ring's icons, in ring order (Move, End, Skill, Item, Attack).</summary>
+        public IReadOnlyList<MeshRenderer> RingIcons => ringIcons;
+
+        /// <summary>The range circle's dots, in dot order.</summary>
+        public IReadOnlyList<MeshRenderer> CircleDots => circleDots;
+
+        /// <summary>
+        /// Draws <paramref name="player"/>'s battle ring menu and range circles from now on (renderRingSelect,
+        /// renderRingIcon, renderCircle): while the ring is open, the select frame and then each entry's icon around the
+        /// leader (eased with it), after the status icons; while a circle is shown, its dots around the leader in their
+        /// colours, behind the heroes. Each culled by the render range, in the world's light.
+        /// </summary>
+        public void ShowRing(Party party, PlayerId player)
+        {
+            if (party == null) return;
+            ringPlayer = player;
+            Ring = party.RingOf(player);
+            if (RingSelectRenderer == null)
+            {
+                var root = new GameObject("Ring menu").transform;
+                root.SetParent(transform, false);
+                var t = Ring.Ring;
+                RingSelectRenderer = NewRenderer("Ring select", Quad(t.SelectSize, t.SelectSize / 2f), t.SelectPicture, RingSelectOrder, root);
+                foreach (var e in t.Entries)
+                    ringIcons.Add(NewRenderer("Ring " + e.Entry, Quad(t.IconSize, t.IconSize / 2f), e.Picture, RingIconsOrder, root));
+                var c = Ring.Circle;
+                for (var i = 0; i < Ring.DotCount; i++)
+                    circleDots.Add(NewRenderer("Circle dot " + i, Quad(c.DotSize, c.DotSize / 2f), c.GreenPicture, CircleOrder, root));
+            }
+
+            Refresh();
+        }
+
+        void RefreshRing(float alpha)
+        {
+            if (Ring == null || Party == null) return;
+            var hero = Party.Leader(ringPlayer);
+            var hx = Mathf.LerpUnclamped(hero.PreviousX, hero.X, alpha);
+            var hy = Mathf.LerpUnclamped(hero.PreviousY, hero.Y, alpha);
+            var size = Party.Data.HeroSize;
+
+            Ring.SelectOffset(out var sx, out var sy);
+            RingSelectRenderer.transform.localPosition = new Vector3(hx + sx, hy + sy, 0f);
+            RingSelectRenderer.enabled = Ring.Open && View.Camera.InRange(hx + sx, hy + sy) && HasTexture(RingSelectRenderer);
+            for (var i = 0; i < ringIcons.Count; i++)
+            {
+                Ring.IconOffset(i, size, out var ix, out var iy);
+                var r = ringIcons[i];
+                r.transform.localPosition = new Vector3(hx + ix, hy + iy, 0f);
+                r.enabled = Ring.Open && View.Camera.InRange(hx + ix, hy + iy) && HasTexture(r);
+            }
+
+            for (var i = 0; i < circleDots.Count; i++)
+            {
+                Ring.DotOffset(i, size, out var dx, out var dy);
+                var r = circleDots[i];
+                r.transform.localPosition = new Vector3(hx + dx, hy + dy, 0f);
+                SetTexture(r, Ring.Circle.Picture(Ring.DotColour(i)));
+                r.enabled = Ring.CircleShown && View.Camera.InRange(hx + dx, hy + dy) && HasTexture(r);
+            }
         }
 
         /// <summary>The tent's quad (renderTent), culled by the render range on x and y.</summary>
@@ -482,6 +562,7 @@ namespace MindAttic.Overworld.Runtime
 
             RefreshStatusIcons(alpha);
             RefreshTarget(alpha);
+            RefreshRing(alpha);
             RefreshWeather(alpha);
             RefreshClouds(alpha);
 

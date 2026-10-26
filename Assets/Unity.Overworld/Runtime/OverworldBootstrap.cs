@@ -45,7 +45,8 @@ namespace MindAttic.Overworld.Runtime
     /// <c>-overworld-script-after</c> (see <see cref="ApplyScriptedConsole"/>); the quests' <c>-overworld-objective</c> and
     /// <c>-overworld-quest-screen</c> (see <see cref="ApplyScriptedQuests"/>); the books' <c>-overworld-book</c> (see
     /// <see cref="ApplyScriptedBook"/>); the weather's <c>-overworld-weather</c> (see <see cref="ApplyScriptedWeather"/>);
-    /// battle mode's <c>-overworld-battle</c> (see <see cref="ApplyScriptedBattle"/>);
+    /// battle mode's <c>-overworld-battle</c> (see <see cref="ApplyScriptedBattle"/>) and <c>-overworld-ring</c> (see
+    /// <see cref="ApplyScriptedRing"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -97,6 +98,7 @@ namespace MindAttic.Overworld.Runtime
         public const string BookArgument = "-overworld-book";
         public const string WeatherArgument = "-overworld-weather";
         public const string BattleArgument = "-overworld-battle";
+        public const string RingArgument = "-overworld-ring";
 
         public const string QuestScreenArgument = "-overworld-quest-screen";
         public const string ObjectiveArgument = "-overworld-objective";
@@ -152,8 +154,9 @@ namespace MindAttic.Overworld.Runtime
             Quests = new QuestLog(Content.Quests, Party) { Scripts = Scripts, ScriptHero = Scripts.TargetOf }.Install(game);
             Party.Install(game);
             Control.Install(game);
-            // getMouse's wheel: the book, the open pack or the target being chosen, then the items in reach, then the zoom.
-            Control.WheelFirst = (player, steps) => Books.UseWheel(player, steps) || Inventory.UseWheel(player, steps) || Pickups.UseWheel(player, steps);
+            // getMouse's wheel: the battle's ring menu, the book, the open pack or the target being chosen, then the items in
+            // reach, then the zoom.
+            Control.WheelFirst = (player, steps) => Party.UseRingWheel(player, steps) || Books.UseWheel(player, steps) || Inventory.UseWheel(player, steps) || Pickups.UseWheel(player, steps);
             // renderTime ran before renderMessages, so the clock steps before the board: an announcement shows on its minute.
             Messages = new MessageBoard(Content.Hud);
             Clock = new WorldClock(Content.Time, Content.Heroes.Locomotion.GameSpeed, Messages);
@@ -188,6 +191,7 @@ namespace MindAttic.Overworld.Runtime
             Hud.ShowBook(Books, PlayerId.One);
             Hud.ShowConsole(Scripts, PlayerId.One);
             World.ShowTarget(Inventory, PlayerId.One, Content.Hud.Target);
+            World.ShowRing(Party, PlayerId.One);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
             Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint, Party, Content.View.TeamButton);
             Input.Inventory = Inventory;
@@ -216,6 +220,7 @@ namespace MindAttic.Overworld.Runtime
             var read = ApplyScriptedBook(args, game);
             var weathered = ApplyScriptedWeather(args, game);
             var battled = ApplyScriptedBattle(args, game);
+            battled |= ApplyScriptedRing(args, game);
             if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || weathered || battled || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
@@ -1152,8 +1157,68 @@ namespace MindAttic.Overworld.Runtime
             else Debug.Log("Unity.Overworld: scripted End; " + DescribeBattle());
         }
 
+        /// <summary>
+        /// <c>-overworld-ring &lt;steps[,choose][,seconds]&gt;</c>: after that many seconds of play (default 1, once End has
+        /// opened the ring) the ring turns that many entries (negative left, positive right), each turn finished before the
+        /// next, and with <c>choose</c> its top entry is chosen as Enter does, e.g. <c>-overworld-battle 0 -overworld-ring 0,choose
+        /// -overworld-move-to 0.4,0</c> walks the leader its move distance.
+        /// </summary>
+        bool ApplyScriptedRing(string[] args, Game game)
+        {
+            var text = ArgumentAfter(args, RingArgument);
+            if (text == null) return false;
+            if (TryRing(text, out var steps, out var choose, out var seconds)) StartCoroutine(RingAfter(game, steps, choose, seconds));
+            else Debug.LogError("Unity.Overworld: " + RingArgument + " wants the entries to turn (negative left), optionally 'choose' and the seconds to wait, not '" + text + "'.");
+            return true;
+        }
+
+        /// <summary>Reads <c>steps[,choose][,seconds]</c>.</summary>
+        public static bool TryRing(string text, out int steps, out bool choose, out float seconds)
+        {
+            choose = false;
+            seconds = 1f;
+            var parts = text.Split(',');
+            if (!int.TryParse(parts[0].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out steps)) return false;
+            for (var i = 1; i < parts.Length; i++)
+            {
+                var p = parts[i].Trim();
+                if (string.Equals(p, "choose", StringComparison.OrdinalIgnoreCase)) choose = true;
+                else if (!float.TryParse(p, NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) || !(seconds >= 0f)) return false;
+            }
+
+            return true;
+        }
+
+        IEnumerator RingAfter(Game game, int steps, bool choose, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var ring = Party.RingOf(PlayerId.One);
+            for (var i = 0; i < Mathf.Abs(steps); i++)
+            {
+                var r = game.Submit(new TurnRing(PlayerId.One, steps < 0 ? -1 : 1));
+                if (!r.Accepted)
+                {
+                    Debug.LogError("Unity.Overworld: " + RingArgument + " turn was refused: " + r.Reason);
+                    yield break;
+                }
+
+                while (ring.Mode != RingMode.Select) yield return null;
+            }
+
+            if (choose)
+            {
+                var r = game.Submit(new ChooseFromRing(PlayerId.One));
+                if (!r.Accepted) Debug.LogError("Unity.Overworld: " + RingArgument + " choose was refused: " + r.Reason);
+            }
+
+            Debug.Log("Unity.Overworld: scripted ring; " + DescribeBattle());
+        }
+
         string DescribeBattle() =>
-            (Party.RingMenuOpen(PlayerId.One) ? "ring menu open" : "ring menu shut") + "; " +
+            "ring " + Party.RingOf(PlayerId.One) + ", leading " + Party.Leader(PlayerId.One).Name + " (move distance " +
+            Party.Leader(PlayerId.One).MoveDistance.ToString("0.###", CultureInfo.InvariantCulture) + ")" +
+            (World != null && World.RingIcons.Count > 0 ? ", ring icons drawn " + World.RingIcons.Count(r => r.enabled) + ", circle dots drawn " + World.CircleDots.Count(r => r.enabled) +
+                                                          " [" + string.Join(" ", World.CircleDots.Where(r => r.enabled).Select(r => World.FileOf(r)).Distinct()) + "]" : "") + "; " +
             string.Join("; ", Party.Heroes.Select(h => h.Name + " " + h.Mode + " " + h.State + " " + h.BattleAction + " AP " + h.Stamina + "/" + h.MaxStamina +
                                                       " frame " + h.Frame + " showing " + h.Sprite + " weapon " + (h.WeaponSprite ?? "blank")));
 

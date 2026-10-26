@@ -571,6 +571,7 @@ Left/right/wheel rotate the ring by 2 pi / (count) with an eased spin (`0.1 + 0.
 - **End**: `NextHeroInBattle`. **Attack, Skill**: no handler.
 Highlighting an entry has an effect (`checkRingEffect`): Attack shows red dots at the weapon's `Range` radius; Move shows dots at radius `moveDistance` (green; blue where an ally is within 0.08; red around the hero itself); Item opens the quick bar; Skill and End hide them. The dots (21 of them) orbit at 0.01 rad per frame.
 Picking up in battle costs 5 percent of maximum stamina.
+Defects (BIBLE, U.OVW-T23): `checkHeroMove` mirrors the gauge from `moveDistance`, which nothing but a Ready check recomputes, so the pickup's and item's costs (and a part-charged hero's Move) are given back as the hero walks; `bNoOneReady` survives leaving battle and `checkBattleSelect` takes any full hero, adventure mode included; one `ringMode` serves turn and pulse, so each cuts the other off; `resetRing` leaves a turn under way.
 
 ### 12.4 Weapons (`Weapons.vb`)
 

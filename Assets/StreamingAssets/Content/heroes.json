@@ -105,7 +105,46 @@
   "battle": {
     "_note": "Heroes.checkRegen in battle mode and Input.actionBattleToggle, RECONSTRUCTION 7 and 12.1: once more than refillInterval seconds (refillInterval, 0.18) have passed since its last check, a hero Recharging gains refillStamina stamina and kneels; already full, it is Ready, gets up, its move distance is recomputed (agility x moveDistancePerAgility x stamina / maximum) and, unless it already holds its battle stance, draws its weapon (the draw cycle from its first frame at drawRate, then the battle cycle at battleRate from a random frame).",
     "refillInterval": 0.18,
-    "refillStamina": 1
+    "refillStamina": 1,
+    "itemStamina": 0.1,
+    "ring": {
+      "_note": "RingMenu.vb, Input.actionRingSelect / NextHeroInBattle, RECONSTRUCTION 12.3: the entries in ring order (ringMove 0, ringEnd 1, ringSkill 2, ringItem 3, ringAttack 4), each an iconSize quad at (hero x + heroSize x iconPoint.x + iconOffset.x + radius cos a, hero y + heroSize x iconPoint.y + iconOffset.y + radius sin a), the offsets being -ItemSize / 2 and ItemSize / 2 + 0.015; entry n starts at startAngle + n x spinStep (1.256 for five, checkRingRotate's deltaAngle), the selected one at the top. A turn eases every angle by spinBase + spinEase x (what is left) a tick, then snaps; Up pulses the radius out by pulseStep a tick to pulseRadius and back in (to radius once within 2 x radius). The select frame is a selectSize quad at (hero x + selectOffset.x, hero y + radius + selectOffset.y), drawn first. itemStamina (above) is checkUseItem's battle cost, CInt(maxStamina x 0.1).",
+      "entries": [
+        {"entry": "Move", "picture": "gfx/ring/ring_Move.PNG"},
+        {"entry": "End", "picture": "gfx/ring/ring_End.PNG"},
+        {"entry": "Skill", "picture": "gfx/ring/ring_Skill.PNG"},
+        {"entry": "Item", "picture": "gfx/ring/ring_Item.PNG"},
+        {"entry": "Attack", "picture": "gfx/ring/ring_Attack.PNG"}
+      ],
+      "radius": 0.1,
+      "iconSize": 0.05,
+      "iconPoint": [0.5, -0.5],
+      "iconOffset": [-0.025, 0.04],
+      "selectPicture": "gfx/gui/ring_select.PNG",
+      "selectSize": 0.075,
+      "selectOffset": [0.035, -0.03],
+      "startAngle": 1.57,
+      "spinStep": 1.256,
+      "spinBase": 0.1,
+      "spinEase": 0.3,
+      "pulseRadius": 1,
+      "pulseStep": 0.1
+    },
+    "circle": {
+      "_note": "Circle.vb renderCircle / checkDotColor, RECONSTRUCTION 12.3: while Move or Attack is highlighted (and on while the hero moves), 'dots' dotSize quads around the leader at radius moveDistance (Move) or its weapon's Range (Attack), dot n starting at n x spacing and orbiting by 'orbit' radians a tick (up while the leader faces left or down, down otherwise), at (hero x + heroSize x point.x + offset.x + r cos a, hero y + heroSize x point.y + offset.y + r sin a). A dot within nearRange on both axes of a hero's point (position + heroSize x nearPoint + nearOffset) is red at the leader and blue at an ally, otherwise green; every Attack dot is red.",
+      "dots": 21,
+      "dotSize": 0.02,
+      "spacing": 0.3,
+      "orbit": 0.01,
+      "point": [0.5, -0.5],
+      "offset": [-0.011, 0.02],
+      "nearPoint": [0.5, -0.5],
+      "nearOffset": [0, 0.03],
+      "nearRange": 0.08,
+      "greenPicture": "gfx/gui/green_dot.PNG",
+      "bluePicture": "gfx/gui/blue_dot.PNG",
+      "redPicture": "gfx/gui/red_dot.PNG"
+    }
   },
   "heroes": [
     {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},

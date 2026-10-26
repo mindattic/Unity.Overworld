@@ -382,8 +382,8 @@ namespace MindAttic.Overworld.Core
                 if (held)
                 {
                     // actionPickup kneels only with the pack shut, no item's target being chosen (Enter uses there) and
-                    // the battle's ring menu shut (Enter chooses from it there).
-                    if ((Focus == null || Focus(player) == InputFocus.World) && !Party.RingMenuOpen(player)) Press(hero, r);
+                    // the battle's ring menu shut (Enter chooses from it there; the press that chose does not kneel).
+                    if ((Focus == null || Focus(player) == InputFocus.World) && !Party.RingMenuOpen(player) && !Party.RingChoiceHeld(player)) Press(hero, r);
                 }
                 else
                 {
@@ -448,6 +448,9 @@ namespace MindAttic.Overworld.Core
             if (hero.BattleAction != BattleAction.Moving) return;
             var cost = hero.MaxStamina * Math.Round((double)Data.BattlePickupStamina, 6);
             hero.Stamina = Math.Max(0, (int)Math.Round(hero.Stamina - cost, MidpointRounding.ToEven));
+            // The move distance follows the gauge (the original left it, so checkHeroMove's mirror gave the cost back
+            // at the next step; BIBLE).
+            Party.SyncMoveDistance(hero);
         }
 
         /// <summary>actionPickup: the leader stops running; unless it lies down, a new press kneels it to pick up.</summary>

@@ -427,12 +427,16 @@ namespace MindAttic.Overworld.Tests
         }
 
         [Test]
-        public void AHeroInBattleModeIsNotChosenByAClick()
+        public void AHeroInBattleModeIsChosenByAClickOnlyWithAFullGauge()
         {
             flagg.Mode = HeroMode.Battle;
-            Assert.IsFalse(game.Submit(new SelectHero(PlayerId.One, 2)).Accepted);
+            flagg.Stamina = flagg.MaxStamina - 1;
+            Assert.IsFalse(game.Submit(new SelectHero(PlayerId.One, 2)).Accepted, "recharging");
             Assert.IsFalse(game.Submit(new SelectHero(PlayerId.One, 3)).Accepted);
             Assert.AreEqual(0, party.LeaderOf(PlayerId.One));
+            flagg.Stamina = flagg.MaxStamina;
+            Assert.IsTrue(game.Submit(new SelectHero(PlayerId.One, 2)).Accepted);
+            Assert.AreEqual(2, party.LeaderOf(PlayerId.One));
         }
 
         [Test]
