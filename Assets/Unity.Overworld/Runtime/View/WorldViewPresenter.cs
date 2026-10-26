@@ -146,6 +146,85 @@ namespace MindAttic.Overworld.Runtime
             Refresh();
         }
 
+        readonly List<MeshRenderer> dropRenderers = new List<MeshRenderer>();
+        Transform dropRoot;
+
+        /// <summary>One quad per drop slot used so far, by slot; disabled while its item is picked up or beyond the render range.</summary>
+        public IReadOnlyList<MeshRenderer> DropRenderers => dropRenderers;
+
+        /// <summary>
+        /// renderDropItem: each dropped item not picked up again, within the camera's render range, as an item-size quad
+        /// of its inventory picture at its place, after the pickups (in slot order) and behind the heroes.
+        /// </summary>
+        void RefreshDrops()
+        {
+            if (Pickups == null) return;
+            var drops = Pickups.Drops;
+            while (dropRenderers.Count < drops.Count)
+            {
+                if (dropRoot == null)
+                {
+                    dropRoot = new GameObject("Drops").transform;
+                    dropRoot.SetParent(transform, false);
+                }
+
+                var size = Pickups.Data.ItemSize;
+                var order = Mathf.Min(PickupsOrder + Pickups.All.Count + dropRenderers.Count, ObjectsOrder - 1);
+                dropRenderers.Add(NewRenderer("Drop " + dropRenderers.Count, Quad(size, size / 2f), null, order, dropRoot));
+            }
+
+            for (var i = 0; i < drops.Count; i++)
+            {
+                var d = drops[i];
+                var r = dropRenderers[i];
+                r.transform.localPosition = new Vector3(d.X, d.Y, 0f);
+                SetTexture(r, d.File);
+                r.enabled = !d.PickedUp && View.Camera.InRange(d.X, d.Y) && HasTexture(r);
+            }
+        }
+
+        /// <summary>The marker on an item's chosen target (select_hero.png), once <see cref="ShowTarget"/> is called.</summary>
+        public MeshRenderer TargetRenderer { get; private set; }
+
+        /// <summary>The pack whose chosen target is marked (null: none).</summary>
+        public InventoryControl Inventory { get; private set; }
+
+        PlayerId targetPlayer;
+
+        /// <summary>
+        /// Marks <paramref name="player"/>'s chosen target from now on (renderHeroSelect): while an item waits for its
+        /// target, <paramref name="marker"/>'s picture on that hero's quad, after the heroes and objects, in the world's light.
+        /// </summary>
+        public void ShowTarget(InventoryControl inventory, PlayerId player, TargetMarkerDefinition marker)
+        {
+            Inventory = inventory;
+            targetPlayer = player;
+            if (TargetRenderer == null && marker != null && Party != null)
+            {
+                var size = Party.Data.HeroSize;
+                TargetRenderer = NewRenderer("Target", Quad(size, size / 2f), marker.Picture, StatusIconOrder - 1);
+            }
+
+            Refresh();
+        }
+
+        void RefreshTarget(float alpha)
+        {
+            if (TargetRenderer == null || Inventory == null || Party == null) return;
+            var v = Inventory.For(targetPlayer);
+            if (!v.Choosing || v.Target < 0 || v.Target >= Party.Heroes.Count)
+            {
+                TargetRenderer.enabled = false;
+                return;
+            }
+
+            var hero = Party.Heroes[v.Target];
+            var x = Mathf.LerpUnclamped(hero.PreviousX, hero.X, alpha);
+            var y = Mathf.LerpUnclamped(hero.PreviousY, hero.Y, alpha);
+            TargetRenderer.transform.localPosition = new Vector3(x, y, 0f);
+            TargetRenderer.enabled = View.Camera.InRange(x, y) && HasTexture(TargetRenderer);
+        }
+
         /// <summary>Draws <paramref name="cursor"/> from now on: its picture, at its position plus the draw offset, over everything.</summary>
         public void ShowCursor(WorldCursor cursor)
         {
@@ -244,6 +323,8 @@ namespace MindAttic.Overworld.Runtime
                     pickupRenderers[i].enabled = !p.PickedUp && View.Camera.InRange(p.X, p.Y) && HasTexture(pickupRenderers[i]);
                 }
 
+            RefreshDrops();
+
             if (Party != null) Poses = View.Poses(Party, game != null ? game.Alpha : 1f);
 
             var order = View.BackToFront(Poses);
@@ -258,6 +339,7 @@ namespace MindAttic.Overworld.Runtime
             }
 
             RefreshStatusIcons(alpha);
+            RefreshTarget(alpha);
 
             if (Cursor != null && CursorRenderer != null)
             {

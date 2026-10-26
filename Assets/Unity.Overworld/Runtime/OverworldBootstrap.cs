@@ -38,6 +38,9 @@ namespace MindAttic.Overworld.Runtime
     /// <c>-overworld-pickup &lt;pickup[,seconds]&gt;</c> does the same and then holds the pick-up button (the leader kneels
     /// and takes it); <c>-overworld-examine-pickup &lt;pickup[,seconds]&gt;</c> turns examine mode on with the world cursor
     /// over that pickup, opening the examine box;
+    /// the inventory's <c>-overworld-give</c>, <c>-overworld-quickbar</c>, <c>-overworld-inventory</c>, <c>-overworld-swap</c>,
+    /// <c>-overworld-drop</c>, <c>-overworld-use</c>, <c>-overworld-quick</c> and <c>-overworld-pickup-drop</c> (see
+    /// <see cref="ApplyScriptedInventory"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -79,6 +82,16 @@ namespace MindAttic.Overworld.Runtime
         public HudPresenter Hud { get; private set; }
         public SleepCycle Sleep { get; private set; }
         public Pickups Pickups { get; private set; }
+        public InventoryControl Inventory { get; private set; }
+
+        public const string GiveArgument = "-overworld-give";
+        public const string InventoryArgument = "-overworld-inventory";
+        public const string SwapArgument = "-overworld-swap";
+        public const string DropArgument = "-overworld-drop";
+        public const string UseArgument = "-overworld-use";
+        public const string QuickArgument = "-overworld-quick";
+        public const string QuickBarArgument = "-overworld-quickbar";
+        public const string PickUpDropArgument = "-overworld-pickup-drop";
 
         /// <summary>The content folder of this build (or of the project, in the editor).</summary>
         public static string ContentDirectory => Path.Combine(Application.streamingAssetsPath, "Content");
@@ -96,9 +109,13 @@ namespace MindAttic.Overworld.Runtime
             var seeded = seedText != null && int.TryParse(seedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out seed);
             if (seedText != null && !seeded) Debug.LogError("Unity.Overworld: " + SeedArgument + " wants a whole number, not '" + seedText + "'.");
             Pickups = new Pickups(Content.Pickups, Party, null, seeded ? new System.Random(seed) : null).Install(game);
+            // getInput's inventory keys acted before the heroes: the pack steps after the pickups and before the party.
+            Control = new CameraControl(Content.View, Party);
+            Inventory = new InventoryControl(Pickups, Content.Hud.Inventory, Content.Hud.QuickBar, Control).Install(game);
             Party.Install(game);
-            Control = new CameraControl(Content.View, Party).Install(game);
-            Control.WheelFirst = Pickups.UseWheel;
+            Control.Install(game);
+            // getMouse's wheel: the open pack or the target being chosen, then the items in reach, then the zoom.
+            Control.WheelFirst = (player, steps) => Inventory.UseWheel(player, steps) || Pickups.UseWheel(player, steps);
             // renderTime ran before renderMessages, so the clock steps before the board: an announcement shows on its minute.
             Messages = new MessageBoard(Content.Hud);
             Clock = new WorldClock(Content.Time, Content.Heroes.Locomotion.GameSpeed, Messages);
@@ -106,6 +123,10 @@ namespace MindAttic.Overworld.Runtime
             Sleep = new SleepCycle(Party, Clock).Install(game);
             Clock.Install(game);
             Messages.Install(game);
+            // The items' scripts (and the gold's) until the script story's interpreter: vitals, gold, sleep, the panel.
+            var scripts = new ItemScripts(Party, Pickups.Inventory, Sleep) { Control = Inventory };
+            Pickups.Scripts = scripts;
+            Inventory.Scripts = scripts;
             var joined = game.Submit(new JoinGame(PlayerId.One));
             if (!joined.Accepted) Debug.LogError("Unity.Overworld: player 1 could not join: " + joined.Reason);
             Viewpoint = Control.For(PlayerId.One);
@@ -123,8 +144,12 @@ namespace MindAttic.Overworld.Runtime
             Hud.transform.SetParent(transform, false);
             Hud.ShowVitals(Party, PlayerId.One);
             Hud.ShowPickups(Pickups, Viewpoint, World, PlayerId.One);
+            Hud.ShowInventory(Inventory, PlayerId.One);
+            World.ShowTarget(Inventory, PlayerId.One, Content.Hud.Target);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
             Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint, Party, Content.View.TeamButton);
+            Input.Inventory = Inventory;
+            Input.InventoryButton = Content.Hud.InventoryButton;
             Input.transform.SetParent(transform, false);
 
             var scripted = ScriptedInput(args);
@@ -142,7 +167,8 @@ namespace MindAttic.Overworld.Runtime
             var vitals = ApplyScriptedVitals(args, game);
             var rested = ApplyScriptedRest(args, game);
             var picked = ApplyScriptedPickups(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || seeded || capture != null) Input.UseDevices = false;
+            var packed = ApplyScriptedInventory(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -575,6 +601,184 @@ namespace MindAttic.Overworld.Runtime
             Debug.Log("Unity.Overworld: scripted examine of " + p + ", under the cursor " + Pickups.PickupAt(Viewpoint.Cursor.X, Viewpoint.Cursor.Y));
         }
 
+        /// <summary>
+        /// Applies the inventory's scripted arguments; true when any was given:
+        /// <c>-overworld-give &lt;pickup[*count],...&gt;</c> puts those pickups' items into the pack at once (e.g.
+        /// <c>0*3,201*2,105</c>); <c>-overworld-quickbar</c> shows the quick bar; <c>-overworld-inventory &lt;slot[,seconds]&gt;</c>
+        /// opens the panel with its cursor on that stack; <c>-overworld-swap &lt;from,to[,seconds]&gt;</c> marks stack from with
+        /// the run key and swaps it with stack to; <c>-overworld-drop &lt;slot[*count][,seconds]&gt;</c> drops that many of the
+        /// stack (Backspace), leaving the panel open; <c>-overworld-use &lt;slot[:hero][,seconds]&gt;</c> presses Enter on the
+        /// stack and, when it waits for its target, chooses that hero and presses Enter again (without a hero it is left
+        /// waiting, the target marked); <c>-overworld-quick &lt;key[:hero][,seconds]&gt;</c> presses that number key (1 to 9,
+        /// 0) the same way; <c>-overworld-pickup-drop &lt;drop[,seconds]&gt;</c> puts the leader by that drop and holds the
+        /// pick-up button.
+        /// </summary>
+        bool ApplyScriptedInventory(string[] args, Game game)
+        {
+            var any = false;
+            var give = ArgumentAfter(args, GiveArgument);
+            if (give != null)
+            {
+                any = true;
+                if (TryGive(give, Pickups.All.Count, out var gifts))
+                    foreach (var (pickup, count) in gifts)
+                    {
+                        var r = game.Submit(new GiveItem(PlayerId.One, pickup, count));
+                        if (!r.Accepted) Debug.LogError("Unity.Overworld: " + GiveArgument + " " + pickup + " was refused: " + r.Reason);
+                    }
+                else Debug.LogError("Unity.Overworld: " + GiveArgument + " wants pickup[*count] items split by ',', not '" + give + "'.");
+                Debug.Log("Unity.Overworld: scripted give; " + DescribePack());
+            }
+
+            if (HasFlag(args, QuickBarArgument))
+            {
+                any = true;
+                game.Submit(new ToggleQuickBar(PlayerId.One));
+            }
+
+            foreach (var (name, kind) in new[] { (InventoryArgument, 'o'), (SwapArgument, 's'), (DropArgument, 'd'), (UseArgument, 'u'), (QuickArgument, 'q'), (PickUpDropArgument, 'p') })
+            {
+                var text = ArgumentAfter(args, name);
+                if (text == null) continue;
+                any = true;
+                if (TryInventoryStep(text, kind, out var a, out var b, out var seconds)) StartCoroutine(InventoryAfter(game, kind, a, b, seconds));
+                else Debug.LogError("Unity.Overworld: " + name + " was not understood: '" + text + "' (see OverworldBootstrap.ApplyScriptedInventory).");
+            }
+
+            return any;
+        }
+
+        /// <summary>Reads <c>pickup[*count],...</c>.</summary>
+        public static bool TryGive(string text, int pickups, out List<(int Pickup, int Count)> gifts)
+        {
+            gifts = new List<(int, int)>();
+            foreach (var raw in text.Split(','))
+            {
+                var part = raw.Trim();
+                if (part.Length == 0) continue;
+                var star = part.Split('*');
+                var count = 1;
+                if (star.Length > 2 || !int.TryParse(star[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var pickup) || pickup < 0 || pickup >= pickups) return false;
+                if (star.Length == 2 && !(int.TryParse(star[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out count) && count >= 1)) return false;
+                gifts.Add((pickup, count));
+            }
+
+            return gifts.Count > 0;
+        }
+
+        /// <summary>
+        /// Reads one inventory step: <c>a[:b|*b][,seconds]</c> (b is the hero for use and quick, the count for drop), or
+        /// <c>from,to[,seconds]</c> for swap. A missing b is -1 (a count of 1 for drop).
+        /// </summary>
+        public static bool TryInventoryStep(string text, char kind, out int a, out int b, out float seconds)
+        {
+            a = b = -1;
+            seconds = 0f;
+            var parts = text.Split(',');
+            var first = parts[0].Trim();
+            var rest = 1;
+            if (kind == 's')
+            {
+                if (parts.Length < 2 || !int.TryParse(parts[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out b) || b < 0) return false;
+                rest = 2;
+            }
+            else
+            {
+                var split = first.Split(kind == 'd' ? '*' : ':');
+                if (split.Length > 2) return false;
+                if (split.Length == 2 && !(int.TryParse(split[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out b) && b >= 0)) return false;
+                first = split[0];
+                if (kind == 'd' && b < 1) b = 1;
+            }
+
+            if (!int.TryParse(first, NumberStyles.Integer, CultureInfo.InvariantCulture, out a) || a < 0) return false;
+            if (parts.Length > rest + 1) return false;
+            if (parts.Length == rest + 1 && !(float.TryParse(parts[rest].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f)) return false;
+            return kind != 'q' || a <= 9;
+        }
+
+        IEnumerator InventoryAfter(Game game, char kind, int a, int b, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var v = Inventory.For(PlayerId.One);
+            void Do(ICommand c)
+            {
+                var r = game.Submit(c);
+                if (!r.Accepted) Debug.LogError("Unity.Overworld: scripted " + c.GetType().Name + " was refused: " + r.Reason);
+            }
+
+            void Open(int slot)
+            {
+                if (!v.Open) Do(new ToggleInventory(PlayerId.One));
+                if (slot >= 0) Do(new MoveInventoryCursor(PlayerId.One, slot));
+            }
+
+            void Target(int hero)
+            {
+                if (!v.Choosing || hero < 0) return;
+                for (var i = 0; i < Party.Heroes.Count && v.Target != hero; i++) Do(new ChooseTarget(PlayerId.One, 1));
+                Do(new UseItem(PlayerId.One));
+            }
+
+            switch (kind)
+            {
+                case 'o':
+                    Open(a);
+                    break;
+                case 's':
+                    Open(a);
+                    Do(new SwapItem(PlayerId.One));
+                    Do(new MoveInventoryCursor(PlayerId.One, b));
+                    Do(new SwapItem(PlayerId.One));
+                    break;
+                case 'd':
+                    Open(a);
+                    for (var i = 0; i < b; i++) Do(new DropItem(PlayerId.One));
+                    break;
+                case 'u':
+                    Open(a);
+                    Do(new UseItem(PlayerId.One));
+                    Target(b);
+                    break;
+                case 'q':
+                    // The 1 key is quick slot 0 ... the 0 key slot 9.
+                    Do(new QuickUse(PlayerId.One, (a + 9) % 10));
+                    Target(b);
+                    break;
+                case 'p':
+                    if (a >= Pickups.Drops.Count)
+                    {
+                        Debug.LogError("Unity.Overworld: " + PickUpDropArgument + " " + a + ": there are " + Pickups.Drops.Count + " drops.");
+                        yield break;
+                    }
+
+                    if (v.Open) Do(new ToggleInventory(PlayerId.One));
+                    var d = Pickups.Drops[a];
+                    var reach = Pickups.Data.Reach;
+                    var item = Pickups.Data.ItemSize;
+                    var size = Party.Data.HeroSize;
+                    var leader = Party.LeaderOf(PlayerId.One);
+                    Do(new PlaceHero(PlayerId.One, leader, d.X + item * reach.ItemPoint.X - size * reach.HeroPoint.X, d.Y + item * reach.ItemPoint.Y - size * reach.HeroPoint.Y));
+                    Do(new SelectHero(PlayerId.One, leader));
+                    yield return NextTick(game);
+                    for (var i = 0; i < reach.Listed && Pickups.SelectedDrop(PlayerId.One) != a; i++) Do(new CyclePickup(PlayerId.One, 1));
+                    Debug.Log("Unity.Overworld: scripted reach of " + d + ", drops in reach [" + string.Join(", ", Pickups.DropsInReach(PlayerId.One)) + "]");
+                    Input.Scripted = (Input.Scripted ?? default(MoveInput)).WithPickUp(true);
+                    yield return NextTick(game);
+                    break;
+            }
+
+            Debug.Log("Unity.Overworld: scripted inventory " + kind + " " + a + (b >= 0 ? " " + b : "") + "; " + DescribeInventory());
+        }
+
+        string DescribeInventory()
+        {
+            var v = Inventory.For(PlayerId.One);
+            return (v.Open ? "panel open" : "panel shut") + ", cursor " + v.Cursor + (v.Swapping ? ", swap marked " + v.SwapFrom : "") +
+                   (v.Choosing ? ", choosing a target: " + Party.Heroes[v.Target].Name : "") + (v.QuickBar ? ", quick bar shown" : "") +
+                   "; " + DescribePack() + "; drops [" + string.Join(", ", Pickups.Drops) + "]";
+        }
+
         string DescribePack()
         {
             var inv = Pickups.Inventory;
@@ -685,6 +889,9 @@ namespace MindAttic.Overworld.Runtime
                               (Hud != null && Hud.Examined >= 0 ? "; examining " + Pickups.All[Hud.Examined] : "") +
                               (Hud != null && Hud.SelectedName != null && Hud.SelectedName.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex
                                   ? "; label '" + Hud.SelectedName.text + "'" : ""));
+                    if (Inventory != null)
+                        Debug.Log("Unity.Overworld: inventory " + DescribeInventory() + "; weight limit " + Inventory.WeightLimit.ToString(CultureInfo.InvariantCulture) +
+                                  (Party.Leader(PlayerId.One).Burdened ? "; the leader is burdened" : ""));
                 }
 
                 if (Clock != null)

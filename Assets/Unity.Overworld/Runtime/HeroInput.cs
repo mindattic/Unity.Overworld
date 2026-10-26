@@ -24,6 +24,8 @@ namespace MindAttic.Overworld.Runtime
         InputAction left, right, up, down, run, move, point;
         InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
         InputAction previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem;
+        InputAction inventory, drop, quickBar;
+        readonly InputAction[] quickKeys = new InputAction[10];
         Vector2? scriptedMouse;
         int scriptedWheelSent;
 
@@ -108,6 +110,11 @@ namespace MindAttic.Overworld.Runtime
             confirm = Button("Confirm", "<Keyboard>/enter", "<Keyboard>/numpadEnter");
             previousItem = Button("PreviousItem", "<Keyboard>/comma");
             nextItem = Button("NextItem", "<Keyboard>/period");
+            inventory = Button("Inventory", "<Keyboard>/delete");
+            drop = Button("Drop", "<Keyboard>/backspace");
+            quickBar = Button("QuickBar", "<Keyboard>/q");
+            // 1 to 9 then 0: quick slots 0 to 9.
+            for (var i = 0; i < quickKeys.Length; i++) quickKeys[i] = Button("Quick" + (i + 1) % 10, "<Keyboard>/digit" + (i + 1) % 10);
         }
 
         static InputAction Button(string name, params string[] bindings)
@@ -137,7 +144,8 @@ namespace MindAttic.Overworld.Runtime
         {
             left, right, up, down, run, move, point,
             motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown,
-            previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem,
+            previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem, inventory, drop, quickBar,
+            quickKeys[0], quickKeys[1], quickKeys[2], quickKeys[3], quickKeys[4], quickKeys[5], quickKeys[6], quickKeys[7], quickKeys[8], quickKeys[9],
         };
 
         void Update()
@@ -163,6 +171,11 @@ namespace MindAttic.Overworld.Runtime
             if (rest.WasPressedThisFrame()) Game.Submit(new Rest(Player));
             if (previousItem.WasPressedThisFrame()) Game.Submit(new CyclePickup(Player, -1));
             if (nextItem.WasPressedThisFrame()) Game.Submit(new CyclePickup(Player, 1));
+            if (inventory.WasPressedThisFrame()) Game.Submit(new ToggleInventory(Player));
+            if (drop.WasPressedThisFrame()) Game.Submit(new DropItem(Player));
+            if (quickBar.WasPressedThisFrame()) Game.Submit(new ToggleQuickBar(Player));
+            for (var i = 0; i < quickKeys.Length; i++)
+                if (quickKeys[i].WasPressedThisFrame()) Game.Submit(new QuickUse(Player, i));
             Confirm(confirm.WasPressedThisFrame() || select.WasPressedThisFrame());
             Click(select.IsPressed(), select.WasPressedThisFrame());
         }
@@ -174,8 +187,18 @@ namespace MindAttic.Overworld.Runtime
         public void Confirm(bool pressed)
         {
             if (!pressed || Party == null) return;
+            // With the pack open or an item's target being chosen, Enter uses (Core reads it from the held button).
+            if (Inventory != null && Inventory.FocusOf(Player) != InputFocus.World) return;
             if (Party.Heroes[Party.LeaderOf(Player)].Laying) Game.Submit(new Sleep(Player));
         }
+
+        /// <summary>The party's pack: what the keys work on, and the inventory button the left button toggles (null: none).</summary>
+        public InventoryControl Inventory { get; set; }
+
+        /// <summary>The inventory button (null: none).</summary>
+        public ScreenButtonDefinition InventoryButton { get; set; }
+
+        bool OverInventoryButton => InventoryButton != null && Viewpoint != null && InventoryButton.Contains(Viewpoint.Cursor.MouseX, Viewpoint.Cursor.MouseY);
 
         /// <summary>
         /// The left button (getMouse's actionHeroSelect and actionPickup): held over a hero, that hero leads (and stays the
@@ -205,6 +228,7 @@ namespace MindAttic.Overworld.Runtime
 
             if (pressed && TeamButton != null && TeamButton.Contains(cursor.MouseX, cursor.MouseY))
                 Game.Submit(new ToggleTeam(Player));
+            if (pressed && OverInventoryButton) Game.Submit(new ToggleInventory(Player));
         }
 
         MoveInput Read()
@@ -222,14 +246,17 @@ namespace MindAttic.Overworld.Runtime
         }
 
         /// <summary>
-        /// actionPickup's buttons: Enter, or the left button unless it is over the team button (overTeam). (A left click on
-        /// a hero both chooses it and kneels it to pick up, as getMouse called actionHeroSelect then actionPickup.)
+        /// actionPickup's buttons: Enter, or the left button unless it is over the team button (overTeam) or the inventory
+        /// button (a click on a button is only the button's: the original also used the panel's item, or knelt, under it;
+        /// BIBLE). (A left click on a hero both chooses it and kneels it to pick up, as getMouse called actionHeroSelect
+        /// then actionPickup.)
         /// </summary>
         public bool PickUpHeld(bool enter, bool leftButton)
         {
             if (enter) return true;
             if (!leftButton) return false;
             if (TeamButton != null && Viewpoint != null && TeamButton.Contains(Viewpoint.Cursor.MouseX, Viewpoint.Cursor.MouseY)) return false;
+            if (OverInventoryButton) return false;
             return true;
         }
 

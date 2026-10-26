@@ -101,12 +101,19 @@ namespace MindAttic.Overworld.Core
             var hero = Leader(command.Player);
             if (hero.Mode == HeroMode.Battle) return CommandResult.Reject(hero.Name + " is in battle; a hero rests in adventure mode.");
             hero.Running = false;
+            var events = new List<IGameEvent>();
+            // actionRest shuts the pack.
+            Rested?.Invoke(command.Player, game.Tick, events);
             if (!hero.Kneeling && !hero.Laying) hero.Kneeling = true;
             else if (hero.Kneeling && !hero.Laying) hero.Laying = true;
             else if (hero.Kneeling && hero.Laying) hero.Laying = false;
             hero.State = HeroState.Kneeling;
-            return CommandResult.Accept(new HeroRestChanged(game.Tick, hero.Index, hero.Kneeling, hero.Laying));
+            events.Add(new HeroRestChanged(game.Tick, hero.Index, hero.Kneeling, hero.Laying));
+            return CommandResult.Accept(events.ToArray());
         }
+
+        /// <summary>Called when a player's leader rests (the <see cref="InventoryControl"/> shuts that player's pack, as actionRest did).</summary>
+        internal Action<PlayerId, long, ICollection<IGameEvent>> Rested { get; set; }
 
         /// <summary>
         /// The player whose leader the followers follow: the one in the game with the lowest id, or none when no one has

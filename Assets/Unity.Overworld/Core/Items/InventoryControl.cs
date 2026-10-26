@@ -352,6 +352,7 @@ namespace MindAttic.Overworld.Core
             Party.Focus = FocusOf;
             Pickups.Focus = FocusOf;
             Party.Pack = Inventory;
+            Party.Rested = Close;
             game.AddSystem(this);
             return this;
         }

@@ -143,6 +143,8 @@ namespace MindAttic.Overworld.Runtime
             root.pickingMode = PickingMode.Ignore;
             // The pickup names are 3D text in the world: under everything the HUD draws.
             labelLayer = NewLayer(root, "pickup labels");
+            // renderinventoryBox came before renderStatus.
+            buttonLayer = NewLayer(root, "inventory button");
             // The status box and bars come before the clock's lines, as renderStatus wrote them before the bars and messages.
             statusLayer = new VisualElement { name = "status", pickingMode = PickingMode.Ignore };
             statusLayer.style.position = Position.Absolute;
@@ -153,6 +155,9 @@ namespace MindAttic.Overworld.Runtime
             TimeLabel = NewLabel(root, "time", Hud.Time);
             RestLabel = Hud.Rest != null ? NewLabel(root, "rest", Hud.Rest) : null;
             if (RestLabel != null) RestLabel.style.display = DisplayStyle.None;
+            // renderInventory, then renderquickIcon and renderquickBar, before the examine box.
+            packLayer = NewLayer(root, "inventory");
+            quickLayer = NewLayer(root, "quick bar");
             messageLayer = new VisualElement { name = "messages", pickingMode = PickingMode.Ignore };
             messageLayer.style.position = Position.Absolute;
             messageLayer.style.left = 0;
@@ -216,6 +221,8 @@ namespace MindAttic.Overworld.Runtime
                 SelectedName = NewWorldLabel("selected name");
                 HoverMarker = NewWorldLabel("hover marker");
                 HoverName = NewWorldLabel("hover name");
+                DropMarker = NewWorldLabel("drop marker");
+                DropName = NewWorldLabel("drop name");
             }
 
             var box = Hud.Examine;
@@ -260,6 +267,9 @@ namespace MindAttic.Overworld.Runtime
             if (Viewpoint != null) hover = Pickups.PickupAt(Viewpoint.Cursor.X, Viewpoint.Cursor.Y);
             ShowLabel(SelectedName, SelectedMarker, selected);
             ShowLabel(HoverName, HoverMarker, hover);
+            var drop = Pickups.SelectedDrop(Player);
+            if (drop < 0) ShowLabel(DropName, DropMarker, null, 0f, 0f);
+            else ShowLabel(DropName, DropMarker, Pickups.Drops[drop].Name, Pickups.Drops[drop].X, Pickups.Drops[drop].Y);
 
             Examined = Viewpoint != null && Viewpoint.Examine ? hover : -1;
             if (examineLayer == null || Hud.Examine == null) return;
@@ -299,20 +309,31 @@ namespace MindAttic.Overworld.Runtime
         /// </summary>
         void ShowLabel(Label name, Label marker, int index)
         {
-            if (index < 0 || World == null || World.Camera == null)
+            if (index < 0) ShowLabel(name, marker, null, 0f, 0f);
+            else ShowLabel(name, marker, Pickups.All[index].Name, Pickups.All[index].X, Pickups.All[index].Y);
+        }
+
+        /// <summary>The same two lines over the item <paramref name="text"/> at (<paramref name="x"/>, <paramref name="y"/>); hidden for null.</summary>
+        void ShowLabel(Label name, Label marker, string text, float x, float y)
+        {
+            if (text == null || World == null || World.Camera == null)
             {
                 name.style.display = DisplayStyle.None;
                 marker.style.display = DisplayStyle.None;
                 return;
             }
 
-            var p = Pickups.All[index];
             var l = Pickups.Data.Label;
             var colour = World.Tint;
             colour.a = 1f;
-            PlaceWorldLabel(marker, l.Marker, p.X + l.MarkerOffset.X, p.Y + l.MarkerOffset.Y, l.EmHeight(l.MarkerScale), colour);
-            PlaceWorldLabel(name, p.Name, p.X + l.NameOffset.X, p.Y + l.NameOffset.Y, l.EmHeight(l.NameScale), colour);
+            PlaceWorldLabel(marker, l.Marker, x + l.MarkerOffset.X, y + l.MarkerOffset.Y, l.EmHeight(l.MarkerScale), colour);
+            PlaceWorldLabel(name, text, x + l.NameOffset.X, y + l.NameOffset.Y, l.EmHeight(l.NameScale), colour);
         }
+
+        /// <summary>The selected drop's name and marker (showItemName's second pair).</summary>
+        public Label DropName { get; private set; }
+
+        public Label DropMarker { get; private set; }
 
         void PlaceWorldLabel(Label label, string text, float x, float y, float em, Color colour)
         {
@@ -334,6 +355,334 @@ namespace MindAttic.Overworld.Runtime
             label.style.fontSize = Mathf.Max(1f, Mathf.Abs(top.y - at.y) * height);
             label.style.color = colour;
             label.style.display = DisplayStyle.Flex;
+        }
+
+        // ---- the inventory (U.OVW-US-A13): the panel, the quick bar, the inventory button, "overburdened", the target --
+
+        VisualElement buttonLayer;
+        VisualElement packLayer;
+        VisualElement quickLayer;
+        readonly List<VisualElement> packIcons = new List<VisualElement>();
+        readonly List<Label> packCounts = new List<Label>();
+        readonly List<VisualElement> quickIcons = new List<VisualElement>();
+        readonly List<Label> quickCounts = new List<Label>();
+
+        /// <summary>The pack shown (null until <see cref="ShowInventory"/>).</summary>
+        public InventoryControl Inventory { get; private set; }
+
+        /// <summary>The panel's picture, shown while the panel is open.</summary>
+        public VisualElement PackPanel { get; private set; }
+
+        /// <summary>The item cursor and the swap cursor on the panel's icons.</summary>
+        public VisualElement ItemCursor { get; private set; }
+
+        public VisualElement SwapCursor { get; private set; }
+
+        /// <summary>The panel's weight, gold, name, effect, description, item weight and value lines.</summary>
+        public Label WeightLabel { get; private set; }
+
+        public Label GoldLabel { get; private set; }
+        public Label ItemNameLabel { get; private set; }
+        public Label EffectLabel { get; private set; }
+        public Label DescriptionLabel { get; private set; }
+        public Label ItemWeightLabel { get; private set; }
+        public Label ValueLabel { get; private set; }
+
+        /// <summary>The icons of the panel's stacks, by slot (hidden beyond the pack).</summary>
+        public IReadOnlyList<VisualElement> PackIcons => packIcons;
+
+        /// <summary>The counts over the panel's icons, by slot (hidden for stacks of one).</summary>
+        public IReadOnlyList<Label> PackCounts => packCounts;
+
+        /// <summary>The quick bar's picture, its icons and their counts, shown while the bar is.</summary>
+        public VisualElement QuickBar { get; private set; }
+
+        public IReadOnlyList<VisualElement> QuickIcons => quickIcons;
+        public IReadOnlyList<Label> QuickCounts => quickCounts;
+
+        /// <summary>The inventory button (open or closed picture).</summary>
+        public VisualElement InventoryButton { get; private set; }
+
+        /// <summary>The picture the inventory button shows now.</summary>
+        public string InventoryButtonFile { get; private set; }
+
+        /// <summary>"You are overburdened", shown while the leader is burdened.</summary>
+        public Label BurdenedLabel { get; private set; }
+
+        /// <summary>The marker and name over the hero an item's target is being chosen on (renderHeroSelect's 3D text).</summary>
+        public Label TargetName { get; private set; }
+
+        public Label TargetMarker { get; private set; }
+
+        /// <summary>
+        /// Shows <paramref name="inventory"/> for <paramref name="player"/> from now on: the inventory button, the panel
+        /// while it is open, the quick bar while it is shown, "You are overburdened" while the leader is, and the name over
+        /// an item's target while it is chosen.
+        /// </summary>
+        public void ShowInventory(InventoryControl inventory, PlayerId player, TextureLibrary library = null)
+        {
+            Inventory = inventory;
+            Player = player;
+            textures = library ?? textures ?? new TextureLibrary();
+            if (PackPanel == null && packLayer != null && Hud.Inventory != null)
+            {
+                var panel = Hud.Inventory;
+                PackPanel = NewPicture(packLayer, "inventory panel", panel.Picture);
+                // renderItemIcon, renderItemCursor, renderSwapCursor, then the text.
+                for (var i = 0; i < panel.Slots; i++) packIcons.Add(NewIcon(packLayer, "icon " + i));
+                ItemCursor = NewPicture(packLayer, "item cursor", panel.ItemCursor);
+                SwapCursor = NewPicture(packLayer, "swap cursor", panel.SwapCursor);
+                WeightLabel = NewPanelLabel("weight", panel.Green);
+                GoldLabel = NewPanelLabel("gold", panel.Green);
+                ItemNameLabel = NewPanelLabel("item name", panel.Green);
+                EffectLabel = NewPanelLabel("effect", panel.Cyan);
+                DescriptionLabel = NewPanelLabel("description", panel.Cyan);
+                ItemWeightLabel = NewPanelLabel("item weight", panel.Green);
+                ValueLabel = NewPanelLabel("value", panel.Green);
+                for (var i = 0; i < panel.Slots; i++) packCounts.Add(NewCount(packLayer, "count " + i, panel.Count));
+                packLayer.style.display = DisplayStyle.None;
+
+                var bar = Hud.QuickBar;
+                for (var i = 0; i < bar.Slots; i++) quickIcons.Add(NewIcon(quickLayer, "quick icon " + i));
+                QuickBar = NewPicture(quickLayer, "quick bar", bar.Picture);
+                for (var i = 0; i < bar.Slots; i++) quickCounts.Add(NewCount(quickLayer, "quick count " + i, bar.Count));
+                quickLayer.style.display = DisplayStyle.None;
+
+                var button = Hud.InventoryButton;
+                InventoryButton = NewPicture(buttonLayer, "inventory button", button.Picture(false));
+                InventoryButtonFile = button.Picture(false);
+
+                BurdenedLabel = NewLabel(statusLayer, "burdened", Hud.Burdened);
+                BurdenedLabel.text = Hud.BurdenedText;
+                BurdenedLabel.style.display = DisplayStyle.None;
+
+            }
+
+            // The target's 3D text uses the pickup labels' font: it is made once the pickups are shown.
+            if (TargetName == null && Pickups != null && labelLayer != null)
+            {
+                TargetMarker = NewWorldLabel("target marker");
+                TargetName = NewWorldLabel("target name");
+            }
+
+            Refresh();
+        }
+
+        VisualElement NewIcon(VisualElement parent, string name)
+        {
+            var e = new VisualElement { name = name, pickingMode = PickingMode.Ignore };
+            e.style.position = Position.Absolute;
+            e.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
+            e.style.display = DisplayStyle.None;
+            parent.Add(e);
+            return e;
+        }
+
+        Label NewPanelLabel(string name, TextColour colour)
+        {
+            var label = NewLabel(packLayer, name, null);
+            Style(label, Hud.Inventory.Font);
+            label.style.color = (Color)new Color32(colour.R, colour.G, colour.B, colour.A);
+            label.style.whiteSpace = WhiteSpace.Pre;
+            return label;
+        }
+
+        Label NewCount(VisualElement parent, string name, CountText count)
+        {
+            var label = NewLabel(parent, name, null);
+            Style(label, count.Font);
+            label.style.color = (Color)new Color32(count.Colour.R, count.Colour.G, count.Colour.B, count.Colour.A);
+            label.style.display = DisplayStyle.None;
+            return label;
+        }
+
+        /// <summary>Places a picture on the 640 x 480 screen at (x, y), w x h, as the same fraction of the view.</summary>
+        void PlaceBox(VisualElement e, float x, float y, float w, float h)
+        {
+            var scale = HorizontalScale;
+            e.style.left = x * scale;
+            e.style.top = y;
+            e.style.width = w * scale;
+            e.style.height = h;
+        }
+
+        void SetPicture(VisualElement e, string file)
+        {
+            var texture = textures.Load(file);
+            e.style.backgroundImage = texture != null ? new StyleBackground(texture) : new StyleBackground(StyleKeyword.None);
+        }
+
+        readonly Dictionary<VisualElement, string> iconFiles = new Dictionary<VisualElement, string>();
+
+        void ShowIcon(VisualElement icon, string file, float x, float y, float size)
+        {
+            PlaceBox(icon, x, y, size, size);
+            if (!iconFiles.TryGetValue(icon, out var shown) || shown != file)
+            {
+                iconFiles[icon] = file;
+                SetPicture(icon, file);
+            }
+
+            icon.style.display = DisplayStyle.Flex;
+        }
+
+        void ShowCount(Label label, CountText count, int amount, DataPoint icon)
+        {
+            var offset = count.Offset(amount);
+            if (!offset.HasValue)
+            {
+                label.style.display = DisplayStyle.None;
+                return;
+            }
+
+            label.text = amount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Place(label, icon.X + offset.Value.X, icon.Y + offset.Value.Y);
+            label.style.display = DisplayStyle.Flex;
+        }
+
+        static void SetText(Label label, string text, float x, float y, Action<VisualElement, float, float> place)
+        {
+            label.text = text;
+            place(label, x, y);
+            label.style.display = DisplayStyle.Flex;
+        }
+
+        void RefreshInventory()
+        {
+            if (Inventory == null || PackPanel == null) return;
+            var v = Inventory.For(Player);
+            var items = Inventory.Inventory.Items;
+
+            // renderinventoryBox: open or closed.
+            var button = Hud.InventoryButton;
+            var file = button.Picture(v.Open);
+            if (file != InventoryButtonFile)
+            {
+                InventoryButtonFile = file;
+                SetPicture(InventoryButton, file);
+            }
+
+            PlaceBox(InventoryButton, button.X, button.Y, button.Width, button.Height);
+
+            // renderStatus: "You are overburdened" in the status box's colour.
+            var leader = Party != null ? Party.Heroes[Party.LeaderOf(Player)] : Inventory.Party.Leader(Player);
+            if (leader.Burdened)
+            {
+                var light = Clock != null ? Clock.Light : new LightColour(255, 255, 255);
+                Place(BurdenedLabel, Hud.Burdened.X, Hud.Burdened.Y);
+                BurdenedLabel.style.color = (Color)new Color32((byte)(255 - light.R), 255, (byte)(255 - light.B), 255);
+                BurdenedLabel.style.display = DisplayStyle.Flex;
+            }
+            else BurdenedLabel.style.display = DisplayStyle.None;
+
+            RefreshPanel(v, items);
+            RefreshQuickBar(v, items);
+            RefreshTarget(v);
+        }
+
+        void RefreshPanel(PackView v, IReadOnlyList<InventoryItem> items)
+        {
+            if (!v.Open)
+            {
+                packLayer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var panel = Hud.Inventory;
+            packLayer.style.display = DisplayStyle.Flex;
+            PlaceBox(PackPanel, panel.X, panel.Y, panel.Width, panel.Height);
+            for (var i = 0; i < packIcons.Count; i++)
+            {
+                if (i >= items.Count)
+                {
+                    packIcons[i].style.display = DisplayStyle.None;
+                    packCounts[i].style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                var at = panel.IconAt(i);
+                ShowIcon(packIcons[i], items[i].Texture, at.X, at.Y, panel.IconSize);
+                ShowCount(packCounts[i], panel.Count, items[i].Amount, at);
+            }
+
+            var any = items.Count > 0;
+            ItemCursor.style.display = any ? DisplayStyle.Flex : DisplayStyle.None;
+            SwapCursor.style.display = any && v.Swapping ? DisplayStyle.Flex : DisplayStyle.None;
+            if (any)
+            {
+                var at = panel.IconAt(v.Cursor);
+                PlaceBox(ItemCursor, at.X, at.Y, panel.IconSize, panel.IconSize);
+                var from = panel.IconAt(v.SwapFrom);
+                PlaceBox(SwapCursor, from.X, from.Y, panel.IconSize, panel.IconSize);
+            }
+
+            var c = System.Globalization.CultureInfo.InvariantCulture;
+            var x = panel.X;
+            var y = panel.Y;
+            SetText(WeightLabel, panel.WeightLine(Inventory.Inventory.Weight, Inventory.WeightLimit), x + panel.Weight.X, y + panel.Weight.Y, Place);
+            SetText(GoldLabel, string.Format(c, panel.GoldText, Inventory.Inventory.Gold), x + panel.Gold.X, y + panel.Gold.Y, Place);
+            foreach (var l in new[] { ItemNameLabel, EffectLabel, DescriptionLabel, ItemWeightLabel, ValueLabel })
+                l.style.display = any ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!any) return;
+
+            var item = items[v.Cursor];
+            var name = item.Amount > 1 ? string.Format(c, panel.AmountText, item.Name, item.Amount) : item.Name;
+            SetText(ItemNameLabel, name, x + panel.Name.X, y + panel.Name.Y, Place);
+            SetText(EffectLabel, item.Effect, x + panel.Effect.X, y + panel.Effect.Y, Place);
+            SetText(DescriptionLabel, item.Description, x + panel.Description.X, y + panel.Description.Y, Place);
+            SetText(ItemWeightLabel, InventoryPanelDefinition.Number(item.Weight), x + panel.ItemWeight.X, y + panel.ItemWeight.Y, Place);
+            var value = item.Value.ToString(c);
+            SetText(ValueLabel, string.Format(c, panel.ValueText, value), x + panel.Value.X - panel.ValueCharacter * value.Length, y + panel.Value.Y, Place);
+        }
+
+        void RefreshQuickBar(PackView v, IReadOnlyList<InventoryItem> items)
+        {
+            if (!v.QuickBar)
+            {
+                quickLayer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var bar = Hud.QuickBar;
+            quickLayer.style.display = DisplayStyle.Flex;
+            PlaceBox(QuickBar, bar.X, bar.Y, bar.Width, bar.Height);
+            for (var i = 0; i < quickIcons.Count; i++)
+            {
+                if (i >= items.Count)
+                {
+                    quickIcons[i].style.display = DisplayStyle.None;
+                    quickCounts[i].style.display = DisplayStyle.None;
+                    continue;
+                }
+
+                var at = bar.IconAt(i);
+                ShowIcon(quickIcons[i], items[i].Texture, at.X, at.Y, bar.IconSize);
+                ShowCount(quickCounts[i], bar.Count, items[i].Amount, at);
+            }
+        }
+
+        /// <summary>renderHeroSelect's 3D text: the marker and the chosen hero's name over it while an item waits for its target.</summary>
+        void RefreshTarget(PackView v)
+        {
+            if (TargetName == null) return;
+            var party = Inventory.Party;
+            var t = Hud.Target;
+            if (!v.Choosing || World == null || World.Camera == null || Pickups == null || v.Target < 0 || v.Target >= party.Heroes.Count)
+            {
+                TargetName.style.display = DisplayStyle.None;
+                TargetMarker.style.display = DisplayStyle.None;
+                return;
+            }
+
+            var hero = party.Heroes[v.Target];
+            var size = party.Data.HeroSize;
+            var x = hero.X + size * t.LabelPoint.X + t.LabelOffset.X;
+            var y = hero.Y + size * t.LabelPoint.Y + t.LabelOffset.Y;
+            var l = Pickups.Data.Label;
+            var colour = World.Tint;
+            colour.a = 1f;
+            PlaceWorldLabel(TargetMarker, t.Marker, x, y, l.EmHeight(t.MarkerScale), colour);
+            PlaceWorldLabel(TargetName, hero.Name, x, y, l.EmHeight(t.NameScale), colour);
         }
 
         void LateUpdate() => Refresh();
@@ -376,6 +725,7 @@ namespace MindAttic.Overworld.Runtime
             RefreshVitals();
             RefreshRest();
             RefreshPickups();
+            RefreshInventory();
 
             var shown = Messages != null ? Messages.Shown : (IReadOnlyList<ShownMessage>)Array.Empty<ShownMessage>();
             for (var i = 0; i < shown.Count; i++)

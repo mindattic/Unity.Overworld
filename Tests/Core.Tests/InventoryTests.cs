@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -107,6 +107,10 @@ namespace MindAttic.Overworld.Tests
             Assert.IsTrue(raised.OfType<InventoryToggled>().Single().Open);
             Submit(new ToggleInventory(PlayerId.One));
             Assert.IsFalse(view.Open);
+
+            Submit(new ToggleInventory(PlayerId.One));
+            Submit(new Rest(PlayerId.One));
+            Assert.IsFalse(view.Open, "resting shuts the pack (actionRest)");
 
             party.Heroes[0].Mode = HeroMode.Battle;
             Assert.IsFalse(game.Submit(new ToggleInventory(PlayerId.One)).Accepted, "the ring's Item entry opens it in battle");
