@@ -18,6 +18,7 @@ namespace MindAttic.Overworld.Core
             State = definition.State;
             Mode = definition.Mode;
             Stamina = definition.Stamina;
+            Health = definition.Health;
         }
 
         /// <summary>The hero's place in the party (0 Chrono, 1 Belmont, 2 Flagg).</summary>
@@ -52,6 +53,9 @@ namespace MindAttic.Overworld.Core
         public HeroState State { get; internal set; }
         public HeroMode Mode { get; internal set; }
         public int Stamina { get; internal set; }
+
+        /// <summary>Health; a hero at 0 does not flock (checkFlocking). Vitals come with story A10.</summary>
+        public int Health { get; internal set; }
 
         /// <summary>The run key is held and the hero had stamina (or the mouse sent it running this tick).</summary>
         public bool Running { get; internal set; }

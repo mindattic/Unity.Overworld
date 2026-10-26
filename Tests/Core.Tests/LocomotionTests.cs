@@ -73,13 +73,21 @@ namespace MindAttic.Overworld.Tests
             {
                 var name = f.ToString().ToLowerInvariant();
                 Assert.AreEqual("gfx/hero/Chrono/stand/face_" + name + ".PNG", s.Stand(f));
+                Assert.AreEqual("gfx/hero/Chrono/kneel/kneel_" + name + ".PNG", s.Kneel(f));
                 CollectionAssert.AreEqual(Enumerable.Range(1, 6).Select(n => "gfx/hero/Chrono/walk/walk_" + name + n + ".PNG"), s.Walk(f));
                 CollectionAssert.AreEqual(Enumerable.Range(1, 6).Select(n => "gfx/hero/Chrono/run/run_" + name + n + ".PNG"), s.Run(f));
             }
 
-            // Two halt pictures (the falling pose, U.OVW-US-A7), then per facing a stand picture and six walk and six run frames.
-            Assert.AreEqual(54, s.Files.Count);
-            Assert.AreEqual(54, s.Files.Distinct().Count());
+            // The laid-down pictures: left and down show the left one, right and up the right one (aiKneeling).
+            Assert.AreEqual("gfx/hero/Chrono/kneel/sleep_left.PNG", s.Sleep(Facing.Left));
+            Assert.AreEqual("gfx/hero/Chrono/kneel/sleep_left.PNG", s.Sleep(Facing.Down));
+            Assert.AreEqual("gfx/hero/Chrono/kneel/sleep_right.PNG", s.Sleep(Facing.Right));
+            Assert.AreEqual("gfx/hero/Chrono/kneel/sleep_right.PNG", s.Sleep(Facing.Up));
+
+            // Two halt pictures (the falling pose, U.OVW-US-A7) and two laid-down ones, then per facing a stand and a kneel
+            // picture and six walk and six run frames.
+            Assert.AreEqual(60, s.Files.Count);
+            Assert.AreEqual(60, s.Files.Distinct().Count());
         }
 
         [Test]
@@ -252,13 +260,15 @@ namespace MindAttic.Overworld.Tests
         }
 
         [Test]
-        public void TheOtherHeroesStandStill()
+        public void TheInputMovesOnlyTheLeaderTheOthersKneelInSolo()
         {
+            Assert.IsTrue(game.Submit(new ToggleTeam(PlayerId.One)).Accepted);
             Hold(MoveInput.Arrows(right: true, run: true));
             Run(30);
+            Assert.AreNotEqual(chrono.Definition.Start.X, chrono.X);
             foreach (var h in party.Heroes.Skip(1))
             {
-                Assert.AreEqual(HeroState.Standing, h.State, h.Name);
+                Assert.AreEqual(HeroState.Kneeling, h.State, h.Name);
                 Assert.AreEqual(h.Definition.Start.X, h.X, h.Name);
             }
         }
@@ -447,7 +457,7 @@ namespace MindAttic.Overworld.Tests
         public void StartingAndStoppingRaiseHeroStateChanged()
         {
             var seen = new System.Collections.Generic.List<HeroStateChanged>();
-            game.EventRaised += e => { if (e is HeroStateChanged c) seen.Add(c); };
+            game.EventRaised += e => { if (e is HeroStateChanged c && c.Hero == 0) seen.Add(c); };
             Hold(MoveInput.Arrows(left: true));
             Run(5);
             Hold(default);

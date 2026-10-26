@@ -15,6 +15,8 @@
     "_note": "Textures.loadTextures: the Chrono set every hero draws with (64 x 64, magenta keyed). stand is face_* (one frame); walk and run are walk_*1..6 and run_*1..6, in frame order. Paths are under the original's folder, exactly as on disk.",
     "stand": {"left": "gfx/hero/Chrono/stand/face_left.PNG", "right": "gfx/hero/Chrono/stand/face_right.PNG", "up": "gfx/hero/Chrono/stand/face_up.PNG", "down": "gfx/hero/Chrono/stand/face_down.PNG"},
     "halt": {"left": "gfx/hero/Chrono/halt/halt_left.PNG", "right": "gfx/hero/Chrono/halt/halt_right.PNG"},
+    "kneel": {"left": "gfx/hero/Chrono/kneel/kneel_left.PNG", "right": "gfx/hero/Chrono/kneel/kneel_right.PNG", "up": "gfx/hero/Chrono/kneel/kneel_up.PNG", "down": "gfx/hero/Chrono/kneel/kneel_down.PNG"},
+    "sleep": {"left": "gfx/hero/Chrono/kneel/sleep_left.PNG", "right": "gfx/hero/Chrono/kneel/sleep_right.PNG"},
     "walk": {
       "left": ["gfx/hero/Chrono/walk/walk_left1.PNG", "gfx/hero/Chrono/walk/walk_left2.PNG", "gfx/hero/Chrono/walk/walk_left3.PNG", "gfx/hero/Chrono/walk/walk_left4.PNG", "gfx/hero/Chrono/walk/walk_left5.PNG", "gfx/hero/Chrono/walk/walk_left6.PNG"],
       "right": ["gfx/hero/Chrono/walk/walk_right1.PNG", "gfx/hero/Chrono/walk/walk_right2.PNG", "gfx/hero/Chrono/walk/walk_right3.PNG", "gfx/hero/Chrono/walk/walk_right4.PNG", "gfx/hero/Chrono/walk/walk_right5.PNG", "gfx/hero/Chrono/walk/walk_right6.PNG"],
@@ -46,6 +48,27 @@
     "rise": 0.04,
     "recallZ": -1,
     "recallSpread": 0.1
+  },
+  "follow": {
+    "_note": "Heroes.checkfollow, RECONSTRUCTION 4.5: every hero no player leads, not in battle, while the team is on (bTeam, True at the start). Ranges are per axis (A_near_B, inclusive). Beyond recallRange on either axis the follower is recalled beside the leader (the 'fall' recall); within it on both it runs at velocity (leader - follower) x runSpeed, within walkRange walks at x walkSpeed, within standRange stands. Facing from dy's sign, unless |dx| is larger. Team off (the ' key or the team button): every follower kneels.",
+    "teamAtStart": true,
+    "recallRange": 1,
+    "runSpeed": 0.03,
+    "walkRange": 0.2,
+    "walkSpeed": 0.02,
+    "standRange": 0.05
+  },
+  "flocking": {
+    "_note": "Heroes.checkFlocking, RECONSTRUCTION 4.5: two followers, both moving and alive, within range on both axes are each nudged apart in x by |dY| / divisor and in y by |dX| / divisor (a sideways slide), once a frame before the heroes update.",
+    "range": 0.05,
+    "divisor": 6
+  },
+  "selection": {
+    "_note": "Cursor.checkCursorOverHero, RECONSTRUCTION 4.7: the cursor is over the first hero whose point (position + heroSize x heroPoint + heroOffset) is within range on both axes of the cursor's position + cursorOffset. A left click there makes it the leader.",
+    "heroPoint": [0.5, -0.5],
+    "heroOffset": [0, 0.03],
+    "cursorOffset": [0.03, -0.05],
+    "range": 0.03
   },
   "heroes": [
     {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},

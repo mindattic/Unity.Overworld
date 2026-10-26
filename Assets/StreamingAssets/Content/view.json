@@ -107,6 +107,14 @@
     "strafe": [0.05, 0.02],
     "isometric": 0.25
   },
+  "teamButton": {
+    "_note": "Gui/TeamBtn.vb and Cursor2D.rendercursor2D, RECONSTRUCTION 13: a 28 x 28 square of the virtual 640 x 480 screen (y down) at (18, 75), drawn after the world, showing icon_team while the team follows and icon_solo while it kneels (the pictures are 32 x 30, stretched to the square). The left button toggles the team while the virtual mouse is across the button's width and between its top + hitTopBottom[0] and its bottom + hitTopBottom[1] (inclusive).",
+    "position": [18, 75],
+    "size": [28, 28],
+    "hitTopBottom": [-10, -12],
+    "team": "gfx/gui/icon_team.PNG",
+    "solo": "gfx/gui/icon_solo.PNG"
+  },
   "objects": {
     "_note": "checkDrawOrder: the heroes, the prop bottoms and the heroes' weapons. A hero stands facing Right on its stand sprite; a weapon shows texBlank (all colour key) unless its hero is drawing or in battle.",
     "heroStandRight": "gfx/hero/Chrono/stand/face_right.PNG",

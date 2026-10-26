@@ -195,6 +195,37 @@ namespace MindAttic.Overworld.Core
         public float Isometric { get; internal set; }
     }
 
+    /// <summary>
+    /// The team button (Gui/TeamBtn.vb, Cursor2D.rendercursor2D; RECONSTRUCTION 13): a 28 x 28 square of the virtual
+    /// 640 x 480 screen at (18, 75) showing icon_team or icon_solo; the left button over it toggles the team. Its hit box
+    /// is the original's: across its width, from 10 px above its top to 12 px above its bottom (view.json "teamButton").
+    /// </summary>
+    public sealed class TeamButtonDefinition
+    {
+        /// <summary>The top-left corner in virtual pixels (y down).</summary>
+        public float X { get; internal set; }
+
+        public float Y { get; internal set; }
+        public float Width { get; internal set; }
+        public float Height { get; internal set; }
+
+        /// <summary>The hit box's top and bottom, from the button's top and bottom (-10, -12).</summary>
+        public float HitTop { get; internal set; }
+
+        public float HitBottom { get; internal set; }
+
+        /// <summary>The picture with the team on (icon_team) and off (icon_solo).</summary>
+        public string TeamPicture { get; internal set; }
+
+        public string SoloPicture { get; internal set; }
+
+        public string Picture(bool team) => team ? TeamPicture : SoloPicture;
+
+        /// <summary>The virtual mouse at (<paramref name="mouseX"/>, <paramref name="mouseY"/>) is over the button (A_between_BC, inclusive).</summary>
+        public bool Contains(float mouseX, float mouseY) =>
+            mouseX >= X && mouseX <= X + Width && mouseY >= Y + HitTop && mouseY <= Y + Height + HitBottom;
+    }
+
     /// <summary>The box drawn behind everything and the colour each frame is cleared to (Cube.vb, Engine.oneFrameRender).</summary>
     public sealed class BackdropDefinition
     {
@@ -223,6 +254,9 @@ namespace MindAttic.Overworld.Core
         public CursorDefinition Cursor { get; private set; }
         public CameraControlDefinition Control { get; private set; }
 
+        /// <summary>The team / solo button on the screen.</summary>
+        public TeamButtonDefinition TeamButton { get; private set; }
+
         /// <summary>A standing hero facing Right (every hero's start pose).</summary>
         public string HeroStandRight { get; private set; }
 
@@ -247,6 +281,8 @@ namespace MindAttic.Overworld.Core
                 list.Add(WeaponIdle);
                 foreach (var f in Textures.Values) if (!list.Contains(f)) list.Add(f);
                 foreach (var f in Cursor.Sprites.Values) if (!list.Contains(f)) list.Add(f);
+                list.Add(TeamButton.TeamPicture);
+                list.Add(TeamButton.SoloPicture);
                 return list;
             }
         }
@@ -262,6 +298,7 @@ namespace MindAttic.Overworld.Core
             view.Backdrop = ReadBackdrop(root.Section("backdrop"));
             view.Cursor = ReadCursor(root.Section("cursor"));
             view.Control = ReadControl(root.Section("cameraControl"));
+            view.TeamButton = ReadTeamButton(root.Section("teamButton"), view.Cursor);
 
             var objects = root.Section("objects");
             view.HeroStandRight = PicturePath(objects, "heroStandRight");
@@ -426,6 +463,29 @@ namespace MindAttic.Overworld.Core
 
             r.Done();
             return c;
+        }
+
+        static TeamButtonDefinition ReadTeamButton(ContentReader r, CursorDefinition cursor)
+        {
+            var position = r.Pair("position", 0f);
+            var size = r.Pair("size", 1f);
+            var hit = r.Pair("hitTopBottom");
+            var button = new TeamButtonDefinition
+            {
+                X = position.X,
+                Y = position.Y,
+                Width = size.X,
+                Height = size.Y,
+                HitTop = hit.X,
+                HitBottom = hit.Y,
+                TeamPicture = PicturePath(r, "team"),
+                SoloPicture = PicturePath(r, "solo"),
+            };
+            if (cursor != null)
+                r.Check(button.X + button.Width <= cursor.ScreenWidth && button.Y + button.Height <= cursor.ScreenHeight, "position", "must keep the button on the virtual screen");
+            r.Check(button.Y + button.HitTop < button.Y + button.Height + button.HitBottom, "hitTopBottom", "must leave the hit box some height");
+            r.Done();
+            return button;
         }
 
         static BackdropDefinition ReadBackdrop(ContentReader r)

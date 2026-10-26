@@ -86,7 +86,8 @@ namespace MindAttic.Overworld.Core
     /// <summary>The three heroes (Chrono, Belmont, Flagg) as the original's Engine.initHero built them.</summary>
     public sealed class HeroData
     {
-        internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, HeroSprites sprites, LocomotionTuning locomotion, FallTuning fall, List<HeroDefinition> heroes)
+        internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, HeroSprites sprites, LocomotionTuning locomotion, FallTuning fall,
+            FollowTuning follow, FlockingTuning flocking, SelectionTuning selection, List<HeroDefinition> heroes)
         {
             HeroSize = heroSize;
             SpriteSet = spriteSet;
@@ -94,6 +95,9 @@ namespace MindAttic.Overworld.Core
             Sprites = sprites;
             Locomotion = locomotion;
             Fall = fall;
+            Follow = follow;
+            Flocking = flocking;
+            Selection = selection;
             Heroes = heroes;
         }
 
@@ -113,6 +117,15 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>How a hero below the ground rises into place, and where a recalled hero lands.</summary>
         public FallTuning Fall { get; }
+
+        /// <summary>How the followers keep up with the leader, and whether following is on at the start.</summary>
+        public FollowTuning Follow { get; }
+
+        /// <summary>How crowding followers slide apart.</summary>
+        public FlockingTuning Flocking { get; }
+
+        /// <summary>Which hero the world cursor is over, for a left click to choose the leader.</summary>
+        public SelectionTuning Selection { get; }
 
         public IReadOnlyList<HeroDefinition> Heroes { get; }
 
@@ -139,6 +152,9 @@ namespace MindAttic.Overworld.Core
             var sprites = HeroSprites.Read(root.Section("sprites"), common.WalkFrames, common.RunFrames);
             var locomotion = LocomotionTuning.Read(root.Section("locomotion"));
             var fall = FallTuning.Read(root.Section("fall"));
+            var follow = FollowTuning.Read(root.Section("follow"));
+            var flocking = FlockingTuning.Read(root.Section("flocking"));
+            var selection = SelectionTuning.Read(root.Section("selection"));
 
             // Each hero is the common block with its own keys laid over it (Belmont's walk rate and speeds).
             var list = new List<HeroDefinition>();
@@ -162,7 +178,7 @@ namespace MindAttic.Overworld.Core
             }
 
             root.Done();
-            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, fall, list);
+            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, fall, follow, flocking, selection, list);
         }
 
         static HeroDefinition ReadCommon(ContentReader c, out float perAgility)

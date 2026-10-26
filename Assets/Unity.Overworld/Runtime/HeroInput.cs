@@ -9,18 +9,24 @@ namespace MindAttic.Overworld.Runtime
     /// arrow keys, the run key (Right Ctrl or Space) and the move button (the right mouse button) heading for the world
     /// cursor. The view controls: the mouse's motion (the system pointer is hidden and held, as the original's
     /// DirectInput mouse was, and its motion drives the world cursor), the wheel and the middle button (zoom), Shift (fast
-    /// edge scroll), E (examine), F (free camera), X / Z (isometric) and numpad 4 / 6 / 8 / 2 (strafe). Every frame, before
-    /// the game advances, it sends what the player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/>
-    /// commands and the key presses as toggles; it never touches game state itself. The <c>Scripted*</c> inputs replace
-    /// the devices for scripted runs.
+    /// edge scroll), E (examine), F (free camera), X / Z (isometric) and numpad 4 / 6 / 8 / 2 (strafe). The party controls
+    /// (RECONSTRUCTION 4.7, 5.1 and 13): [ and ] (the previous and next hero), ' (team / solo), and the left button (on a
+    /// hero, it leads; on the team button, the team toggles). Every frame, before the game advances, it sends what the
+    /// player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/> commands and the key presses and clicks as
+    /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public sealed class HeroInput : MonoBehaviour
     {
         InputAction left, right, up, down, run, move, point;
         InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
+        InputAction previousHero, nextHero, team, select;
         Vector2? scriptedMouse;
         int scriptedWheelSent;
+
+        // The original's overHero: once the held left button has been over a hero, that hero is chosen until it is let go.
+        int overHero = -1;
+        int chosen = -1;
 
         public Game Game { get; private set; }
         public PlayerId Player { get; private set; }
@@ -49,7 +55,13 @@ namespace MindAttic.Overworld.Runtime
 
         public ViewInput LastView { get; private set; }
 
-        public static HeroInput Create(Game game, PlayerId player, Camera camera, Viewpoint viewpoint = null)
+        /// <summary>The party, to find the hero under the cursor (null: clicks choose no hero).</summary>
+        public Party Party { get; private set; }
+
+        /// <summary>The team button the left button toggles (null: none).</summary>
+        public TeamButtonDefinition TeamButton { get; private set; }
+
+        public static HeroInput Create(Game game, PlayerId player, Camera camera, Viewpoint viewpoint = null, Party party = null, TeamButtonDefinition teamButton = null)
         {
             var go = new GameObject("HeroInput");
             var input = go.AddComponent<HeroInput>();
@@ -57,6 +69,8 @@ namespace MindAttic.Overworld.Runtime
             input.Player = player;
             input.Camera = camera;
             input.Viewpoint = viewpoint;
+            input.Party = party;
+            input.TeamButton = teamButton;
             return input;
         }
 
@@ -82,6 +96,11 @@ namespace MindAttic.Overworld.Runtime
             strafeRight = Button("StrafeRight", "<Keyboard>/numpad6");
             strafeUp = Button("StrafeUp", "<Keyboard>/numpad8");
             strafeDown = Button("StrafeDown", "<Keyboard>/numpad2");
+
+            previousHero = Button("PreviousHero", "<Keyboard>/leftBracket");
+            nextHero = Button("NextHero", "<Keyboard>/rightBracket");
+            team = Button("Team", "<Keyboard>/quote");
+            select = Button("Select", "<Mouse>/leftButton");
         }
 
         static InputAction Button(string name, params string[] bindings)
@@ -111,6 +130,7 @@ namespace MindAttic.Overworld.Runtime
         {
             left, right, up, down, run, move, point,
             motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown,
+            previousHero, nextHero, team, select,
         };
 
         void Update()
@@ -128,6 +148,42 @@ namespace MindAttic.Overworld.Runtime
             Game.Submit(new SetViewInput(Player, view));
             if (UseDevices && examine.WasPressedThisFrame()) Game.Submit(new ToggleExamine(Player));
             if (UseDevices && freeCamera.WasPressedThisFrame()) Game.Submit(new ToggleFreeCamera(Player));
+            if (!UseDevices) return;
+
+            if (previousHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, -1));
+            if (nextHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, 1));
+            if (team.WasPressedThisFrame()) Game.Submit(new ToggleTeam(Player));
+            Click(select.IsPressed(), select.WasPressedThisFrame());
+        }
+
+        /// <summary>
+        /// The left button (getMouse's actionHeroSelect and actionPickup): held over a hero, that hero leads (and stays the
+        /// one chosen until the button is let go, as the original's overHero did); pressed over the team button, the team
+        /// toggles (once a press, bUseDown).
+        /// </summary>
+        public void Click(bool held, bool pressed)
+        {
+            if (!held || Viewpoint == null)
+            {
+                overHero = -1;
+                chosen = -1;
+                return;
+            }
+
+            var cursor = Viewpoint.Cursor;
+            if (Party != null)
+            {
+                var at = Party.HeroAt(cursor.X, cursor.Y);
+                if (at >= 0) overHero = at;
+                if (overHero >= 0 && overHero != chosen)
+                {
+                    chosen = overHero;
+                    Game.Submit(new SelectHero(Player, overHero));
+                }
+            }
+
+            if (pressed && TeamButton != null && TeamButton.Contains(cursor.MouseX, cursor.MouseY))
+                Game.Submit(new ToggleTeam(Player));
         }
 
         MoveInput Read()

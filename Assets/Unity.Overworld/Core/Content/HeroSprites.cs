@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace MindAttic.Overworld.Core
 {
     /// <summary>
-    /// The art set every hero draws with (Textures.loadTextures, RECONSTRUCTION 4.4): one standing picture per facing, the
-    /// two halt pictures and the six-frame walk and run cycles per facing, as paths under the original's folder
+    /// The art set every hero draws with (Textures.loadTextures, RECONSTRUCTION 4.4): one standing and one kneeling picture per
+    /// facing, the two halt and two laid-down pictures and the six-frame walk and run cycles per facing, as paths under the original's folder
     /// (heroes.json "sprites").
     /// </summary>
     public sealed class HeroSprites
@@ -14,6 +14,8 @@ namespace MindAttic.Overworld.Core
 
         readonly Dictionary<Facing, string> stand = new Dictionary<Facing, string>();
         readonly Dictionary<Facing, string> halt = new Dictionary<Facing, string>();
+        readonly Dictionary<Facing, string> kneel = new Dictionary<Facing, string>();
+        readonly Dictionary<Facing, string> sleep = new Dictionary<Facing, string>();
         readonly Dictionary<Facing, IReadOnlyList<string>> walk = new Dictionary<Facing, IReadOnlyList<string>>();
         readonly Dictionary<Facing, IReadOnlyList<string>> run = new Dictionary<Facing, IReadOnlyList<string>>();
 
@@ -30,6 +32,15 @@ namespace MindAttic.Overworld.Core
         /// </summary>
         public string Halt(Facing facing) => halt[facing == Facing.Right ? Facing.Right : Facing.Left];
 
+        /// <summary>The kneeling picture (kneel\kneel_*) facing <paramref name="facing"/> (aiKneeling).</summary>
+        public string Kneel(Facing facing) => kneel[facing];
+
+        /// <summary>
+        /// The laid-down picture (kneel\sleep_left|right): the original loaded only these two, left and down showing the
+        /// left one, right and up the right one (aiKneeling while Laying).
+        /// </summary>
+        public string Sleep(Facing facing) => sleep[facing == Facing.Right || facing == Facing.Up ? Facing.Right : Facing.Left];
+
         /// <summary>The walk cycle (walk\walk_*1..6) facing <paramref name="facing"/>, in frame order.</summary>
         public IReadOnlyList<string> Walk(Facing facing) => walk[facing];
 
@@ -44,9 +55,12 @@ namespace MindAttic.Overworld.Core
                 var list = new List<string>();
                 list.Add(halt[Facing.Left]);
                 list.Add(halt[Facing.Right]);
+                list.Add(sleep[Facing.Left]);
+                list.Add(sleep[Facing.Right]);
                 foreach (var f in Facings)
                 {
                     list.Add(stand[f]);
+                    list.Add(kneel[f]);
                     list.AddRange(walk[f]);
                     list.AddRange(run[f]);
                 }
@@ -65,6 +79,13 @@ namespace MindAttic.Overworld.Core
             sprites.halt[Facing.Left] = Picture(haltReader, "left");
             sprites.halt[Facing.Right] = Picture(haltReader, "right");
             haltReader.Done();
+            var kneelReader = r.Section("kneel");
+            foreach (var f in Facings) sprites.kneel[f] = Picture(kneelReader, Key(f));
+            kneelReader.Done();
+            var sleepReader = r.Section("sleep");
+            sprites.sleep[Facing.Left] = Picture(sleepReader, "left");
+            sprites.sleep[Facing.Right] = Picture(sleepReader, "right");
+            sleepReader.Done();
             ReadCycle(r.Section("walk"), sprites.walk, walkFrames + 1);
             ReadCycle(r.Section("run"), sprites.run, runFrames + 1);
             r.Done();

@@ -215,7 +215,25 @@ namespace MindAttic.Overworld.Core
             game.Register<ToggleFreeCamera>(HandleFreeCamera);
             game.Register<ToggleExamine>(HandleExamine);
             game.AddSystem(this);
+            game.EventRaised += OnEvent;
             return this;
+        }
+
+        /// <summary>
+        /// A new leader (changeHero, actionHeroSelect): the player's camera centres on it (CenterOnHero), and when it was
+        /// chosen with [ or ] the cursor snaps onto it (half a hero across and up from its position).
+        /// </summary>
+        void OnEvent(IGameEvent e)
+        {
+            if (!(e is LeaderChanged changed)) return;
+            var v = For(changed.Player);
+            v.Centring = true;
+            if (!changed.Cycled) return;
+            var hero = Party.Heroes[changed.Hero];
+            var half = Party.Data.HeroSize / 2f;
+            v.Cursor.X = hero.X + half;
+            v.Cursor.Y = hero.Y + half;
+            v.Cursor.Settle();
         }
 
         /// <summary>The view of <paramref name="player"/> (made at the start position the first time it is asked for).</summary>

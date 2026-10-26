@@ -4,14 +4,21 @@ using System.Collections.Generic;
 namespace MindAttic.Overworld.Core
 {
     /// <summary>
-    /// The party in play and its locomotion (U.OVW-US-A5 and A7; RECONSTRUCTION 3.5, 3.7, 4.3, 4.4, 5.1, 5.4 and 5.6).
-    /// Each tick it does what the original's frame did: every player's held input is applied to the hero that player leads
-    /// (getKeyboard's arrows and run key, getMouse's move-to-cursor, then KeysUp), then every hero runs its AI state
-    /// (aiStanding, aiWalking, aiRunning: the velocity steps toward its speed and the walk or run cycle advances on the
-    /// clock), the walls push its velocity back (checkWall, <see cref="WallCollision"/>), a hero below the ground rises
-    /// into place (checkFall), and it moves by its velocity times the game speed. Installed on a <see cref="Game"/>, which
-    /// then accepts <see cref="SetMoveInput"/> and <see cref="RecallHero"/>; presentation reads <see cref="Heroes"/>.
+    /// The party in play, its locomotion and its following (U.OVW-US-A5, A7 and A8; RECONSTRUCTION 3.5, 3.7, 4.3 to 4.7,
+    /// 5.1, 5.4 and 5.6). Each tick it does what the original's frame did: every player's held input is applied to the hero
+    /// that player leads (getKeyboard's arrows and run key, getMouse's move-to-cursor, then KeysUp), crowding followers
+    /// slide apart (checkFlocking), then every hero runs its AI state (aiStanding, aiWalking, aiRunning, aiKneeling: the
+    /// velocity steps toward its speed and the walk or run cycle advances on the clock), a follower is steered after the
+    /// leader or recalled beside it, or kneels when the team is off (checkfollow), the walls push its velocity back
+    /// (checkWall, <see cref="WallCollision"/>), a hero below the ground rises into place (checkFall), and it moves by its
+    /// velocity times the game speed. Installed on a <see cref="Game"/>, which then accepts <see cref="SetMoveInput"/>,
+    /// <see cref="RecallHero"/>, <see cref="ToggleTeam"/>, <see cref="SelectHero"/> and <see cref="CycleLeader"/>;
+    /// presentation reads <see cref="Heroes"/> and <see cref="Team"/>.
     /// </summary>
+    /// <remarks>
+    /// A follower is a hero no player in the game leads. Followers follow the hero the captain leads: the player in the
+    /// game with the lowest id (with one player, the original's currHero). The team flag is the party's, as bTeam was.
+    /// </remarks>
     public sealed class Party : ITickSystem
     {
         readonly List<Hero> heroes = new List<Hero>();
@@ -26,10 +33,11 @@ namespace MindAttic.Overworld.Core
         public Party(HeroData data, WallData walls = null, Random random = null)
         {
             Data = data ?? throw new ArgumentNullException(nameof(data));
-            if (data.Sprites == null || data.Locomotion == null || data.Fall == null)
-                throw new ArgumentException("The hero data has no sprites, locomotion or fall.", nameof(data));
+            if (data.Sprites == null || data.Locomotion == null || data.Fall == null || data.Follow == null || data.Flocking == null || data.Selection == null)
+                throw new ArgumentException("The hero data has no sprites, locomotion, fall, follow, flocking or selection.", nameof(data));
             Walls = walls;
             this.random = random ?? new Random();
+            Team = data.Follow.TeamAtStart;
             for (var i = 0; i < data.Heroes.Count; i++)
             {
                 var hero = new Hero(i, data.Heroes[i]);
@@ -46,14 +54,129 @@ namespace MindAttic.Overworld.Core
         LocomotionTuning Tuning => Data.Locomotion;
         HeroSprites Sprites => Data.Sprites;
 
-        /// <summary>Registers <see cref="SetMoveInput"/> and the per-tick rules on <paramref name="game"/>.</summary>
+        /// <summary>Team mode (bTeam): the followers follow; off (solo), they kneel.</summary>
+        public bool Team { get; private set; }
+
+        /// <summary>Registers the party's commands and the per-tick rules on <paramref name="game"/>.</summary>
         public Party Install(Game game)
         {
             if (game == null) throw new ArgumentNullException(nameof(game));
             game.Register<SetMoveInput>(HandleInput);
             game.Register<RecallHero>(HandleRecall);
+            game.Register<ToggleTeam>(HandleTeam);
+            game.Register<SelectHero>(HandleSelect);
+            game.Register<CycleLeader>(HandleCycle);
             game.AddSystem(this);
             return this;
+        }
+
+        /// <summary>
+        /// The player whose leader the followers follow: the one in the game with the lowest id, or none when no one has
+        /// joined.
+        /// </summary>
+        public PlayerId Captain(Game game)
+        {
+            var captain = PlayerId.None;
+            foreach (var p in game.Players)
+                if (captain.IsNone || p.Value < captain.Value) captain = p;
+            return captain;
+        }
+
+        /// <summary>True when a player in <paramref name="game"/> other than <paramref name="except"/> leads hero <paramref name="index"/>.</summary>
+        bool LedByAnother(Game game, int index, PlayerId except)
+        {
+            foreach (var p in game.Players)
+                if (p != except && LeaderOf(p) == index) return true;
+            return false;
+        }
+
+        /// <summary>True when a player in <paramref name="game"/> leads hero <paramref name="index"/>; otherwise it is a follower.</summary>
+        public bool IsLed(Game game, int index) => LedByAnother(game, index, PlayerId.None);
+
+        /// <summary>
+        /// checkCursorOverHero: the first hero (in party order) the world cursor at (<paramref name="cursorX"/>,
+        /// <paramref name="cursorY"/>) is over, or -1. The current leader counts too, as it did in the original.
+        /// </summary>
+        public int HeroAt(float cursorX, float cursorY)
+        {
+            var s = Data.Selection;
+            var size = Data.HeroSize;
+            var cx = cursorX + s.CursorOffset.X;
+            var cy = cursorY + s.CursorOffset.Y;
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var hx = heroes[i].X + size * s.HeroPoint.X + s.HeroOffset.X;
+                var hy = heroes[i].Y + size * s.HeroPoint.Y + s.HeroOffset.Y;
+                if (WorldCamera.Near(hx, cx, s.Range) && WorldCamera.Near(hy, cy, s.Range)) return i;
+            }
+
+            return -1;
+        }
+
+        CommandResult HandleTeam(Game game, ToggleTeam command)
+        {
+            Team = !Team;
+            return CommandResult.Accept(new TeamChanged(game.Tick, command.Player, Team));
+        }
+
+        /// <summary>
+        /// actionHeroSelect in adventure mode: with the team off the old leader kneels; the chosen hero leads and stands.
+        /// A hero in battle mode is chosen by the battle's own rule (story A19), so it is refused here.
+        /// </summary>
+        CommandResult HandleSelect(Game game, SelectHero command)
+        {
+            if (command.Hero < 0 || command.Hero >= heroes.Count)
+                return CommandResult.Reject("There is no hero " + command.Hero + " in the party.");
+            var chosen = heroes[command.Hero];
+            if (LedByAnother(game, command.Hero, command.Player))
+                return CommandResult.Reject(chosen.Name + " is led by another player.");
+            if (chosen.Mode == HeroMode.Battle)
+                return CommandResult.Reject(chosen.Name + " is in battle; a hero in battle is chosen when it is ready (battle mode).");
+
+            var previous = LeaderOf(command.Player);
+            if (!Team)
+            {
+                var old = heroes[previous];
+                old.State = HeroState.Kneeling;
+                old.Laying = false;
+                old.Kneeling = true;
+            }
+
+            leaders[command.Player] = command.Hero;
+            chosen.Laying = false;
+            chosen.Kneeling = false;
+            chosen.State = HeroState.Standing;
+            return CommandResult.Accept(new LeaderChanged(game.Tick, command.Player, command.Hero, previous, false));
+        }
+
+        /// <summary>
+        /// lastHero / nextHero and changeHero: the old leader and the new one (the previous or next hero in party order,
+        /// wrapping, passing over any another player leads) both stop running, kneeling and laying and stand.
+        /// </summary>
+        CommandResult HandleCycle(Game game, CycleLeader command)
+        {
+            if (command.Step != 1 && command.Step != -1) return CommandResult.Reject("Step to the previous (-1) or next (+1) hero.");
+            var previous = LeaderOf(command.Player);
+            var next = previous;
+            for (var tries = 0; tries < heroes.Count; tries++)
+            {
+                next = (next + command.Step + heroes.Count) % heroes.Count;
+                if (!LedByAnother(game, next, command.Player)) break;
+            }
+
+            if (next == previous && heroes.Count > 1) return CommandResult.Reject("Every other hero is led by another player.");
+            StandStill(heroes[previous]);
+            leaders[command.Player] = next;
+            StandStill(heroes[next]);
+            return CommandResult.Accept(new LeaderChanged(game.Tick, command.Player, next, previous, true));
+        }
+
+        static void StandStill(Hero hero)
+        {
+            hero.State = HeroState.Standing;
+            hero.Running = false;
+            hero.Kneeling = false;
+            hero.Laying = false;
         }
 
         /// <summary>
@@ -125,12 +248,22 @@ namespace MindAttic.Overworld.Core
                 if (input.Move) moveHeld[hero.Index] = true;
             }
 
+            var led = new bool[heroes.Count];
+            for (var i = 0; i < heroes.Count; i++) led[i] = IsLed(game, i);
+            var captain = Captain(game);
+            var leader = captain.IsNone ? null : Leader(captain);
+
+            Flock(led);
+
             // updateHero: every hero's AI, then its move.
             for (var i = 0; i < heroes.Count; i++)
             {
                 var hero = heroes[i];
                 switch (hero.State)
                 {
+                    case HeroState.Kneeling:
+                        Kneel(hero);
+                        break;
                     case HeroState.Standing:
                         Stand(hero);
                         break;
@@ -143,13 +276,14 @@ namespace MindAttic.Overworld.Core
                         Animate(hero, now, hero.Definition.RunRate, Cycle(hero, Sprites.Run), hero.Definition.RunFrames);
                         break;
                     default:
-                        // Kneeling, Resting, Drawing and Battle hold still; their pictures come with their stories.
+                        // Resting, Drawing and Battle hold still; their pictures come with their stories.
                         hero.DX = 0f;
                         hero.DY = 0f;
                         break;
                 }
 
-                // checkfollow comes with the party's following (U.OVW-US-A8); then checkWall and checkFall.
+                // checkfollow, then checkWall and checkFall.
+                if (!led[i] && leader != null) Follow(hero, leader, tick, events);
                 if (Walls != null) WallCollision.Apply(hero, Walls, Data.HeroSize);
                 if (Fall(hero)) events.Add(new HeroLanded(tick, i));
 
@@ -158,6 +292,102 @@ namespace MindAttic.Overworld.Core
 
                 if (before[i].Item1 != hero.State || before[i].Item2 != hero.Facing)
                     events.Add(new HeroStateChanged(tick, i, hero.State, hero.Facing));
+            }
+        }
+
+        // ---- following (Heroes.checkfollow, checkFlocking) ---------------------------------------------------------
+
+        /// <summary>
+        /// checkfollow for a follower: with the team off it kneels (laying cleared). With it on, and the follower not in
+        /// battle: beyond the recall range on either axis it is recalled beside the leader; then, by the nearest range it
+        /// is within on both axes, it runs, walks or stands, heading for the leader at that speed times the distance, and
+        /// faces the way it heads (dy's sign, unless dx is the larger).
+        /// </summary>
+        void Follow(Hero hero, Hero leader, long tick, ICollection<IGameEvent> events)
+        {
+            if (!Team)
+            {
+                hero.State = HeroState.Kneeling;
+                hero.Laying = false;
+                hero.Kneeling = true;
+                return;
+            }
+
+            if (hero.Mode == HeroMode.Battle) return;
+            var f = Data.Follow;
+            if (!WorldCamera.Near(leader.X, hero.X, f.RecallRange) || !WorldCamera.Near(leader.Y, hero.Y, f.RecallRange))
+                events.Add(Recall(hero, leader, tick));
+
+            var speed = 0f;
+            if (Within(leader, hero, f.RecallRange))
+            {
+                hero.State = HeroState.Running;
+                speed = f.RunSpeed;
+            }
+
+            if (Within(leader, hero, f.WalkRange))
+            {
+                hero.State = HeroState.Walking;
+                speed = f.WalkSpeed;
+            }
+
+            if (Within(leader, hero, f.StandRange))
+            {
+                hero.State = HeroState.Standing;
+                speed = 0f;
+            }
+
+            var dx = leader.X - hero.X;
+            var dy = leader.Y - hero.Y;
+            hero.Facing = dy > 0 ? Facing.Up : Facing.Down;
+            if (Math.Abs(dx) > Math.Abs(dy)) hero.Facing = dx > 0 ? Facing.Right : Facing.Left;
+            hero.DY = dy * speed;
+            hero.DX = dx * speed;
+        }
+
+        static bool Within(Hero a, Hero b, float range) => WorldCamera.Near(a.X, b.X, range) && WorldCamera.Near(a.Y, b.Y, range);
+
+        /// <summary>
+        /// checkFlocking: every ordered pair of followers (the original's two loops, a hero paired with itself too, which
+        /// nudges it by nothing), both moving, both alive, within the flocking range on both axes: each is pushed along x
+        /// by its own |dY| / divisor and along y by its own |dX| / divisor, away from the other.
+        /// </summary>
+        internal void Flock(bool[] led)
+        {
+            var fl = Data.Flocking;
+            for (var d = 0; d < heroes.Count; d++)
+            {
+                for (var c = 0; c < heroes.Count; c++)
+                {
+                    if (led[d] || led[c]) continue;
+                    var a = heroes[d];
+                    var b = heroes[c];
+                    if (a.State == HeroState.Standing || b.State == HeroState.Standing) continue;
+                    if (!Within(a, b, fl.Range)) continue;
+                    if (a.Health <= 0 || b.Health <= 0) continue;
+
+                    if (a.X < b.X)
+                    {
+                        a.X += -Math.Abs(a.DY) / fl.Divisor;
+                        b.X += Math.Abs(b.DY) / fl.Divisor;
+                    }
+                    else
+                    {
+                        a.X += Math.Abs(a.DY) / fl.Divisor;
+                        b.X += -Math.Abs(b.DY) / fl.Divisor;
+                    }
+
+                    if (a.Y < b.Y)
+                    {
+                        a.Y += -Math.Abs(a.DX) / fl.Divisor;
+                        b.Y += Math.Abs(b.DX) / fl.Divisor;
+                    }
+                    else
+                    {
+                        a.Y += Math.Abs(a.DX) / fl.Divisor;
+                        b.Y += -Math.Abs(b.DX) / fl.Divisor;
+                    }
+                }
             }
         }
 
@@ -302,6 +532,14 @@ namespace MindAttic.Overworld.Core
             hero.DY = 0f;
             hero.Frame = 0;
             hero.Sprite = Sprites.Stand(hero.Facing);
+        }
+
+        /// <summary>aiKneeling: still, the kneeling picture of the facing, or the laid-down one while laying.</summary>
+        void Kneel(Hero hero)
+        {
+            hero.DX = 0f;
+            hero.DY = 0f;
+            hero.Sprite = hero.Laying ? Sprites.Sleep(hero.Facing) : Sprites.Kneel(hero.Facing);
         }
 
         /// <summary>

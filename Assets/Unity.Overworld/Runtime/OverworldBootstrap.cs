@@ -19,7 +19,9 @@ namespace MindAttic.Overworld.Runtime
     /// the wheel (positive in, negative out); <c>-overworld-view-hold &lt;zoom,shift,x,z,num4,num6,num8,num2&gt;</c> holds
     /// those view keys; <c>-overworld-examine</c> and <c>-overworld-free-camera</c> switch those on;
     /// <c>-overworld-recall &lt;hero[,seconds]&gt;</c> recalls that hero (1 Belmont, 2 Flagg) beside the leader, at once or after
-    /// that many seconds of play, so it falls in from z -1;
+    /// that many seconds of play, so it falls in from z -1; <c>-overworld-solo</c> turns the team off (the others kneel);
+    /// <c>-overworld-select &lt;hero|next|previous[,seconds]&gt;</c> makes that hero (0 Chrono, 1 Belmont, 2 Flagg) lead, as a
+    /// left click on it does, or steps to the next or previous one as ] and [ do, at once or after that many seconds;
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -36,6 +38,8 @@ namespace MindAttic.Overworld.Runtime
         public const string ExamineArgument = "-overworld-examine";
         public const string FreeCameraArgument = "-overworld-free-camera";
         public const string RecallArgument = "-overworld-recall";
+        public const string SoloArgument = "-overworld-solo";
+        public const string SelectArgument = "-overworld-select";
 
         public ContentRegistry Content { get; private set; }
         public GameHost Host { get; private set; }
@@ -44,6 +48,7 @@ namespace MindAttic.Overworld.Runtime
         public Viewpoint Viewpoint { get; private set; }
         public WorldViewPresenter World { get; private set; }
         public HeroInput Input { get; private set; }
+        public TeamButtonPresenter TeamButton { get; private set; }
 
         /// <summary>The content folder of this build (or of the project, in the editor).</summary>
         public static string ContentDirectory => Path.Combine(Application.streamingAssetsPath, "Content");
@@ -64,7 +69,8 @@ namespace MindAttic.Overworld.Runtime
             World.transform.SetParent(transform, false);
             World.Follow(Party, game);
             World.ShowCursor(Viewpoint.Cursor);
-            Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint);
+            TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
+            Input = HeroInput.Create(game, PlayerId.One, World.Camera, Viewpoint, Party, Content.View.TeamButton);
             Input.transform.SetParent(transform, false);
 
             var args = Environment.GetCommandLineArgs();
@@ -78,7 +84,8 @@ namespace MindAttic.Overworld.Runtime
             var capture = ArgumentAfter(args, CaptureArgument);
             var scriptedView = ApplyScriptedView(args, game);
             var recalled = ApplyScriptedRecall(args, game);
-            if (scripted.HasValue || scriptedView || recalled || capture != null) Input.UseDevices = false;
+            var party = ApplyScriptedParty(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -203,6 +210,51 @@ namespace MindAttic.Overworld.Runtime
             else Debug.LogError("Unity.Overworld: " + RecallArgument + " " + hero + " was refused: " + result.Reason);
         }
 
+        /// <summary>Applies <c>-overworld-solo</c> and <c>-overworld-select</c>; true when either was given.</summary>
+        bool ApplyScriptedParty(string[] args, Game game)
+        {
+            var any = false;
+            if (HasFlag(args, SoloArgument))
+            {
+                any = true;
+                game.Submit(new ToggleTeam(PlayerId.One));
+                Debug.Log("Unity.Overworld: scripted solo (the team kneels)");
+            }
+
+            var select = ArgumentAfter(args, SelectArgument);
+            if (select != null)
+            {
+                any = true;
+                if (TrySelect(select, out var command, out var seconds)) StartCoroutine(SelectAfter(game, command, seconds));
+                else Debug.LogError("Unity.Overworld: " + SelectArgument + " wants a hero (0 to 2), next or previous, and optionally the seconds to wait, not '" + select + "'.");
+            }
+
+            return any;
+        }
+
+        /// <summary>Reads <c>hero|next|previous[,seconds]</c> as the command it asks for (player 1's).</summary>
+        public static bool TrySelect(string text, out ICommand command, out float seconds)
+        {
+            command = null;
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            if (parts.Length == 2 && !(float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f)) return false;
+            var what = parts[0].Trim().ToLowerInvariant();
+            if (what == "next") command = new CycleLeader(PlayerId.One, 1);
+            else if (what == "previous") command = new CycleLeader(PlayerId.One, -1);
+            else if (int.TryParse(what, NumberStyles.Integer, CultureInfo.InvariantCulture, out var hero) && hero >= 0) command = new SelectHero(PlayerId.One, hero);
+            return command != null;
+        }
+
+        IEnumerator SelectAfter(Game game, ICommand command, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var result = game.Submit(command);
+            if (result.Accepted) Debug.Log("Unity.Overworld: scripted leader " + Party.Leader(PlayerId.One));
+            else Debug.LogError("Unity.Overworld: " + SelectArgument + " was refused: " + result.Reason);
+        }
+
         /// <summary>The view keys <c>-overworld-view-hold</c> names (zoom, shift, x, z, num4, num6, num8, num2).</summary>
         public static ViewInput ScriptedViewKeys(string keys)
         {
@@ -259,6 +311,9 @@ namespace MindAttic.Overworld.Runtime
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
                 File.WriteAllBytes(file, shot.EncodeToPNG());
                 Debug.Log("Unity.Overworld: captured " + Path.GetFullPath(file));
+                if (Party != null)
+                    Debug.Log("Unity.Overworld: " + (Party.Team ? "team" : "solo") + ", leading " + Party.Leader(PlayerId.One).Name +
+                              (TeamButton != null ? ", team button showing " + TeamButton.File : ""));
                 if (Party != null)
                     foreach (var hero in Party.Heroes)
                         Debug.Log("Unity.Overworld: " + hero + " z " + hero.Z.ToString(CultureInfo.InvariantCulture) + " showing " + hero.Sprite);
