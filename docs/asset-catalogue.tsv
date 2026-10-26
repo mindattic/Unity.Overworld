@@ -1,0 +1,896 @@
+path	bytes	disposition	note
+data/books/Colesium Vol I/pg01.txt	621	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg02.txt	661	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg03.txt	719	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg04.txt	731	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg05.txt	652	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg06.txt	683	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg07.txt	766	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg08.txt	598	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg09.txt	318	used	Book page, loaded (section 11)
+data/books/Colesium Vol I/pg10.txt	81	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg01.txt	540	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg02.txt	594	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg03.txt	601	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg04.txt	571	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg05.txt	671	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg06.txt	521	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg07.txt	539	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg08.txt	502	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg09.txt	621	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg10.txt	528	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg11.txt	130	used	Book page, loaded (section 11)
+data/books/Dragon Almanac/pg12.txt	79	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg01.txt	475	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg02.txt	603	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg03.txt	582	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg04.txt	381	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg05.txt	0	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg06.txt	9	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg07.txt	0	used	Book page, loaded (section 11)
+data/books/Grimoire de'Alchemiste/pg08.txt	127	used	Book page, loaded (section 11)
+data/books/Matt's Book/pg01.txt	12	used	Book page, loaded (section 11)
+data/books/Matt's Book/pg02.txt	0	used	Book page, loaded (section 11)
+data/books/Matt's Book/pg03.txt	0	used	Book page, loaded (section 11)
+data/books/Matt's Book/pg04.txt	0	used	Book page, loaded (section 11)
+data/books/Matt's Book/pg05.txt	0	used	Book page, loaded (section 11)
+data/books/Matt's Book/pg06.txt	9	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg01.txt	441	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg02.txt	0	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg03.txt	525	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg04.txt	393	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg05.txt	618	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg06.txt	307	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg07.txt	455	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg08.txt	558	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg09.txt	424	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg10.txt	620	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg11.txt	526	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg12.txt	629	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg13.txt	674	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg14.txt	302	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg15.txt	0	used	Book page, loaded (section 11)
+data/books/Poetry Book/pg16.txt	156	used	Book page, loaded (section 11)
+data/world.mdb	421888	used	Database the shipped game read (section 16)
+Engine.exe	237568	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Engine.pdb	972288	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Engine.vshost.exe	14328	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Engine.vshost.exe.manifest	490	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+gfx/area/A1.png	123590	used	Area tile loaded by computed name
+gfx/area/A2.png	174960	used	Area tile loaded by computed name
+gfx/area/A3.PNG	305918	used	Area tile loaded by computed name
+gfx/area/A4.PNG	87752	used	Area tile loaded by computed name
+gfx/area/A5.PNG	96441	used	Area tile loaded by computed name
+gfx/area/A6.PNG	219646	used	Area tile loaded by computed name
+gfx/area/A7.PNG	125241	used	Area tile loaded by computed name
+gfx/area/A8.PNG	125241	used	Area tile loaded by computed name
+gfx/area/B1.PNG	125241	used	Area tile loaded by computed name
+gfx/area/B2.png	174960	used	Area tile loaded by computed name
+gfx/area/B3.png	397532	used	Area tile loaded by computed name
+gfx/area/B4.PNG	111953	used	Area tile loaded by computed name
+gfx/area/B4z.PNG	111953	not-shipped	Area file never loaded
+gfx/area/B5.PNG	309918	used	Area tile loaded by computed name
+gfx/area/B6.PNG	125241	used	Area tile loaded by computed name
+gfx/area/B7.PNG	125241	used	Area tile loaded by computed name
+gfx/area/B8.PNG	125241	used	Area tile loaded by computed name
+gfx/area/B9.PNG	125241	used	Area tile loaded by computed name
+gfx/area/base.png	92060	not-shipped	Area file never loaded
+gfx/area/base2x.PNG	309796	not-shipped	Area file never loaded
+gfx/area/bigrunescape.PNG	1192573	not-shipped	Area file never loaded
+gfx/area/C1.png	125241	used	Area tile loaded by computed name
+gfx/area/C2.png	174013	used	Area tile loaded by computed name
+gfx/area/C3.png	116320	used	Area tile loaded by computed name
+gfx/area/C4.PNG	115005	used	Area tile loaded by computed name
+gfx/area/C5.PNG	115005	used	Area tile loaded by computed name
+gfx/area/C6.PNG	115005	used	Area tile loaded by computed name
+gfx/area/C7.PNG	142624	used	Area tile loaded by computed name
+gfx/area/D1.PNG	125241	used	Area tile loaded by computed name
+gfx/area/D2.PNG	174960	used	Area tile loaded by computed name
+gfx/area/D3.PNG	100286	used	Area tile loaded by computed name
+gfx/area/D4.PNG	100286	used	Area tile loaded by computed name
+gfx/area/D5.PNG	100286	used	Area tile loaded by computed name
+gfx/area/D6.PNG	125241	used	Area tile loaded by computed name
+gfx/area/D7.PNG	125241	used	Area tile loaded by computed name
+gfx/area/E1.PNG	125241	used	Area tile loaded by computed name
+gfx/area/E2.PNG	174960	used	Area tile loaded by computed name
+gfx/area/E3.PNG	125241	used	Area tile loaded by computed name
+gfx/area/E4.PNG	599495	used	Area tile loaded by computed name
+gfx/area/E5.PNG	596024	used	Area tile loaded by computed name
+gfx/area/E6.PNG	415569	used	Area tile loaded by computed name
+gfx/area/E7.PNG	125241	used	Area tile loaded by computed name
+gfx/area/F1.PNG	125241	used	Area tile loaded by computed name
+gfx/area/F2.PNG	174960	used	Area tile loaded by computed name
+gfx/area/F3.PNG	125241	used	Area tile loaded by computed name
+gfx/area/F4.PNG	125241	used	Area tile loaded by computed name
+gfx/area/F5.PNG	125241	used	Area tile loaded by computed name
+gfx/area/F6.PNG	125241	used	Area tile loaded by computed name
+gfx/area/F8.PNG	125241	used	Area tile loaded by computed name
+gfx/area/flowers.PNG	108199	not-shipped	Area file never loaded
+gfx/area/grass.PNG	99068	not-shipped	Area file never loaded
+gfx/area/rune.PNG	343784	not-shipped	Area file never loaded
+gfx/area/rune2x.PNG	1602370	not-shipped	Area file never loaded
+gfx/area/West of Town/bgLandscape2_0x4.jpg	12916	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x1.jpg	101094	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x2.jpg	124404	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x3.jpg	140591	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x4.jpg	108691	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x5.jpg	111335	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x5.PNG	481252	not-shipped	Spare or duplicate scene strip
+gfx/area/West of Town/bgLandscape2_1x6.jpg	123105	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x7.jpg	114446	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/bgLandscape2_1x8.jpg	84520	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/mountain.JPG	57632	not-shipped	Spare or duplicate scene strip
+gfx/area/West of Town/mountain.PNG	257075	union	Scene strip used by the root world.mdb Scene table
+gfx/area/West of Town/mountain_long.PNG	611713	not-shipped	Spare or duplicate scene strip
+gfx/area/West of Town/new.PNG	441816	not-shipped	All zero bytes; an intact copy is in Fish 2
+gfx/balloon.PNG	1771	used	Balloon, used
+gfx/blank.PNG	142	used	Blank, loaded
+gfx/clouds/cloud1.PNG	733	used	Cloud, loaded
+gfx/clouds/cloud2.PNG	617	used	Cloud, loaded
+gfx/clouds/cloud3.PNG	1130	used	Cloud, loaded
+gfx/clouds/cloud4.PNG	1130	used	Cloud, loaded
+gfx/cursor/arrow.PNG	564	used	Cursor, loaded
+gfx/cursor/arrow2.PNG	637	not-shipped	Cursor never loaded
+gfx/cursor/arrow3.PNG	222	not-shipped	Cursor never loaded
+gfx/cursor/blank.PNG	191	used	Cursor, loaded
+gfx/cursor/box.PNG	210	used	Cursor, loaded
+gfx/cursor/cross.PNG	216	used	Cursor, loaded
+gfx/cursor/eye.PNG	286	used	Cursor, loaded
+gfx/cursor/group.PNG	254	used	Cursor, loaded
+gfx/cursor/hand.PNG	321	used	Cursor, loaded
+gfx/cursor/hand2.PNG	562	not-shipped	Cursor never loaded
+gfx/cursor/item_cursor.PNG	217	used	Cursor, loaded
+gfx/cursor/retreat.PNG	257	used	Cursor, loaded
+gfx/cursor/scroll_down.PNG	304	used	Cursor, loaded
+gfx/cursor/scroll_downright.PNG	309	not-shipped	Cursor never loaded
+gfx/cursor/scroll_left.PNG	312	used	Cursor, loaded
+gfx/cursor/scroll_right.PNG	309	used	Cursor, loaded
+gfx/cursor/scroll_up.PNG	303	used	Cursor, loaded
+gfx/cursor/swap_cursor.PNG	209	used	Cursor, loaded
+gfx/cursor/zoom.PNG	254	used	Cursor, loaded
+gfx/enemy/catman/attack_left_1.PNG	838	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/attack_left_2.PNG	862	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/attack_left_3.PNG	953	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/attack_left_4.PNG	857	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/attack_right_1.PNG	831	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/attack_right_2.PNG	869	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/attack_right_3.PNG	957	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/attack_right_4.PNG	857	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/hurt_left.PNG	772	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/hurt_right.PNG	767	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/stand_left.PNG	772	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/stand_right.PNG	751	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_left_1.PNG	754	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_left_2.PNG	830	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_left_3.PNG	775	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_left_4.PNG	818	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_right_1.PNG	769	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_right_2.PNG	843	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_right_3.PNG	769	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/catman/walk_right_4.PNG	816	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime/slime_1.PNG	435	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime/slime_2.PNG	430	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime/slime_attack_1.PNG	462	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime/slime_attack_2.PNG	463	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime/slime_dead.PNG	391	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime/slime_hurt.PNG	448	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime_black.PNG	628	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime_blue.PNG	640	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime_red.PNG	651	union	Enemy art unused in code, built in the enemy layer
+gfx/enemy/slime_yellow.PNG	619	union	Enemy art unused in code, built in the enemy layer
+gfx/grey_box.PNG	1744	not-shipped	Root gfx file never loaded
+gfx/gui/ap_bar.PNG	222	not-shipped	GUI file never loaded
+gfx/gui/blue_dot.PNG	195	used	GUI art, loaded
+gfx/gui/book.PNG	6884	used	GUI art, loaded
+gfx/gui/book_blue.PNG	7393	used	GUI art, loaded
+gfx/gui/book_brown.PNG	6884	used	GUI art, loaded
+gfx/gui/Copy of inventory.PNG	110206	not-shipped	GUI file never loaded
+gfx/gui/event.PNG	163	used	GUI art, loaded
+gfx/gui/examine.PNG	10274	used	GUI art, loaded
+gfx/gui/green_dot.PNG	193	used	GUI art, loaded
+gfx/gui/health_bar.PNG	277	used	GUI art, loaded
+gfx/gui/health_fill.PNG	234	used	GUI art, loaded
+gfx/gui/icon_solo.PNG	308	used	GUI art, loaded
+gfx/gui/icon_team.PNG	379	used	GUI art, loaded
+gfx/gui/inventory.PNG	22455	used	GUI art, loaded
+gfx/gui/inventory_2.PNG	21264	not-shipped	GUI file never loaded
+gfx/gui/inventory_Closed.PNG	299	used	GUI art, loaded
+gfx/gui/inventory_Open.PNG	349	used	GUI art, loaded
+gfx/gui/inventory2.PNG	22455	not-shipped	GUI file never loaded
+gfx/gui/load.PNG	8929	not-shipped	GUI file never loaded
+gfx/gui/load/load640_1.jpg	38659	used	Loading picture, loaded
+gfx/gui/load/load640_10.JPG	91174	used	Loading picture, loaded
+gfx/gui/load/load640_11.JPG	47752	used	Loading picture, loaded
+gfx/gui/load/load640_12.JPG	53359	used	Loading picture, loaded
+gfx/gui/load/load640_2.jpg	92745	used	Loading picture, loaded
+gfx/gui/load/load640_3.jpg	46341	used	Loading picture, loaded
+gfx/gui/load/load640_4.jpg	55986	used	Loading picture, loaded
+gfx/gui/load/load640_5.jpg	24734	used	Loading picture, loaded
+gfx/gui/load/load640_6.JPG	30140	used	Loading picture, loaded
+gfx/gui/load/load640_7.JPG	45356	used	Loading picture, loaded
+gfx/gui/load/load640_8.JPG	38843	used	Loading picture, loaded
+gfx/gui/load/load640_9.JPG	51714	used	Loading picture, loaded
+gfx/gui/mana_fill.PNG	234	used	GUI art, loaded
+gfx/gui/menu.jpg	12241	not-shipped	GUI file never loaded
+gfx/gui/menu.PNG	115328	not-shipped	GUI file never loaded
+gfx/gui/path.PNG	186	used	GUI art, loaded
+gfx/gui/quest_screen.PNG	8037	not-shipped	GUI file never loaded
+gfx/gui/quest_screen_completed.PNG	6974	used	GUI art, loaded
+gfx/gui/quest_screen_main.PNG	6991	used	GUI art, loaded
+gfx/gui/quest_screen_subquests.PNG	6490	used	GUI art, loaded
+gfx/gui/quick_bar.PNG	1777	used	GUI art, loaded
+gfx/gui/ready_bar.PNG	338	used	GUI art, loaded
+gfx/gui/ready_fill.PNG	231	used	GUI art, loaded
+gfx/gui/red_dot.PNG	194	used	GUI art, loaded
+gfx/gui/ring_select.PNG	275	used	GUI art, loaded
+gfx/gui/select_hero.PNG	421	used	GUI art, loaded
+gfx/gui/select_hero2.PNG	506	not-shipped	GUI file never loaded
+gfx/gui/stamina_bar.PNG	277	used	GUI art, loaded
+gfx/gui/stamina_fill.PNG	234	used	GUI art, loaded
+gfx/gui/status_box.PNG	437	used	GUI art, loaded
+gfx/gui/talkbox.png	11714	not-shipped	GUI file never loaded
+gfx/gui/terrain.PNG	163	used	GUI art, loaded
+gfx/hero/belmont/1.png	1888	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/2.png	1878	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/3.png	1884	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/4.png	1886	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/5.png	1460	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/alphabet.PNG	4318	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_left1.PNG	767	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_left2.PNG	805	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_left3.PNG	805	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_left4.PNG	784	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_left5.PNG	784	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_left6.PNG	777	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_left7.PNG	777	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_right1.PNG	772	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_right2.PNG	792	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_right3.PNG	783	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_right4.PNG	804	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_right5.PNG	778	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_right6.PNG	759	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/attack_right7.PNG	759	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot_left1.PNG	842	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot_left2.PNG	859	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot_left3.PNG	800	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot_left5.PNG	819	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot_left6.PNG	820	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot_left7.PNG	765	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot2/shoot_left1.PNG	842	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot2/shoot_left2.PNG	859	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot2/shoot_left3.PNG	800	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot2/shoot_left4.PNG	837	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/shoot/shoot2/shoot_left6.PNG	842	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/sword/attack_left1.PNG	799	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/sword/attack_left2.PNG	807	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/sword/attack_left3.PNG	841	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/sword/attack_left4.PNG	787	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/sword/attack_left5.PNG	783	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/attack/sword/shoot dev.PNG	7155	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dash/dash_left_L.PNG	760	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dash/dash_left_R.PNG	805	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dash/dash_right_L.PNG	813	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dash/dash_right_R.PNG	734	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dash/halt_left.PNG	813	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dash/halt_right.PNG	805	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dl1.png	2275	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/doublejump/doublejump_left.PNG	767	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/doublejump/doublejump_right.PNG	771	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dr1.png	1658	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dr2.png	1754	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/dr3.png	2095	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/fall1.PNG	2051	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/hal1.png	1655	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/hal2.png	1830	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/hal3.png	1689	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/halt/halt_left.PNG	813	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/halt/halt_right.PNG	805	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/fall_left.PNG	816	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/fall_right.PNG	826	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/jump_left.PNG	821	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/jump_left1.PNG	795	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/jump_left2.PNG	821	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/jump_right.PNG	831	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/jump_right1.PNG	785	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump/jump_right2.PNG	831	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump1.PNG	1824	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump2.PNG	2389	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/jump3.PNG	1957	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_left.PNG	669	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_left1.PNG	776	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_left2.PNG	713	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_left3.PNG	674	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_left4.PNG	669	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_right.PNG	671	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_right1.PNG	795	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_right2.PNG	719	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_right3.PNG	672	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneel/kneel_right4.PNG	671	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneelattack/kneel_left.PNG	669	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneelattack/kneel_right.PNG	671	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneelattack/kneelattack_left1.PNG	741	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneelattack/kneelattack_left2.PNG	716	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneelattack/kneelattack_left3.PNG	704	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneelattack/kneelattack_left4.PNG	739	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/kneelattack/kneelattack_left5.PNG	714	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/land1.PNG	1588	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/land2.PNG	1850	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/land3.PNG	1780	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/land4.PNG	1785	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/land5.PNG	1746	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/land6.PNG	1746	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/land7.PNG	1563	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/r1.png	1811	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/r2.png	2158	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/r3.png	2161	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/r4.png	2245	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/r5.png	2062	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/r6.png	2047	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/r7.png	1940	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_left1.PNG	833	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_left2.PNG	836	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_left3.PNG	832	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_left4.PNG	822	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_left5.PNG	778	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_left6.PNG	781	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_right1.PNG	828	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_right2.PNG	818	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_right3.PNG	835	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_right4.PNG	813	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_right5.PNG	778	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/run/run_right6.PNG	783	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_left.PNG	732	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_left1.PNG	715	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_left2.PNG	727	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_left3.PNG	715	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_left4.PNG	713	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_right.PNG	715	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_right1.PNG	697	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_right2.PNG	715	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_right3.PNG	697	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand/face_right4.PNG	695	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/stand1.png	1500	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/transition.PNG	1598	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_left1.PNG	833	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_left2.PNG	836	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_left3.PNG	832	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_left4.PNG	822	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_left5.PNG	778	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_left6.PNG	781	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_right1.PNG	828	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_right2.PNG	818	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_right3.PNG	835	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_right4.PNG	813	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_right5.PNG	778	union	Alternate hero sprite set, union layer
+gfx/hero/belmont/walk/run_right6.PNG	783	union	Alternate hero sprite set, union layer
+gfx/hero/Chrono/chrono_run.PNG	1939	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/combat/attack/attack_left_1.PNG	679	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_left_2.PNG	680	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_left_3.PNG	716	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_left_4.PNG	719	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_left_5.PNG	716	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_left_6.PNG	679	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_right_1.PNG	685	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_right_2.PNG	669	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_right_3.PNG	719	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_right_4.PNG	707	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_right_5.PNG	719	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/attack_right_6.PNG	685	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/faspecal.PNG	756	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/attack/thrust_left_1.PNG	680	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/battle_left_1.PNG	780	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_left_2.PNG	802	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_left_3.PNG	767	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_left_4.PNG	769	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_left_5.PNG	802	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_left_6.PNG	802	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_right_1.PNG	771	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_right_2.PNG	773	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_right_3.PNG	757	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_right_4.PNG	757	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_right_5.PNG	773	used	Hero frame, loaded
+gfx/hero/Chrono/combat/battle_right_6.PNG	773	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_left_1.PNG	778	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_left_2.PNG	778	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_left_3.PNG	800	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_left_4.PNG	800	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_left_5.PNG	835	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_left_6.PNG	835	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_right_1.PNG	765	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_right_2.PNG	765	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_right_3.PNG	785	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_right_4.PNG	785	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_right_5.PNG	808	used	Hero frame, loaded
+gfx/hero/Chrono/combat/draw/draw_right_6.PNG	808	used	Hero frame, loaded
+gfx/hero/Chrono/combat/hurt_left.PNG	656	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/hurt_right.PNG	648	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_left_1.PNG	697	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_left_2.PNG	717	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_left_3.PNG	708	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_left_4.PNG	706	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_left_5.PNG	697	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_left_6.PNG	748	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_right_1.PNG	694	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_right_2.PNG	713	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_right_3.PNG	711	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_right_4.PNG	705	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_right_5.PNG	692	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/combat/walk_battle_right_6.PNG	740	union	Combat frame beyond the code, built in the combat layer
+gfx/hero/Chrono/fall&jump/falling_down.PNG	741	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/fall&jump/falling_left.PNG	786	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/fall&jump/falling_right.PNG	776	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/fall&jump/falling_up.PNG	693	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/halt/halt_left.PNG	742	used	Hero frame, loaded
+gfx/hero/Chrono/halt/halt_right.PNG	729	used	Hero frame, loaded
+gfx/hero/Chrono/idle/idle_left_1.PNG	673	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_left_2.PNG	673	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_left_3.PNG	673	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_left_4.PNG	673	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_left_5.PNG	669	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_left_6.PNG	669	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_right_1.PNG	674	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_right_2.PNG	674	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_right_3.PNG	686	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_right_4.PNG	686	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_right_5.PNG	673	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/idle/idle_right_6.PNG	673	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/jump/jump_left.PNG	1045	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/jump/jump_right.PNG	1047	not-shipped	Spare side-view frame (Hero.vb design)
+gfx/hero/Chrono/kneel/kneel_down.PNG	740	used	Hero frame, loaded
+gfx/hero/Chrono/kneel/kneel_left.PNG	698	used	Hero frame, loaded
+gfx/hero/Chrono/kneel/kneel_right.PNG	678	used	Hero frame, loaded
+gfx/hero/Chrono/kneel/kneel_up.PNG	714	used	Hero frame, loaded
+gfx/hero/Chrono/kneel/sleep_left.PNG	637	used	Hero frame, loaded
+gfx/hero/Chrono/kneel/sleep_right.PNG	632	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_down1.PNG	764	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_down2.PNG	797	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_down3.PNG	788	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_down4.PNG	767	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_down5.PNG	798	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_down6.PNG	800	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_left1.PNG	714	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_left2.PNG	778	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_left3.PNG	840	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_left4.PNG	689	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_left5.PNG	805	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_left6.PNG	837	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_right1.PNG	717	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_right2.PNG	789	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_right3.PNG	841	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_right4.PNG	703	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_right5.PNG	799	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_right6.PNG	845	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_up1.PNG	747	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_up2.PNG	748	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_up3.PNG	709	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_up4.PNG	746	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_up5.PNG	770	used	Hero frame, loaded
+gfx/hero/Chrono/run/run_up6.PNG	718	used	Hero frame, loaded
+gfx/hero/Chrono/stand/face_down.PNG	810	used	Hero frame, loaded
+gfx/hero/Chrono/stand/face_left.PNG	737	used	Hero frame, loaded
+gfx/hero/Chrono/stand/face_right.PNG	744	used	Hero frame, loaded
+gfx/hero/Chrono/stand/face_up.PNG	764	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_down1.PNG	771	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_down2.PNG	784	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_down3.PNG	749	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_down4.PNG	761	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_down5.PNG	786	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_down6.PNG	763	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_left1.PNG	744	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_left2.PNG	709	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_left3.PNG	809	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_left4.PNG	749	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_left5.PNG	683	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_left6.PNG	797	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_right1.PNG	717	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_right2.PNG	717	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_right3.PNG	799	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_right4.PNG	734	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_right5.PNG	694	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_right6.PNG	793	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_up1.PNG	729	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_up2.PNG	749	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_up3.PNG	745	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_up4.PNG	729	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_up5.PNG	753	used	Hero frame, loaded
+gfx/hero/Chrono/walk/walk_up6.PNG	746	used	Hero frame, loaded
+gfx/hero/girl/halt/halt_left.png	864	union	Alternate hero sprite set, union layer
+gfx/hero/girl/halt/halt_left4.png	999	union	Alternate hero sprite set, union layer
+gfx/hero/girl/halt/halt_right.png	882	union	Alternate hero sprite set, union layer
+gfx/hero/girl/halt/halt_right1.png	1117	union	Alternate hero sprite set, union layer
+gfx/hero/girl/halt/halt_right2.png	1084	union	Alternate hero sprite set, union layer
+gfx/hero/girl/halt/halt_right3.png	1117	union	Alternate hero sprite set, union layer
+gfx/hero/girl/halt/halt_right4.png	1001	union	Alternate hero sprite set, union layer
+gfx/hero/girl/jump/jump_left.png	855	union	Alternate hero sprite set, union layer
+gfx/hero/girl/jump/jump_right.png	881	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_left1.png	859	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_left2.png	834	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_left3.png	993	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_left4.png	913	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_left5.png	818	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_left6.png	960	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_right1.png	879	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_right2.png	834	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_right3.png	981	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_right4.png	918	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_right5.png	813	union	Alternate hero sprite set, union layer
+gfx/hero/girl/run/run_right6.png	953	union	Alternate hero sprite set, union layer
+gfx/hero/girl/stand/face_left.png	740	union	Alternate hero sprite set, union layer
+gfx/hero/girl/stand/face_right.png	730	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/a/walk_left1.png	740	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/a/walk_left2.png	789	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/a/walk_left3.png	774	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/a/walk_left4.png	740	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/a/walk_left5.png	802	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/a/walk_left6.png	773	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/backup/walk_left1.png	857	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/backup/walk_left2.png	935	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/backup/walk_left3.png	881	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/backup/walk_left4.png	857	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/backup/walk_left5.png	943	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/backup/walk_left6.png	932	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_left1.png	740	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_left2.png	789	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_left3.png	774	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_left4.png	740	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_left5.png	802	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_left6.png	773	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_right1.png	730	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_right2.png	796	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_right3.png	750	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_right4.png	730	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_right5.png	807	union	Alternate hero sprite set, union layer
+gfx/hero/girl/walk/walk_right6.png	755	union	Alternate hero sprite set, union layer
+gfx/hero/reticle.PNG	376	not-shipped	Orphan Gui.vb art
+gfx/hero/reticle2.PNG	437	not-shipped	Orphan Gui.vb art
+gfx/hero/talk_bubble.PNG	437	not-shipped	Orphan Gui.vb art
+gfx/hero/talk_bubble2.PNG	405	not-shipped	Orphan Gui.vb art
+gfx/hero/talk_bubble3.PNG	410	not-shipped	Orphan Gui.vb art
+gfx/items/apple.PNG	228	used	Item icon, loaded
+gfx/items/book1.PNG	387	used	Item icon, loaded
+gfx/items/book2.PNG	382	used	Item icon, loaded
+gfx/items/cheese.PNG	243	used	Item icon, loaded
+gfx/items/coffee_bean.PNG	208	used	Item icon, loaded
+gfx/items/crabweed.PNG	348	used	Item icon, loaded
+gfx/items/cure_plant.PNG	239	used	Item icon, loaded
+gfx/items/day_berry.PNG	253	used	Item icon, loaded
+gfx/items/egg.PNG	215	used	Item icon, loaded
+gfx/items/gold.PNG	201	used	Item icon, loaded
+gfx/items/gold5.PNG	205	used	Item icon, loaded
+gfx/items/health_root.PNG	264	used	Item icon, loaded
+gfx/items/mandrake.PNG	243	used	Item icon, loaded
+gfx/items/night_berry.PNG	252	used	Item icon, loaded
+gfx/items/plant1.PNG	215	used	Item icon, loaded
+gfx/items/plant2.PNG	249	used	Item icon, loaded
+gfx/items/potato.PNG	234	used	Item icon, loaded
+gfx/items/rune1.PNG	262	used	Item icon, loaded
+gfx/items/rusty_sword.PNG	219	used	Item icon, loaded
+gfx/items/satchel.PNG	235	used	Item icon, loaded
+gfx/items/spineynut.PNG	270	used	Item icon, loaded
+gfx/items/turnip.PNG	317	used	Item icon, loaded
+gfx/items/violet_caper.PNG	220	used	Item icon, loaded
+gfx/map.PNG	28161	not-shipped	Root gfx file never loaded
+gfx/npc/magitek/npc_front.PNG	882	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_left.PNG	827	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_right.PNG	839	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_left_1.PNG	821	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_left_2.PNG	812	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_left_3.PNG	821	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_left_4.PNG	819	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_right_1.PNG	839	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_right_2.PNG	817	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_right_3.PNG	839	union	NPC art unused in code, built in the NPC layer
+gfx/npc/magitek/npc_walk_right_4.PNG	846	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_front.PNG	596	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_left.PNG	576	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_right.PNG	568	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_left_1.PNG	584	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_left_2.PNG	581	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_left_3.PNG	571	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_left_4.PNG	581	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_right_1.PNG	578	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_right_2.PNG	567	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_right_3.PNG	566	union	NPC art unused in code, built in the NPC layer
+gfx/npc/woman/npc_walk_right_4.PNG	567	union	NPC art unused in code, built in the NPC layer
+gfx/prop/bellfry.PNG	3158	not-shipped	Spare prop art
+gfx/prop/court.PNG	18683	not-shipped	Spare prop art
+gfx/prop/fgDryad.PNG	29115	not-shipped	Spare prop art
+gfx/prop/fgDryad2.PNG	29115	not-shipped	Spare prop art
+gfx/prop/fgRain.PNG	10632	not-shipped	Spare prop art
+gfx/prop/gate.PNG	3771	not-shipped	Spare prop art
+gfx/prop/magitek.PNG	801	not-shipped	Spare prop art
+gfx/prop/magitek2.PNG	735	not-shipped	Spare prop art
+gfx/prop/structure/gate.PNG	2365	union	Prop used only by the root world.mdb
+gfx/prop/structure/stonehenge.png	65897	union	Prop used only by the root world.mdb
+gfx/prop/structure/wall_medium.PNG	1005	used	Prop, loaded
+gfx/prop/torch.PNG	1177	not-shipped	Spare prop art
+gfx/prop/tree.PNG	46232	not-shipped	Spare prop art
+gfx/prop/tree/orchard_1.PNG	52070	union	Prop used only by the root world.mdb
+gfx/prop/tree/orchard_2.PNG	25952	union	Prop used only by the root world.mdb
+gfx/prop/tree/orchard_3.PNG	42579	union	Prop used only by the root world.mdb
+gfx/prop/tree/orchard_4.PNG	47642	union	Prop used only by the root world.mdb
+gfx/prop/tree/orchard_5.PNG	40303	union	Prop used only by the root world.mdb
+gfx/prop/tree/orchard_6.PNG	38980	union	Prop used only by the root world.mdb
+gfx/prop/tree/orchard_7.PNG	37701	union	Prop used only by the root world.mdb
+gfx/prop/tree/tree_bottom_01.PNG	1594	not-shipped	Spare prop art
+gfx/prop/tree/tree_bottom_1.PNG	1583	used	Prop, loaded
+gfx/prop/tree/tree_top_01.PNG	8149	not-shipped	Spare prop art
+gfx/prop/tree/tree_top_1.PNG	8170	used	Prop, loaded
+gfx/prop/tree/tree1.PNG	2938	not-shipped	Spare prop art
+gfx/prop/vase.PNG	443	not-shipped	Spare prop art
+gfx/prop/willow.PNG	8813	not-shipped	Spare prop art
+gfx/ring/ring_Attack.PNG	355	used	Ring menu art, loaded
+gfx/ring/ring_End.PNG	288	used	Ring menu art, loaded
+gfx/ring/ring_Item.PNG	290	used	Ring menu art, loaded
+gfx/ring/ring_Magic.PNG	363	not-shipped	Ring entry never loaded
+gfx/ring/ring_Move.PNG	319	used	Ring menu art, loaded
+gfx/ring/ring_Skill.PNG	300	used	Ring menu art, loaded
+gfx/shadow.PNG	251	not-shipped	Root gfx file never loaded
+gfx/small_shadow.PNG	238	not-shipped	Root gfx file never loaded
+gfx/status/Angry/statusAngry1.PNG	410	used	Status icon, loaded
+gfx/status/Angry/statusAngry2.PNG	409	used	Status icon, loaded
+gfx/status/Angry/statusAngry3.PNG	412	used	Status icon, loaded
+gfx/status/Angry/statusAngry4.PNG	409	used	Status icon, loaded
+gfx/status/Exhausted/statusExhausted1.PNG	303	used	Status icon, loaded
+gfx/status/Exhausted/statusExhausted2.PNG	306	used	Status icon, loaded
+gfx/status/Exhausted/statusExhausted3.PNG	303	used	Status icon, loaded
+gfx/status/Exhausted/statusExhausted4.PNG	304	used	Status icon, loaded
+gfx/sword.PNG	1222	not-shipped	Root gfx file never loaded
+gfx/template.PNG	250	not-shipped	Root gfx file never loaded
+gfx/tent/Tent_1.PNG	2286	not-shipped	Tent frame never loaded
+gfx/tent/Tent_128.PNG	3150	used	Tent, loaded
+gfx/tent/Tent_dmg_1.PNG	2307	not-shipped	Tent frame never loaded
+gfx/tent/Tent_dmg_2.PNG	2276	not-shipped	Tent frame never loaded
+gfx/tent/Tent_dmg_3.PNG	2226	not-shipped	Tent frame never loaded
+gfx/tent/Tent_dmg_4.PNG	2040	not-shipped	Tent frame never loaded
+gfx/tent/Tent_dmg_5.PNG	1956	not-shipped	Tent frame never loaded
+gfx/tent/Tent_dmg_6.PNG	1677	not-shipped	Tent frame never loaded
+gfx/tent/Tent_dmg_7.PNG	1479	not-shipped	Tent frame never loaded
+gfx/weapon/axe/defend_left.PNG	344	union	Defend frame beyond the code
+gfx/weapon/axe/defend_right.PNG	350	union	Defend frame beyond the code
+gfx/weapon/axe/draw/weapon_draw_left_1.PNG	232	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_left_2.PNG	232	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_left_3.PNG	739	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_left_4.PNG	739	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_left_5.PNG	778	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_left_6.PNG	778	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_right_1.PNG	232	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_right_2.PNG	232	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_right_3.PNG	732	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_right_4.PNG	732	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_right_5.PNG	779	used	Weapon frame, loaded
+gfx/weapon/axe/draw/weapon_draw_right_6.PNG	779	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_left_1.PNG	611	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_left_2.PNG	611	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_left_3.PNG	611	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_left_4.PNG	611	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_left_5.PNG	611	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_left_6.PNG	615	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_right_1.PNG	607	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_right_2.PNG	604	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_right_3.PNG	604	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_right_4.PNG	604	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_right_5.PNG	604	used	Weapon frame, loaded
+gfx/weapon/axe/weapon_right_6.PNG	604	used	Weapon frame, loaded
+gfx/weapon/axeold/defend_left.PNG	523	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/defend_right.PNG	538	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_left_1.PNG	250	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_left_2.PNG	250	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_left_3.PNG	651	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_left_4.PNG	651	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_left_5.PNG	708	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_left_6.PNG	708	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_right_1.PNG	250	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_right_2.PNG	250	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_right_3.PNG	666	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_right_4.PNG	666	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_right_5.PNG	707	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/draw/weapon_draw_right_6.PNG	707	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_left_1.PNG	548	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_left_2.PNG	554	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_left_3.PNG	554	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_left_4.PNG	554	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_left_5.PNG	554	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_left_6.PNG	554	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_right_1.PNG	541	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_right_2.PNG	538	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_right_3.PNG	540	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_right_4.PNG	540	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_right_5.PNG	538	not-shipped	Superseded or development weapon frames
+gfx/weapon/axeold/weapon_right_6.PNG	538	not-shipped	Superseded or development weapon frames
+gfx/weapon/broadsword/defend_left.PNG	420	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/defend_right.PNG	429	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_left_1.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_left_2.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_left_3.PNG	432	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_left_4.PNG	432	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_left_5.PNG	409	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_left_6.PNG	409	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_right_1.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_right_2.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_right_3.PNG	446	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_right_4.PNG	446	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_right_5.PNG	431	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/draw/weapon_draw_right_6.PNG	431	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_left_1.PNG	408	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_left_2.PNG	406	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_left_3.PNG	406	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_left_4.PNG	406	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_left_5.PNG	406	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_left_6.PNG	406	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_right_1.PNG	410	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_right_2.PNG	411	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_right_3.PNG	409	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_right_4.PNG	409	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_right_5.PNG	411	union	Weapon set of hero.mdb, union layer
+gfx/weapon/broadsword/weapon_right_6.PNG	411	union	Weapon set of hero.mdb, union layer
+gfx/weapon/dev/sword_left1.PNG	478	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_left2.PNG	501	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_left3.PNG	485	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_left4.PNG	779	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_left5.PNG	468	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_left6.PNG	468	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_left7.PNG	468	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_right1.PNG	506	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_right2.PNG	534	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_right3.PNG	471	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_right4.PNG	761	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_right5.PNG	475	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_right6.PNG	475	not-shipped	Superseded or development weapon frames
+gfx/weapon/dev/sword_right7.PNG	475	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/defend_left.PNG	331	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/defend_right.PNG	316	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_left_1.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_left_2.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_left_3.PNG	373	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_left_4.PNG	373	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_left_5.PNG	401	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_left_6.PNG	401	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_right_1.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_right_2.PNG	250	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_right_3.PNG	365	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_right_4.PNG	365	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_right_5.PNG	378	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/draw/weapon_draw_right_6.PNG	378	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/sword_left1.PNG	717	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_left2.PNG	716	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_left3.PNG	711	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_left4.PNG	860	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_left5.PNG	510	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_left6.PNG	510	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_left7.PNG	510	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_right1.PNG	786	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_right2.PNG	788	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_right3.PNG	700	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_right4.PNG	822	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_right5.PNG	504	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_right6.PNG	504	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/sword_right7.PNG	504	not-shipped	Superseded or development weapon frames
+gfx/weapon/katana/weapon_left_1.PNG	315	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_left_2.PNG	308	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_left_3.PNG	309	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_left_4.PNG	309	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_left_5.PNG	308	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_left_6.PNG	308	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_right_1.PNG	313	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_right_2.PNG	313	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_right_3.PNG	305	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_right_4.PNG	305	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_right_5.PNG	313	union	Weapon set of hero.mdb, union layer
+gfx/weapon/katana/weapon_right_6.PNG	313	union	Weapon set of hero.mdb, union layer
+gfx/weapon/longsword/sword_left1.PNG	608	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_left2.PNG	611	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_left3.PNG	610	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_left4.PNG	726	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_left5.PNG	598	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_left6.PNG	598	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_left7.PNG	598	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_right1.PNG	675	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_right2.PNG	664	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_right3.PNG	598	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_right4.PNG	725	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_right5.PNG	605	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_right6.PNG	605	not-shipped	Superseded or development weapon frames
+gfx/weapon/longsword/sword_right7.PNG	605	not-shipped	Superseded or development weapon frames
+gfx/weapon/stat_axe.PNG	799	union	Weapon status picture beyond the code
+gfx/weapon/stat_broadsword.PNG	697	union	Weapon status picture beyond the code
+gfx/weapon/stat_katana.PNG	610	union	Weapon status picture beyond the code
+gfx/weapon/stat_steelsword.PNG	633	union	Weapon status picture beyond the code
+gfx/weapon/steelsword/defend_left.PNG	344	union	Defend frame beyond the code
+gfx/weapon/steelsword/defend_right.PNG	350	union	Defend frame beyond the code
+gfx/weapon/steelsword/draw/weapon_draw_left_1.PNG	232	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_left_2.PNG	232	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_left_3.PNG	722	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_left_4.PNG	708	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_left_5.PNG	708	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_left_6.PNG	746	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_right_1.PNG	232	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_right_2.PNG	232	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_right_3.PNG	706	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_right_4.PNG	702	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_right_5.PNG	702	used	Weapon frame, loaded
+gfx/weapon/steelsword/draw/weapon_draw_right_6.PNG	728	used	Weapon frame, loaded
+gfx/weapon/steelsword/sword_left1.PNG	478	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_left2.PNG	501	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_left3.PNG	485	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_left4.PNG	779	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_left5.PNG	468	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_left6.PNG	468	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_left7.PNG	468	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_right1.PNG	506	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_right2.PNG	534	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_right3.PNG	471	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_right4.PNG	761	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_right5.PNG	475	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_right6.PNG	475	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/sword_right7.PNG	475	not-shipped	Superseded or development weapon frames
+gfx/weapon/steelsword/weapon_left_1.PNG	393	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_left_2.PNG	386	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_left_3.PNG	387	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_left_4.PNG	387	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_left_5.PNG	386	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_left_6.PNG	393	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_right_1.PNG	383	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_right_2.PNG	385	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_right_3.PNG	382	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_right_4.PNG	382	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_right_5.PNG	385	used	Weapon frame, loaded
+gfx/weapon/steelsword/weapon_right_6.PNG	383	used	Weapon frame, loaded
+gfx/weather/dust1.PNG	204	used	Weather, used
+gfx/weather/rain1.PNG	214	used	Weather, used
+gfx/weather/snow1.PNG	222	used	Weather, used
+gfx/weather/snow2.PNG	226	not-shipped	Weather frame loaded but never drawn
+gfx/weather/splash1.PNG	227	not-shipped	Weather frame loaded but never drawn
+gfx/weather/splash2.PNG	239	not-shipped	Weather frame loaded but never drawn
+gfx/weather/splash3.PNG	222	not-shipped	Weather frame loaded but never drawn
+gfx/weather/splash4.PNG	217	not-shipped	Weather frame loaded but never drawn
+hero.mdb	528384	union	Older database beyond the code (section 16, union layer)
+Microsoft.DirectX.AudioVideoPlayback.dll	43520	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.Diagnostics.dll	13824	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.Direct3D.dll	274432	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.Direct3DX.dll	1701376	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.DirectDraw.dll	133120	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.DirectInput.dll	141824	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.DirectPlay.dll	237056	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.DirectSound.dll	138752	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.DirectX.dll	202752	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+Microsoft.VisualBasic.Compatibility.dll	229376	not-shipped	Original binary or DirectX/VB assembly; the rebuild replaces it (reference only)
+sfx/ambient/zombies.mp3	262478	union	Sound beyond the code, built in the audio layer
+sfx/death_1.wav	45622	union	Sound beyond the code, built in the audio layer
+sfx/death_2.wav	18902	union	Sound beyond the code, built in the audio layer
+sfx/death_3.wav	30498	union	Sound beyond the code, built in the audio layer
+sfx/death_4.wav	28546	union	Sound beyond the code, built in the audio layer
+sfx/defend.wav	3978	union	Sound beyond the code, built in the audio layer
+sfx/footstep_1.wav	29836	union	Sound beyond the code, built in the audio layer
+sfx/footstep_2.wav	30726	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_draw.wav	14444	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_hit_1.wav	3978	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_hit_2.wav	4360	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_hit_3.wav	4854	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_swing_1.wav	1714	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_swing_2.wav	20468	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_swing_3.wav	11180	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_swing_4.wav	10050	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_swing_5.wav	6814	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_swing_6.wav	6666	union	Sound beyond the code, built in the audio layer
+sfx/hero/attack/sword_swing_7.wav	2786	union	Sound beyond the code, built in the audio layer
+sfx/hero/charge.wav	43762	union	Sound beyond the code, built in the audio layer
+sfx/hero/footstep.wav	29836	union	Sound beyond the code, built in the audio layer
+sfx/hero/heavy_footstep.wav	30726	union	Sound beyond the code, built in the audio layer
+sfx/hero/jump.wav	93998	union	Sound beyond the code, built in the audio layer
+sfx/hero/regen.wav	119384	used	Regeneration sound, loaded
+sfx/music/Battle.mp3	4974550	union	Sound beyond the code, built in the audio layer
+sfx/music/Music.mp3	7121188	used	Music object constructed at start (never played in the original)
+sfx/music/music.wma	613638	not-shipped	Legacy WMA music; the MP3 ships
+sfx/ruby.avi	2001902	not-shipped	Video constructed but never shown
+sfx/sword_hit_1.wav	14444	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_hit_2.wav	4358	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_hit_3.wav	4852	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_swing_1.wav	1714	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_swing_2.wav	20468	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_swing_3.wav	11180	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_swing_4.wav	10050	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_swing_5.wav	6814	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_swing_6.wav	6666	not-shipped	Duplicate of the file under sfx/hero/attack
+sfx/sword_swing_7.wav	2760	not-shipped	Duplicate of the file under sfx/hero/attack
+world.mdb	794624	union	Older database beyond the code (section 16, union layer)

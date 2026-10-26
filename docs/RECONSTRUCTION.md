@@ -763,6 +763,8 @@ Counts are files. "Loaded" means a compiled routine opens it. Where a file is in
 | `gfx` root: `blank.png`, `grey_box.png`, `map.png` (1024 x 1024), `shadow.png`, `small_shadow.png`, `sword.png`, `template.png` | 7 | blank loaded; the rest unused (a world map, hero shadows, a 48 x 48 sprite template) |
 | `sfx\*` | 38 | Section 15 |
 
+The per-file record is `docs/asset-catalogue.tsv` (path, bytes, disposition `used` / `union` / `not-shipped`, note), regenerated from the original by `tools/build-asset-catalogue.ps1`; `Tests/Core.Tests/AssetCatalogueTests.cs` diffs it against the original's file list.
+
 Sprite sizes: hero and weapon frames 64 x 64; NPC, enemy and template 48 x 48; items 16 x 16 (books 22 x 24); status icons 32 x 32 (loaded at 16 x 16); cursors 16 to 20; area tiles 512 x 512; scene strips 640 x 480.
 Textures are loaded through `TextureLoader.FromFile` with the loader's requested width and height (so they are resampled to that size) and the colour key `0xFFFF00FF` (magenta transparent).
 
