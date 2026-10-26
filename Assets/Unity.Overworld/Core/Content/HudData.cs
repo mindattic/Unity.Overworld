@@ -318,6 +318,105 @@ namespace MindAttic.Overworld.Core
     }
 
     /// <summary>
+    /// The quest screen (Gui/QuestScreen.vb renderQuestScreen and showQuestPoints, RECONSTRUCTION 10): the page's picture
+    /// over (X, Y) of Width x Height, the title and the lines (each <see cref="LineSpacing"/> lower, by its index) at their
+    /// points from the screen's corner in its font and colours, and the "*" drawn in the world at every incomplete objective.
+    /// </summary>
+    public sealed class QuestScreenDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public float Width { get; internal set; }
+        public float Height { get; internal set; }
+
+        /// <summary>The picture of the main page, of the subquest list and a subquest's page, and of the finished page.</summary>
+        public string MainPicture { get; internal set; }
+
+        public string SubquestsPicture { get; internal set; }
+        public string FinishedPicture { get; internal set; }
+        public HudFont Font { get; internal set; }
+
+        /// <summary>The quest's text, from the screen's corner (+160, +25).</summary>
+        public DataPoint Title { get; internal set; }
+
+        /// <summary>The first line, from the screen's corner (+160, +60); line n is n x <see cref="LineSpacing"/> lower.</summary>
+        public DataPoint FirstLine { get; internal set; }
+
+        public float LineSpacing { get; internal set; }
+
+        /// <summary>The title, an open objective and a subquest on the list (white).</summary>
+        public TextColour Normal { get; internal set; }
+
+        /// <summary>A completed objective and a finished quest (half-transparent white).</summary>
+        public TextColour Faded { get; internal set; }
+
+        /// <summary>The subquest chosen on the list (pale yellow).</summary>
+        public TextColour Chosen { get; internal set; }
+
+        /// <summary>"~ {0}", "X {0}" and "o {0}": an open objective, a completed one, a finished quest.</summary>
+        public string OpenText { get; internal set; }
+
+        public string DoneText { get; internal set; }
+        public string FinishedText { get; internal set; }
+
+        /// <summary>The 3D text drawn at an incomplete objective ("*") and its renderText scale (0.02).</summary>
+        public string Marker { get; internal set; }
+
+        public float MarkerScale { get; internal set; }
+
+        /// <summary>The picture of <paramref name="page"/>.</summary>
+        public string Picture(QuestPage page) =>
+            page == QuestPage.Main ? MainPicture : page == QuestPage.Finished ? FinishedPicture : SubquestsPicture;
+
+        /// <summary>The top-left point of line <paramref name="index"/> on the 640 x 480 screen.</summary>
+        public DataPoint LineAt(int index) => new DataPoint(X + FirstLine.X, Y + FirstLine.Y + LineSpacing * index);
+
+        /// <summary>The top-left point of the title on the 640 x 480 screen.</summary>
+        public DataPoint TitleAt => new DataPoint(X + Title.X, Y + Title.Y);
+
+        /// <summary>
+        /// renderQuestScreen's text for <paramref name="view"/>: each line's text, its point and colour, in draw order (the
+        /// title first where the page has one).
+        /// </summary>
+        public List<(string Text, DataPoint At, TextColour Colour)> Lines(QuestLog log, QuestScreenView view)
+        {
+            var c = System.Globalization.CultureInfo.InvariantCulture;
+            var lines = new List<(string, DataPoint, TextColour)>();
+            void ShowQuest(Quest q)
+            {
+                lines.Add((q.Text, TitleAt, Normal));
+                for (var o = 0; o < q.Objectives.Count; o++)
+                {
+                    var objective = q.Objectives[o];
+                    lines.Add((string.Format(c, objective.Complete ? DoneText : OpenText, objective.Text), LineAt(o), objective.Complete ? Faded : Normal));
+                }
+            }
+
+            switch (view.Page)
+            {
+                case QuestPage.Main:
+                    ShowQuest(log.Current);
+                    break;
+                case QuestPage.Subquests:
+                    for (var o = 0; o < log.Subquests.Count; o++)
+                        lines.Add((log.Subquests[o].Text, LineAt(o), o == view.Subquest ? Chosen : Normal));
+                    break;
+                case QuestPage.SubquestInfo:
+                    if (view.Subquest >= 0 && view.Subquest < log.Subquests.Count) ShowQuest(log.Subquests[view.Subquest]);
+                    break;
+                default:
+                    // Each at its quest's own line, so an unfinished quest leaves its line empty.
+                    for (var o = 0; o < log.Quests.Count; o++)
+                        if (log.Quests[o].Status == QuestStatus.Success)
+                            lines.Add((string.Format(c, FinishedText, log.Quests[o].Text), LineAt(o), Faded));
+                    break;
+            }
+
+            return lines;
+        }
+    }
+
+    /// <summary>
     /// The heads-up text (hud.json): the virtual screen the original drew on, its fonts, where the clock's lines go on the
     /// HUD and the hero screen, and how messages show.
     /// </summary>
@@ -369,6 +468,9 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>The marker over an item's chosen target.</summary>
         public TargetMarkerDefinition Target { get; internal set; }
+
+        /// <summary>The quest screen (Page Down) and the objectives' markers.</summary>
+        public QuestScreenDefinition QuestScreen { get; internal set; }
 
         /// <summary>The rest prompt for one hour ("Rest for {0} hour?").</summary>
         public string RestOne { get; internal set; }
@@ -507,6 +609,7 @@ namespace MindAttic.Overworld.Core
             };
             target.Check(data.Target.Picture.StartsWith("gfx/", StringComparison.Ordinal), "picture", "must be a path under gfx/");
             target.Done();
+            data.QuestScreen = ReadQuestScreen(root.Section("questScreen"), data, fonts);
 
             var m = root.Section("messages");
             var tuning = new MessageTuning
@@ -617,6 +720,39 @@ namespace MindAttic.Overworld.Core
             };
             r.Done();
             return bar;
+        }
+
+        static QuestScreenDefinition ReadQuestScreen(ContentReader r, HudData data, List<HudFont> fonts)
+        {
+            var pictures = r.Section("pictures");
+            var screen = new QuestScreenDefinition
+            {
+                X = r.Number("x", 0f, data.ScreenWidth),
+                Y = r.Number("y", 0f, data.ScreenHeight),
+                Width = r.Positive("width"),
+                Height = r.Positive("height"),
+                MainPicture = ReadPicture(pictures, "main"),
+                SubquestsPicture = ReadPicture(pictures, "subquests"),
+                FinishedPicture = ReadPicture(pictures, "finished"),
+            };
+            pictures.Done();
+            screen.Font = ReadFont(r, fonts);
+            screen.Title = r.Pair("title", 0f, data.ScreenWidth);
+            screen.FirstLine = r.Pair("firstLine", 0f, data.ScreenWidth);
+            screen.LineSpacing = r.Positive("lineSpacing");
+            screen.Normal = ReadColour(r, "normal");
+            screen.Faded = ReadColour(r, "faded");
+            screen.Chosen = ReadColour(r, "chosen");
+            screen.OpenText = r.Text("openText");
+            screen.DoneText = r.Text("doneText");
+            screen.FinishedText = r.Text("finishedText");
+            screen.Marker = r.Text("marker");
+            screen.MarkerScale = r.Positive("markerScale");
+            foreach (var (key, text) in new[] { ("openText", screen.OpenText), ("doneText", screen.DoneText), ("finishedText", screen.FinishedText) })
+                r.Check(text.Contains("{0}"), key, "must hold {0} for the text");
+            r.Check(screen.X + screen.Width <= data.ScreenWidth && screen.Y + screen.Height <= data.ScreenHeight, "x", "must keep the screen on the screen");
+            r.Done();
+            return screen;
         }
 
         static ScreenButtonDefinition ReadButton(ContentReader r, HudData data)

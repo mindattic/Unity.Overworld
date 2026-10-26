@@ -115,6 +115,7 @@ namespace MindAttic.Overworld.Core
         {
             var hero = Leader(command.Player);
             if (hero.Mode == HeroMode.Battle) return CommandResult.Reject(hero.Name + " is in battle; a hero rests in adventure mode.");
+            if (QuestScreenOpenFor(command.Player)) return CommandResult.Reject("The quest screen is open; the leader rests once it is shut.");
             hero.Running = false;
             var events = new List<IGameEvent>();
             // actionRest shuts the pack.
@@ -307,8 +308,9 @@ namespace MindAttic.Overworld.Core
                 var input = InputOf(player);
                 var hero = Leader(player);
                 var focus = Focus != null ? Focus(player) : InputFocus.World;
-                ApplyInput(hero, input, focus);
-                if (input.Move && focus != InputFocus.Inventory) moveHeld[hero.Index] = true;
+                var questScreen = QuestScreenOpenFor(player);
+                ApplyInput(hero, input, focus, questScreen);
+                if (input.Move && focus != InputFocus.Inventory && !questScreen) moveHeld[hero.Index] = true;
             }
 
             var led = new bool[heroes.Count];
@@ -499,6 +501,18 @@ namespace MindAttic.Overworld.Core
         /// </summary>
         public Func<PlayerId, InputFocus> Focus { get; set; }
 
+        /// <summary>
+        /// True while a player's quest screen is open (bQuestScreen): its arrows only mark the direction held (the screen
+        /// takes them), the move button does not head for the cursor and the leader does not rest; the run key and the
+        /// pick-up button still work, as they did. Null: never open.
+        /// </summary>
+        public Func<PlayerId, bool> QuestScreenOpen { get; set; }
+
+        bool QuestScreenOpenFor(PlayerId player) => QuestScreenOpen != null && QuestScreenOpen(player);
+
+        /// <summary>The party's experience (Root.Experience): the quests' rewards add to it; nothing in the original spent it.</summary>
+        public int Experience { get; internal set; }
+
         // ---- following (Heroes.checkfollow, checkFlocking) ---------------------------------------------------------
 
         /// <summary>
@@ -597,7 +611,7 @@ namespace MindAttic.Overworld.Core
 
         // ---- input (Input.getKeyboard, getMouse, KeysUp) ----------------------------------------------------------
 
-        void ApplyInput(Hero hero, MoveInput input, InputFocus focus)
+        void ApplyInput(Hero hero, MoveInput input, InputFocus focus, bool questScreen)
         {
             var packOpen = focus == InputFocus.Inventory;
             var choosing = focus == InputFocus.Target;
@@ -606,12 +620,13 @@ namespace MindAttic.Overworld.Core
             if (input.Run && !packOpen) hero.Running = hero.Stamina > 0;
 
             // actionLeft / Right / Up / Down, in that order, so the last held arrow sets the facing; while the pick-up
-            // button is held (bItemPickup) they only mark the direction held, as they do while the pack is open, and
-            // left and right do while an item's target is chosen.
-            if (input.Left) Arrow(hero, Facing.Left, input.PickUp || packOpen || choosing);
-            if (input.Right) Arrow(hero, Facing.Right, input.PickUp || packOpen || choosing);
-            if (input.Up) Arrow(hero, Facing.Up, input.PickUp || packOpen);
-            if (input.Down) Arrow(hero, Facing.Down, input.PickUp || packOpen);
+            // button is held (bItemPickup) they only mark the direction held, as they do while the pack or the quest
+            // screen is open, and left and right do while an item's target is chosen.
+            var held = input.PickUp || packOpen || questScreen;
+            if (input.Left) Arrow(hero, Facing.Left, held || choosing);
+            if (input.Right) Arrow(hero, Facing.Right, held || choosing);
+            if (input.Up) Arrow(hero, Facing.Up, held);
+            if (input.Down) Arrow(hero, Facing.Down, held);
 
             // tryingConflict: opposite arrows together face Down and stand.
             if ((input.Left && input.Right) || (input.Up && input.Down))
@@ -621,8 +636,8 @@ namespace MindAttic.Overworld.Core
             }
 
             // actionMove waits while the pick-up button is held (getMouse tests the left button first; Enter blocks it);
-            // with the pack open the move button drops instead.
-            if (input.Move && !input.PickUp && !packOpen) MoveTowardCursor(hero, input.CursorX, input.CursorY);
+            // with the pack open the move button drops instead, and with the quest screen open it does nothing.
+            if (input.Move && !input.PickUp && !packOpen && !questScreen) MoveTowardCursor(hero, input.CursorX, input.CursorY);
 
             // KeysUp: released keys clear their flags; with nothing held (the pick-up button included, and no pickup
             // under way) the hero stands.

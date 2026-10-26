@@ -108,6 +108,23 @@
     "markerScale": 0.02,
     "nameScale": 0.007
   },
+  "questScreen": {
+    "_note": "Gui/QuestScreen.vb renderQuestScreen while bQuestScreen is on (Page Down): the page's picture (quest_screen_main, _subquests for the list and a subquest's page, _completed; loaded at 579 x 420) on the QuestWidth x Questheight (600 x 430) quad at QuestOffset (20, 20) (its top edge's v was 2 / 600 and 2 / 430 rather than 0, which crops under half a pixel row of the picture; not reproduced), then in fontArial: the quest's text at +(160, 25), and the lines at +(160, 60 + 20 n): '~ text' for an open objective in (255, 255, 255, 255), 'X text' for a completed one in (128, 255, 255, 255), the subquests by name in white with the chosen one in (255, 255, 255, 128), and 'o text' for each Success main quest at its own index's line in (128, 255, 255, 255). showQuestPoints (called every frame, open or not) draws renderText's '*' at scale 0.02 at every incomplete objective of every main quest and of every Active subquest, centred, in the world's light.",
+    "x": 20, "y": 20, "width": 600, "height": 430,
+    "pictures": {"main": "gfx/gui/quest_screen_main.PNG", "subquests": "gfx/gui/quest_screen_subquests.PNG", "finished": "gfx/gui/quest_screen_completed.PNG"},
+    "font": "fontArial",
+    "title": [160, 25],
+    "firstLine": [160, 60],
+    "lineSpacing": 20,
+    "normal": [255, 255, 255, 255],
+    "faded": [128, 255, 255, 255],
+    "chosen": [255, 255, 255, 128],
+    "openText": "~ {0}",
+    "doneText": "X {0}",
+    "finishedText": "o {0}",
+    "marker": "*",
+    "markerScale": 0.02
+  },
   "messages": {
     "_note": "Messages.vb: up to maxMessages waiting (a message added to a full queue replaces the last); the next is shown at the screen centre, x less 6 / 2 per character, once the last shown is more than 'spacing' pixels below the centre or gone; each shown message loses 'fade' alpha and drops 'drift' pixels a tick, starting at alpha 255, and is gone at 0. The period announcements use fontArialNarrow24 in white.",
     "maxMessages": 100,

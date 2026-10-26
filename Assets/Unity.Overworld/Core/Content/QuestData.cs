@@ -50,19 +50,27 @@ namespace MindAttic.Overworld.Core
     /// <summary>The four main quests and the two subquests (RECONSTRUCTION 10).</summary>
     public sealed class QuestData
     {
-        internal QuestData(List<QuestDefinition> quests, List<QuestDefinition> subquests)
+        internal QuestData(List<QuestDefinition> quests, List<QuestDefinition> subquests, DataPoint heroPoint)
         {
             Quests = quests;
             Subquests = subquests;
+            HeroPoint = heroPoint;
         }
 
         public IReadOnlyList<QuestDefinition> Quests { get; }
         public IReadOnlyList<QuestDefinition> Subquests { get; }
 
+        /// <summary>
+        /// The leader's point an objective's range is measured from, as fractions of the hero size from its position:
+        /// checkQuests' (x + heroSize / 2, y - heroSize / 3).
+        /// </summary>
+        public DataPoint HeroPoint { get; }
+
         internal static QuestData Read(IContentSource source, string file, List<string> errors)
         {
             var root = ContentFiles.Open(source, file, errors);
             if (root == null) return null;
+            var heroPoint = root.Pair("heroPoint", -1f, 1f);
             var quests = ReadList(root, "quests", errors);
             var subquests = ReadList(root, "subquests", errors);
             root.Done();
@@ -75,7 +83,7 @@ namespace MindAttic.Overworld.Core
                     errors.Add(file + ".quests[" + i + "]: the main story starts with quest 0 Active and the rest Inactive (this is " + quests[i].Status + ")");
             }
 
-            return new QuestData(quests, subquests);
+            return new QuestData(quests, subquests, heroPoint);
         }
 
         static List<QuestDefinition> ReadList(ContentReader root, string key, List<string> errors)

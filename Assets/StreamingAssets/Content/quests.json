@@ -1,5 +1,6 @@
 {
-  "_source": "overhead 2/Quests.vb loadQuests and loadSubquests, RECONSTRUCTION 10. Every objective is a MoveTo (the only type the source evaluates); range applies to both axes.",
+  "_source": "overhead 2/Quests.vb loadQuests and loadSubquests, RECONSTRUCTION 10. Every objective is a MoveTo (the only type the source evaluates); range applies to both axes, measured from the leader's point (x + heroSize x heroPoint.x, y + heroSize x heroPoint.y): checkQuests' (x + heroSize / 2, y - heroSize / 3).",
+  "heroPoint": [0.5, -0.33333333],
   "quests": [
     {"id": 0, "text": "Farmer Brinn wants you to check the crops", "exp": 1000, "status": "Active", "startScript": "", "endScript": "", "objectives": [
       {"type": "MoveTo", "at": [0, 0.3], "range": 0.1, "exp": 100, "text": "Check North Field", "startScript": "", "endScript": ""},

@@ -435,6 +435,8 @@ namespace MindAttic.Overworld.Tests
             var q = Registry.Quests;
             Assert.AreEqual(4, q.Quests.Count);
             Assert.AreEqual(2, q.Subquests.Count);
+            // checkQuests measured from (x + heroSize / 2, y - heroSize / 3).
+            Assert.AreEqual((0.5f, -1f / 3f), (q.HeroPoint.X, q.HeroPoint.Y));
 
             void Quest(QuestDefinition d, string text, int exp, QuestStatus status, int objectives)
             {
