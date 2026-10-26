@@ -22,7 +22,7 @@ namespace MindAttic.Overworld.Core
     /// A follower is a hero no player in the game leads. Followers follow the hero the captain leads: the player in the
     /// game with the lowest id (with one player, the original's currHero). The team flag is the party's, as bTeam was.
     /// </remarks>
-    public sealed class Party : ITickSystem
+    public sealed partial class Party : ITickSystem
     {
         readonly List<Hero> heroes = new List<Hero>();
         readonly Dictionary<PlayerId, MoveInput> inputs = new Dictionary<PlayerId, MoveInput>();
@@ -37,8 +37,8 @@ namespace MindAttic.Overworld.Core
         {
             Data = data ?? throw new ArgumentNullException(nameof(data));
             if (data.Sprites == null || data.Locomotion == null || data.Fall == null || data.Follow == null || data.Flocking == null || data.Selection == null ||
-                data.Vitals == null || data.Rest == null)
-                throw new ArgumentException("The hero data has no sprites, locomotion, fall, follow, flocking, selection, vitals or rest.", nameof(data));
+                data.Vitals == null || data.Rest == null || data.Battle == null)
+                throw new ArgumentException("The hero data has no sprites, locomotion, fall, follow, flocking, selection, vitals, rest or battle.", nameof(data));
             Walls = walls;
             this.random = random ?? new Random();
             Team = data.Follow.TeamAtStart;
@@ -47,6 +47,9 @@ namespace MindAttic.Overworld.Core
                 var hero = new Hero(i, data.Heroes[i]);
                 hero.Sprite = data.Sprites.Stand(hero.Facing);
                 hero.SleepHours = data.Rest.MinHours;
+                // loadHero: moveDistanceMax = Agility x 0.05, moveDistance its share of the stamina.
+                hero.MoveDistanceMax = hero.Definition.Agility * data.MoveDistancePerAgility;
+                hero.MoveDistance = MoveDistanceFor(hero);
                 heroes.Add(hero);
             }
         }
@@ -74,6 +77,8 @@ namespace MindAttic.Overworld.Core
             game.Register<SetHeroVitals>(HandleVitals);
             game.Register<Rest>(HandleRest);
             game.Register<PlaceHero>(HandlePlace);
+            game.Register<ToggleBattle>(HandleBattle);
+            game.Register<ToggleHeroMode>(HandleHeroMode);
             game.AddSystem(this);
             return this;
         }
@@ -291,9 +296,11 @@ namespace MindAttic.Overworld.Core
         {
             var now = tick * Clock.TickSeconds;
             var before = new (HeroState, Facing)[heroes.Count];
+            var actionBefore = new BattleAction[heroes.Count];
             for (var i = 0; i < heroes.Count; i++)
             {
                 before[i] = (heroes[i].State, heroes[i].Facing);
+                actionBefore[i] = heroes[i].BattleAction;
                 heroes[i].PreviousX = heroes[i].X;
                 heroes[i].PreviousY = heroes[i].Y;
                 heroes[i].PreviousZ = heroes[i].Z;
@@ -309,8 +316,9 @@ namespace MindAttic.Overworld.Core
                 var hero = Leader(player);
                 var focus = Focus != null ? Focus(player) : InputFocus.World;
                 var questScreen = QuestScreenOpenFor(player);
-                ApplyInput(hero, input, focus, questScreen, BookShownFor(player));
-                if (input.Move && focus != InputFocus.Inventory && !questScreen) moveHeld[hero.Index] = true;
+                var ring = RingMenuOpen(player);
+                ApplyInput(hero, input, focus, questScreen, BookShownFor(player), ring);
+                if (input.Move && focus != InputFocus.Inventory && !questScreen && !ring) moveHeld[hero.Index] = true;
             }
 
             var led = new bool[heroes.Count];
@@ -346,8 +354,14 @@ namespace MindAttic.Overworld.Core
                         Accelerate(hero, hero.Definition.RunSpeed, moveHeld[i]);
                         Animate(hero, now, hero.Definition.RunRate, Cycle(hero, Sprites.Run), hero.Definition.RunFrames);
                         break;
+                    case HeroState.Drawing:
+                        DrawWeapon(hero, now);
+                        break;
+                    case HeroState.Battle:
+                        HoldStance(hero, now);
+                        break;
                     default:
-                        // Resting, Drawing and Battle hold still; their pictures come with their stories.
+                        // Resting (never set by the original) holds still.
                         hero.DX = 0f;
                         hero.DY = 0f;
                         break;
@@ -361,8 +375,12 @@ namespace MindAttic.Overworld.Core
                 hero.X += hero.DX * Tuning.GameSpeed;
                 hero.Y += hero.DY * Tuning.GameSpeed;
 
+                // renderWeapon: the weapon's frame in step with the hero's.
+                hero.WeaponSprite = hero.Weapon?.Frame(hero.State, hero.Facing, hero.Frame);
+
                 if (before[i].Item1 != hero.State || before[i].Item2 != hero.Facing)
                     events.Add(new HeroStateChanged(tick, i, hero.State, hero.Facing));
+                if (actionBefore[i] != hero.BattleAction) events.Add(new HeroBattleActionChanged(tick, i, hero.BattleAction));
 
                 // renderIcon: the status animation above the hero.
                 AnimateStatus(hero, now);
@@ -397,12 +415,16 @@ namespace MindAttic.Overworld.Core
         /// <summary>
         /// checkRegen in adventure mode: once the hero's regen rate (2 s) has passed since its last step, a hero not
         /// poisoned gains stamina kneeling (+2, unless picking up) or standing (+1), up to its maximum; a poisoned one loses
-        /// a health point instead (to 0); and a running hero loses a stamina point (to 0) either way. Battle mode's refill
-        /// is the battle story's (A18).
+        /// a health point instead (to 0); and a running hero loses a stamina point (to 0) either way. In battle mode the
+        /// turn gauge refills instead (<see cref="Refill"/>).
         /// </summary>
         void Regenerate(Hero hero, double now)
         {
-            if (hero.Mode != HeroMode.Adventure) return;
+            if (hero.Mode == HeroMode.Battle)
+            {
+                Refill(hero, now);
+                return;
+            }
             // The tick clock is exact; the epsilon keeps 120 ticks from falling a hair short of 2 s.
             if (now + 1e-6 < hero.LastRegenTime + hero.Definition.RegenRate) return;
             var v = Vitals;
@@ -620,7 +642,7 @@ namespace MindAttic.Overworld.Core
 
         // ---- input (Input.getKeyboard, getMouse, KeysUp) ----------------------------------------------------------
 
-        void ApplyInput(Hero hero, MoveInput input, InputFocus focus, bool questScreen, bool book)
+        void ApplyInput(Hero hero, MoveInput input, InputFocus focus, bool questScreen, bool book, bool ring)
         {
             var packOpen = focus == InputFocus.Inventory;
             // Left and right only mark their direction while a target is chosen or the book is shown.
@@ -631,8 +653,8 @@ namespace MindAttic.Overworld.Core
 
             // actionLeft / Right / Up / Down, in that order, so the last held arrow sets the facing; while the pick-up
             // button is held (bItemPickup) they only mark the direction held, as they do while the pack or the quest
-            // screen is open, and left and right do while an item's target is chosen.
-            var held = input.PickUp || packOpen || questScreen;
+            // screen or the battle's ring menu is open, and left and right do while an item's target is chosen.
+            var held = input.PickUp || packOpen || questScreen || ring;
             if (input.Left) Arrow(hero, Facing.Left, held || choosing);
             if (input.Right) Arrow(hero, Facing.Right, held || choosing);
             if (input.Up) Arrow(hero, Facing.Up, held);
@@ -646,11 +668,11 @@ namespace MindAttic.Overworld.Core
             }
 
             // actionMove waits while the pick-up button is held (getMouse tests the left button first; Enter blocks it);
-            // with the pack open the move button drops instead, and with the quest screen open it does nothing.
-            if (input.Move && !input.PickUp && !packOpen && !questScreen) MoveTowardCursor(hero, input.CursorX, input.CursorY);
+            // with the pack open the move button drops instead, and with the quest screen or the ring menu open it does nothing.
+            if (input.Move && !input.PickUp && !packOpen && !questScreen && !ring) MoveTowardCursor(hero, input.CursorX, input.CursorY);
 
             // KeysUp: released keys clear their flags; with nothing held (the pick-up button included, and no pickup
-            // under way) the hero stands.
+            // under way) the hero stands, or kneels while its battle gauge recharges.
             if (!input.Run) hero.Running = false;
             if (!input.Move)
             {
@@ -662,7 +684,17 @@ namespace MindAttic.Overworld.Core
 
             if (!input.AnyArrow && !input.Move && !input.PickUp && !hero.Kneeling && !hero.Laying && !hero.PickingUp &&
                 hero.State != HeroState.Drawing && hero.State != HeroState.Battle)
-                hero.State = HeroState.Standing;
+            {
+                if (hero.BattleAction != BattleAction.Recharging)
+                {
+                    hero.State = HeroState.Standing;
+                }
+                else
+                {
+                    hero.Kneeling = true;
+                    hero.State = HeroState.Kneeling;
+                }
+            }
         }
 
         static void Arrow(Hero hero, Facing facing, bool pickUpHeld)
@@ -715,6 +747,13 @@ namespace MindAttic.Overworld.Core
             // Facing: from the sign of y, unless x is the larger.
             hero.Facing = dy > 0 ? Facing.Up : Facing.Down;
             if (Math.Abs(dx) > Math.Abs(dy)) hero.Facing = dx > 0 ? Facing.Right : Facing.Left;
+
+            // In battle mode only a hero Moving goes anywhere: any other turns to the cursor and stands.
+            if (hero.Mode == HeroMode.Battle && hero.BattleAction != BattleAction.Moving)
+            {
+                hero.State = HeroState.Standing;
+                return;
+            }
 
             if (hero.State == HeroState.Walking)
             {

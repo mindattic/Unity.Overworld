@@ -381,8 +381,9 @@ namespace MindAttic.Overworld.Core
                 r.Pressed = false;
                 if (held)
                 {
-                    // actionPickup kneels only with the pack shut and no item's target being chosen (Enter uses there).
-                    if (Focus == null || Focus(player) == InputFocus.World) Press(hero, r);
+                    // actionPickup kneels only with the pack shut, no item's target being chosen (Enter uses there) and
+                    // the battle's ring menu shut (Enter chooses from it there).
+                    if ((Focus == null || Focus(player) == InputFocus.World) && !Party.RingMenuOpen(player)) Press(hero, r);
                 }
                 else
                 {
@@ -431,10 +432,22 @@ namespace MindAttic.Overworld.Core
             var index = SelectedDrop(player);
             if (index < 0) return;
             hero.PickingUp = false;
+            PayForPickUp(hero);
             var d = drops[index];
             d.PickedUp = true;
             var stack = Inventory.Add(d.Source, d.File);
             events.Add(new DroppedItemCollected(tick, player, hero.Index, index, d.Name, stack));
+        }
+
+        /// <summary>
+        /// checkItemPickup and checkDroppedPickup: a hero Moving in battle loses 5 percent of its maximum stamina (VB's
+        /// Integer assignment, rounded half to even), not below 0.
+        /// </summary>
+        void PayForPickUp(Hero hero)
+        {
+            if (hero.BattleAction != BattleAction.Moving) return;
+            var cost = hero.MaxStamina * Math.Round((double)Data.BattlePickupStamina, 6);
+            hero.Stamina = Math.Max(0, (int)Math.Round(hero.Stamina - cost, MidpointRounding.ToEven));
         }
 
         /// <summary>actionPickup: the leader stops running; unless it lies down, a new press kneels it to pick up.</summary>
@@ -474,7 +487,7 @@ namespace MindAttic.Overworld.Core
         /// <summary>
         /// checkItemPickup: a leader picking up with an item in reach stops picking up and takes the selected one: it is
         /// picked up (its growth timer starts), and a UseOnPickup item's script runs at once while anything else joins the
-        /// pack. (The 5 percent of stamina a hero moving in battle pays comes with battle's Moving action, story A18.)
+        /// pack. A hero Moving in battle pays 5 percent of its maximum stamina for it (<see cref="PayForPickUp"/>).
         /// </summary>
         void Collect(Game game, PlayerId player, Hero hero, Reach r, double now, long tick, ICollection<IGameEvent> events)
         {
@@ -482,6 +495,7 @@ namespace MindAttic.Overworld.Core
             var index = Selected(player);
             if (index < 0) return;
             hero.PickingUp = false;
+            PayForPickUp(hero);
             var p = pickups[index];
             p.PickedUp = true;
             p.LastGrowTime = now;

@@ -5,7 +5,8 @@ namespace MindAttic.Overworld.Core
 {
     /// <summary>
     /// The art set every hero draws with (Textures.loadTextures, RECONSTRUCTION 4.4): one standing and one kneeling picture per
-    /// facing, the two halt and two laid-down pictures and the six-frame walk and run cycles per facing, as paths under the original's folder
+    /// facing, the two halt and two laid-down pictures, the six-frame walk and run cycles per facing and the six-frame draw
+    /// and battle-stance cycles for left and right, as paths under the original's folder
     /// (heroes.json "sprites").
     /// </summary>
     public sealed class HeroSprites
@@ -18,6 +19,8 @@ namespace MindAttic.Overworld.Core
         readonly Dictionary<Facing, string> sleep = new Dictionary<Facing, string>();
         readonly Dictionary<Facing, IReadOnlyList<string>> walk = new Dictionary<Facing, IReadOnlyList<string>>();
         readonly Dictionary<Facing, IReadOnlyList<string>> run = new Dictionary<Facing, IReadOnlyList<string>>();
+        readonly Dictionary<Facing, IReadOnlyList<string>> draw = new Dictionary<Facing, IReadOnlyList<string>>();
+        readonly Dictionary<Facing, IReadOnlyList<string>> battle = new Dictionary<Facing, IReadOnlyList<string>>();
 
         HeroSprites()
         {
@@ -47,6 +50,18 @@ namespace MindAttic.Overworld.Core
         /// <summary>The run cycle (run\run_*1..6) facing <paramref name="facing"/>, in frame order.</summary>
         public IReadOnlyList<string> Run(Facing facing) => run[facing];
 
+        /// <summary>
+        /// The weapon-drawing cycle (combat\draw\draw_left|right_1..6), in frame order: the original loaded only the left
+        /// and right sets, left and down showing the left one, right and up the right one (aiDrawing).
+        /// </summary>
+        public IReadOnlyList<string> Draw(Facing facing) => draw[Side(facing)];
+
+        /// <summary>The battle stance's cycle (combat\battle_left|right_1..6), left and down showing the left set (aiBattle).</summary>
+        public IReadOnlyList<string> Battle(Facing facing) => battle[Side(facing)];
+
+        /// <summary>The side a facing shows in the two-sided sets: left for left and down, right for right and up.</summary>
+        public static Facing Side(Facing facing) => facing == Facing.Right || facing == Facing.Up ? Facing.Right : Facing.Left;
+
         /// <summary>Every picture of the set, once each.</summary>
         public IReadOnlyList<string> Files
         {
@@ -65,11 +80,13 @@ namespace MindAttic.Overworld.Core
                     list.AddRange(run[f]);
                 }
 
+                foreach (var side in new[] { Facing.Left, Facing.Right }) list.AddRange(draw[side]);
+                foreach (var side in new[] { Facing.Left, Facing.Right }) list.AddRange(battle[side]);
                 return list;
             }
         }
 
-        internal static HeroSprites Read(ContentReader r, int walkFrames, int runFrames)
+        internal static HeroSprites Read(ContentReader r, int walkFrames, int runFrames, int drawFrames, int battleFrames)
         {
             var sprites = new HeroSprites();
             var standReader = r.Section("stand");
@@ -88,13 +105,15 @@ namespace MindAttic.Overworld.Core
             sleepReader.Done();
             ReadCycle(r.Section("walk"), sprites.walk, walkFrames + 1);
             ReadCycle(r.Section("run"), sprites.run, runFrames + 1);
+            ReadCycle(r.Section("draw"), sprites.draw, drawFrames + 1, Facing.Left, Facing.Right);
+            ReadCycle(r.Section("battle"), sprites.battle, battleFrames + 1, Facing.Left, Facing.Right);
             r.Done();
             return sprites;
         }
 
-        static void ReadCycle(ContentReader r, Dictionary<Facing, IReadOnlyList<string>> into, int frames)
+        static void ReadCycle(ContentReader r, Dictionary<Facing, IReadOnlyList<string>> into, int frames, params Facing[] facings)
         {
-            foreach (var f in Facings)
+            foreach (var f in facings.Length > 0 ? facings : Facings)
             {
                 var key = Key(f);
                 var files = r.Texts(key);

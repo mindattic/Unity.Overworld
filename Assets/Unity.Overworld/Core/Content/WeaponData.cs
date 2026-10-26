@@ -30,6 +30,44 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>The sprite folder under gfx/weapon holding the four sets (left, right, draw-left, draw-right).</summary>
         public string Sprites { get; internal set; }
+
+        /// <summary>The battle-stance frames shown over a hero facing left or down (weapon_left_1..6), in frame order.</summary>
+        public IReadOnlyList<string> Left { get; internal set; } = new string[0];
+
+        /// <summary>The battle-stance frames over a hero facing right or up (weapon_right_1..6).</summary>
+        public IReadOnlyList<string> Right { get; internal set; } = new string[0];
+
+        /// <summary>The drawing frames over a hero facing left or down (draw\weapon_draw_left_1..6).</summary>
+        public IReadOnlyList<string> DrawLeft { get; internal set; } = new string[0];
+
+        /// <summary>The drawing frames over a hero facing right or up (draw\weapon_draw_right_1..6).</summary>
+        public IReadOnlyList<string> DrawRight { get; internal set; } = new string[0];
+
+        /// <summary>
+        /// renderWeapon: the frame shown over a hero in <paramref name="state"/> facing <paramref name="facing"/> at
+        /// <paramref name="frame"/> (the hero's own frame number): drawing, the draw set's; in the battle stance, the
+        /// stance's; null (texBlank) in any other state.
+        /// </summary>
+        public string Frame(HeroState state, Facing facing, int frame)
+        {
+            var left = facing == Facing.Left || facing == Facing.Down;
+            IReadOnlyList<string> set;
+            if (state == HeroState.Drawing) set = left ? DrawLeft : DrawRight;
+            else if (state == HeroState.Battle) set = left ? Left : Right;
+            else return null;
+            return frame >= 0 && frame < set.Count ? set[frame] : null;
+        }
+
+        /// <summary>Every frame of the weapon, once each.</summary>
+        public IReadOnlyList<string> Files
+        {
+            get
+            {
+                var list = new List<string>();
+                foreach (var set in new[] { Left, Right, DrawLeft, DrawRight }) list.AddRange(set);
+                return list;
+            }
+        }
     }
 
     /// <summary>The two weapons the engine defines.</summary>
@@ -77,6 +115,12 @@ namespace MindAttic.Overworld.Core
                     Range = r.Positive("range"),
                     Sprites = r.Text("sprites"),
                 };
+                var framesReader = r.Section("frames");
+                w.Left = Frames(framesReader, "left", w.Sprites, frames);
+                w.Right = Frames(framesReader, "right", w.Sprites, frames);
+                w.DrawLeft = Frames(framesReader, "drawLeft", w.Sprites, frames);
+                w.DrawRight = Frames(framesReader, "drawRight", w.Sprites, frames);
+                framesReader.Done();
                 r.Check(w.Durability <= w.MaxDurability, "durability", "is above maxDurability");
                 if (list.Exists(x => x.Name == w.Name)) r.Fail("name", "\"" + w.Name + "\" is defined twice");
                 r.Done();
@@ -86,6 +130,18 @@ namespace MindAttic.Overworld.Core
             if (list.Count > max) errors.Add(file + ".weapons: " + list.Count + " weapons exceed maxWeapons " + max);
             root.Done();
             return new WeaponData(max, frames, list);
+        }
+
+        /// <summary>One frame set: spriteFrames pictures, each a relative path in the weapon's own folder under gfx/weapon.</summary>
+        static IReadOnlyList<string> Frames(ContentReader r, string key, string folder, int frames)
+        {
+            var files = r.Texts(key);
+            r.Check(files.Count == frames, key, "must list " + frames + " frames, the weapons' spriteFrames (has " + files.Count + ")");
+            var prefix = "gfx/weapon/" + folder + "/";
+            foreach (var file in files)
+                if (!file.StartsWith(prefix, System.StringComparison.Ordinal) || file.IndexOf('\\') >= 0 || file.EndsWith("/", System.StringComparison.Ordinal))
+                    r.Fail(key, "must hold forward-slashed pictures under " + prefix + " (has \"" + file + "\")");
+            return files;
         }
     }
 }

@@ -131,7 +131,8 @@ namespace MindAttic.Overworld.Core
         }
 
         /// <summary>
-        /// Every hero of <paramref name="party"/> where it is and with the picture it shows, its weapon idle;
+        /// Every hero of <paramref name="party"/> where it is and with the picture it shows, its weapon's frame over it
+        /// (texBlank unless it is drawing or in its battle stance);
         /// <paramref name="alpha"/> (0 to 1, how far through the next tick) places it between its last two ticks.
         /// </summary>
         public HeroPose[] Poses(Party party, float alpha = 1f)
@@ -146,7 +147,7 @@ namespace MindAttic.Overworld.Core
                 var x = h.PreviousX + (h.X - h.PreviousX) * alpha;
                 var y = h.PreviousY + (h.Y - h.PreviousY) * alpha;
                 var z = h.PreviousZ + (h.Z - h.PreviousZ) * alpha;
-                poses[i] = new HeroPose(x, y, z, h.Sprite, View.WeaponIdle);
+                poses[i] = new HeroPose(x, y, z, h.Sprite, h.WeaponSprite ?? View.WeaponIdle);
             }
 
             return poses;

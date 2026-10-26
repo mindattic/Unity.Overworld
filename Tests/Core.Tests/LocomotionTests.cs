@@ -85,9 +85,9 @@ namespace MindAttic.Overworld.Tests
             Assert.AreEqual("gfx/hero/Chrono/kneel/sleep_right.PNG", s.Sleep(Facing.Up));
 
             // Two halt pictures (the falling pose, U.OVW-US-A7) and two laid-down ones, then per facing a stand and a kneel
-            // picture and six walk and six run frames.
-            Assert.AreEqual(60, s.Files.Count);
-            Assert.AreEqual(60, s.Files.Distinct().Count());
+            // picture and six walk and six run frames, then the six-frame draw and battle cycles for left and right (A18).
+            Assert.AreEqual(84, s.Files.Count);
+            Assert.AreEqual(84, s.Files.Distinct().Count());
         }
 
         [Test]

@@ -30,6 +30,19 @@ namespace MindAttic.Overworld.Core
         Battle,
     }
 
+    /// <summary>
+    /// What a hero in battle mode is doing (the original's aBattleAction): Ready (its gauge is full and it may act),
+    /// Moving (walking the distance its stamina allows), Recharging (kneeling while its gauge refills) or Attacking (never
+    /// set by the original).
+    /// </summary>
+    public enum BattleAction
+    {
+        Ready,
+        Moving,
+        Recharging,
+        Attacking,
+    }
+
     /// <summary>One of the three party heroes with every figure resolved (the shared defaults with the hero's own overrides).</summary>
     public sealed class HeroDefinition
     {
@@ -37,6 +50,9 @@ namespace MindAttic.Overworld.Core
         public string Name { get; internal set; }
         public DataPoint Start { get; internal set; }
         public string Weapon { get; internal set; }
+
+        /// <summary>The weapon <see cref="Weapon"/> names, as equipWeapon found it in the weapons file (null without one).</summary>
+        public WeaponDefinition WeaponDefinition { get; internal set; }
         public HeroState State { get; internal set; }
         public Facing Facing { get; internal set; }
         public HeroMode Mode { get; internal set; }
@@ -87,8 +103,9 @@ namespace MindAttic.Overworld.Core
     public sealed class HeroData
     {
         internal HeroData(float heroSize, string spriteSet, float moveDistancePerAgility, HeroSprites sprites, LocomotionTuning locomotion, FallTuning fall,
-            FollowTuning follow, FlockingTuning flocking, SelectionTuning selection, VitalsTuning vitals, RestTuning rest, List<HeroDefinition> heroes)
+            FollowTuning follow, FlockingTuning flocking, SelectionTuning selection, VitalsTuning vitals, RestTuning rest, BattleTuning battle, List<HeroDefinition> heroes)
         {
+            Battle = battle;
             HeroSize = heroSize;
             SpriteSet = spriteSet;
             MoveDistancePerAgility = moveDistancePerAgility;
@@ -135,6 +152,9 @@ namespace MindAttic.Overworld.Core
         /// <summary>How a hero rests and lies down, the hours a sleep can be set to, what it restores and how the screen fades.</summary>
         public RestTuning Rest { get; }
 
+        /// <summary>How a hero's turn gauge refills in battle mode.</summary>
+        public BattleTuning Battle { get; }
+
         public IReadOnlyList<HeroDefinition> Heroes { get; }
 
         /// <summary>The party's carrying limit: the sum of every hero's weight limit.</summary>
@@ -157,7 +177,7 @@ namespace MindAttic.Overworld.Core
             var commonReader = root.Section("common");
             var common = ReadCommon(commonReader, out var perAgility);
             commonReader.Done();
-            var sprites = HeroSprites.Read(root.Section("sprites"), common.WalkFrames, common.RunFrames);
+            var sprites = HeroSprites.Read(root.Section("sprites"), common.WalkFrames, common.RunFrames, common.DrawFrames, common.BattleFrames);
             var locomotion = LocomotionTuning.Read(root.Section("locomotion"));
             var fall = FallTuning.Read(root.Section("fall"));
             var follow = FollowTuning.Read(root.Section("follow"));
@@ -165,6 +185,7 @@ namespace MindAttic.Overworld.Core
             var selection = SelectionTuning.Read(root.Section("selection"));
             var vitals = VitalsTuning.Read(root.Section("vitals"));
             var rest = RestTuning.Read(root.Section("rest"));
+            var battle = BattleTuning.Read(root.Section("battle"));
 
             // Each hero is the common block with its own keys laid over it (Belmont's walk rate and speeds).
             var list = new List<HeroDefinition>();
@@ -181,14 +202,17 @@ namespace MindAttic.Overworld.Core
                 if (r.Has("runSpeed")) h.RunSpeed = r.Positive("runSpeed");
                 r.Check(h.RunSpeed >= h.WalkSpeed, "runSpeed", "is below walkSpeed");
                 r.Check(h.Id == list.Count, "id", "must be " + list.Count + ", the hero's place in the party (is " + h.Id + ")");
-                if (weapons != null && weapons.Find(h.Weapon) == null)
+                h.WeaponDefinition = weapons?.Find(h.Weapon);
+                if (weapons != null && h.WeaponDefinition == null)
                     r.Fail("weapon", "\"" + h.Weapon + "\" is not a weapon in the weapons file");
+                if (h.WeaponDefinition != null && h.WeaponDefinition.Left.Count < h.BattleFrames + 1)
+                    r.Fail("weapon", "\"" + h.Weapon + "\" has " + h.WeaponDefinition.Left.Count + " frames, fewer than the hero's " + (h.BattleFrames + 1));
                 r.Done();
                 list.Add(h);
             }
 
             root.Done();
-            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, fall, follow, flocking, selection, vitals, rest, list);
+            return new HeroData(heroSize, spriteSet, perAgility, sprites, locomotion, fall, follow, flocking, selection, vitals, rest, battle, list);
         }
 
         static HeroDefinition ReadCommon(ContentReader c, out float perAgility)

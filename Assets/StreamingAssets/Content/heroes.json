@@ -12,7 +12,7 @@
     "moveDistancePerAgility": 0.05
   },
   "sprites": {
-    "_note": "Textures.loadTextures: the Chrono set every hero draws with (64 x 64, magenta keyed). stand is face_* (one frame); walk and run are walk_*1..6 and run_*1..6, in frame order. Paths are under the original's folder, exactly as on disk.",
+    "_note": "Textures.loadTextures: the Chrono set every hero draws with (64 x 64, magenta keyed). stand is face_* (one frame); walk and run are walk_*1..6 and run_*1..6, in frame order; draw and battle (combat\\draw\\draw_* and combat\\battle_*, 1..6) were loaded for left and right only, left and down showing the left set, right and up the right one. Paths are under the original's folder, exactly as on disk.",
     "stand": {"left": "gfx/hero/Chrono/stand/face_left.PNG", "right": "gfx/hero/Chrono/stand/face_right.PNG", "up": "gfx/hero/Chrono/stand/face_up.PNG", "down": "gfx/hero/Chrono/stand/face_down.PNG"},
     "halt": {"left": "gfx/hero/Chrono/halt/halt_left.PNG", "right": "gfx/hero/Chrono/halt/halt_right.PNG"},
     "kneel": {"left": "gfx/hero/Chrono/kneel/kneel_left.PNG", "right": "gfx/hero/Chrono/kneel/kneel_right.PNG", "up": "gfx/hero/Chrono/kneel/kneel_up.PNG", "down": "gfx/hero/Chrono/kneel/kneel_down.PNG"},
@@ -28,6 +28,14 @@
       "right": ["gfx/hero/Chrono/run/run_right1.PNG", "gfx/hero/Chrono/run/run_right2.PNG", "gfx/hero/Chrono/run/run_right3.PNG", "gfx/hero/Chrono/run/run_right4.PNG", "gfx/hero/Chrono/run/run_right5.PNG", "gfx/hero/Chrono/run/run_right6.PNG"],
       "up": ["gfx/hero/Chrono/run/run_up1.PNG", "gfx/hero/Chrono/run/run_up2.PNG", "gfx/hero/Chrono/run/run_up3.PNG", "gfx/hero/Chrono/run/run_up4.PNG", "gfx/hero/Chrono/run/run_up5.PNG", "gfx/hero/Chrono/run/run_up6.PNG"],
       "down": ["gfx/hero/Chrono/run/run_down1.PNG", "gfx/hero/Chrono/run/run_down2.PNG", "gfx/hero/Chrono/run/run_down3.PNG", "gfx/hero/Chrono/run/run_down4.PNG", "gfx/hero/Chrono/run/run_down5.PNG", "gfx/hero/Chrono/run/run_down6.PNG"]
+    },
+    "draw": {
+      "left": ["gfx/hero/Chrono/combat/draw/draw_left_1.PNG", "gfx/hero/Chrono/combat/draw/draw_left_2.PNG", "gfx/hero/Chrono/combat/draw/draw_left_3.PNG", "gfx/hero/Chrono/combat/draw/draw_left_4.PNG", "gfx/hero/Chrono/combat/draw/draw_left_5.PNG", "gfx/hero/Chrono/combat/draw/draw_left_6.PNG"],
+      "right": ["gfx/hero/Chrono/combat/draw/draw_right_1.PNG", "gfx/hero/Chrono/combat/draw/draw_right_2.PNG", "gfx/hero/Chrono/combat/draw/draw_right_3.PNG", "gfx/hero/Chrono/combat/draw/draw_right_4.PNG", "gfx/hero/Chrono/combat/draw/draw_right_5.PNG", "gfx/hero/Chrono/combat/draw/draw_right_6.PNG"]
+    },
+    "battle": {
+      "left": ["gfx/hero/Chrono/combat/battle_left_1.PNG", "gfx/hero/Chrono/combat/battle_left_2.PNG", "gfx/hero/Chrono/combat/battle_left_3.PNG", "gfx/hero/Chrono/combat/battle_left_4.PNG", "gfx/hero/Chrono/combat/battle_left_5.PNG", "gfx/hero/Chrono/combat/battle_left_6.PNG"],
+      "right": ["gfx/hero/Chrono/combat/battle_right_1.PNG", "gfx/hero/Chrono/combat/battle_right_2.PNG", "gfx/hero/Chrono/combat/battle_right_3.PNG", "gfx/hero/Chrono/combat/battle_right_4.PNG", "gfx/hero/Chrono/combat/battle_right_5.PNG", "gfx/hero/Chrono/combat/battle_right_6.PNG"]
     }
   },
   "locomotion": {
@@ -93,6 +101,11 @@
     "chooserRate": 0.08,
     "restorePerHour": 0.125,
     "fadeStep": 5
+  },
+  "battle": {
+    "_note": "Heroes.checkRegen in battle mode and Input.actionBattleToggle, RECONSTRUCTION 7 and 12.1: once more than refillInterval seconds (refillInterval, 0.18) have passed since its last check, a hero Recharging gains refillStamina stamina and kneels; already full, it is Ready, gets up, its move distance is recomputed (agility x moveDistancePerAgility x stamina / maximum) and, unless it already holds its battle stance, draws its weapon (the draw cycle from its first frame at drawRate, then the battle cycle at battleRate from a random frame).",
+    "refillInterval": 0.18,
+    "refillStamina": 1
   },
   "heroes": [
     {"id": 0, "name": "Chrono", "start": [0, 0], "weapon": "Fine Axe", "state": "Standing"},

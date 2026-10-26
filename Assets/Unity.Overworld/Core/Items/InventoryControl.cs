@@ -361,6 +361,7 @@ namespace MindAttic.Overworld.Core
             Pickups.Focus = FocusOf;
             Party.Pack = Inventory;
             Party.Rested = Close;
+            Party.BattleLeft = HideQuickBar;
             game.AddSystem(this);
             return this;
         }
@@ -383,6 +384,15 @@ namespace MindAttic.Overworld.Core
             if (Party.Leader(c.Player).Mode == HeroMode.Battle) return CommandResult.Reject("The pack does not open in battle mode (the ring's Item entry opens it).");
             v.Open = !v.Open;
             return CommandResult.Accept(new InventoryToggled(game.Tick, c.Player, v.Open));
+        }
+
+        /// <summary>actionBattleToggle on leaving battle: bQuickBar = False.</summary>
+        void HideQuickBar(PlayerId player, long tick, ICollection<IGameEvent> events)
+        {
+            var v = For(player);
+            if (!v.QuickBar) return;
+            v.QuickBar = false;
+            events.Add(new QuickBarToggled(tick, player, false));
         }
 
         CommandResult HandleQuickBar(Game game, ToggleQuickBar c)

@@ -71,6 +71,12 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>How far right each other hero's column is (80).</summary>
         public float TeamSpacing { get; internal set; }
+
+        /// <summary>The battle line's point from the box ("NN %" or "Ready!", +14, +67).</summary>
+        public DataPoint Battle { get; internal set; }
+
+        /// <summary>The battle line's font (fontArialNarrow14).</summary>
+        public HudFont BattleFont { get; internal set; }
     }
 
     /// <summary>One of the bottom-left bars: where it is, its frame picture and its fill picture.</summary>
@@ -619,6 +625,8 @@ namespace MindAttic.Overworld.Core
                 Maximum = box.Pair("maximum", 0f, data.ScreenWidth),
                 RowSpacing = box.Number("rowSpacing", 0f, data.ScreenHeight),
                 TeamSpacing = box.Number("teamSpacing", 0f, data.ScreenWidth),
+                Battle = box.Pair("battle", 0f, data.ScreenWidth),
+                BattleFont = ReadFont(box, fonts, "battleFont"),
             };
             box.Done();
 

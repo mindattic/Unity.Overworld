@@ -122,6 +122,30 @@ namespace MindAttic.Overworld.Core
         /// <summary>When the frame last advanced, in game seconds (lastHeroCheck).</summary>
         internal double LastFrameTime { get; set; }
 
+        /// <summary>The weapon the hero carries (equipWeapon: the Fine Axe for Chrono, the Steel Sword for Belmont and Flagg).</summary>
+        public WeaponDefinition Weapon => Definition.WeaponDefinition;
+
+        /// <summary>
+        /// The weapon frame drawn over the hero (renderWeapon): its draw or battle-stance frame in step with the hero's own,
+        /// or null (texBlank) while it is in any other state.
+        /// </summary>
+        public string WeaponSprite { get; internal set; }
+
+        /// <summary>What the hero is doing in battle mode (Ready until it first recharges).</summary>
+        public BattleAction BattleAction { get; internal set; }
+
+        /// <summary>When the battle refill last checked the hero, in game seconds (lastBattleCheck).</summary>
+        internal double LastBattleTime { get; set; }
+
+        /// <summary>
+        /// How far the hero may move in its battle turn (moveDistance): recomputed as <see cref="MoveDistanceMax"/> x
+        /// stamina / maximum when the hero becomes Ready.
+        /// </summary>
+        public float MoveDistance { get; internal set; }
+
+        /// <summary>The farthest a hero moves in one battle turn (moveDistanceMax): agility x 0.05 (0.25).</summary>
+        public float MoveDistanceMax { get; internal set; }
+
         public override string ToString() => Name + " " + State + " " + Facing + " at (" + X + ", " + Y + ")";
     }
 

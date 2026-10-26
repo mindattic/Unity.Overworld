@@ -5,6 +5,7 @@
     {"name": "fontCalisto", "families": ["Calisto MT", "Georgia", "Times New Roman"], "points": 8, "bold": true},
     {"name": "fontArial", "families": ["Arial"], "points": 10, "bold": true},
     {"name": "fontArialNarrow24", "families": ["Arial Narrow", "Arial"], "points": 24, "bold": false},
+    {"name": "fontArialNarrow14", "families": ["Arial Narrow", "Arial"], "points": 14, "bold": true},
     {"name": "fontAmount", "families": ["Small Fonts", "Arial"], "points": 7, "bold": false},
     {"name": "fontCorsiva8", "families": ["Monotype Corsiva", "Palatino Linotype", "Georgia"], "points": 8, "bold": false, "italic": true},
     {"name": "fontCorsiva", "families": ["Monotype Corsiva", "Palatino Linotype", "Georgia"], "points": 12, "bold": false, "italic": true}
@@ -20,13 +21,15 @@
     "time": {"x": 390, "y": 45, "font": "fontCalisto", "colour": [128, 255, 255, 0]}
   },
   "statusBox": {
-    "_note": "Gui/StatusBox.vb renderStatus (status_box.png is loaded but its draw is commented out, so only the text shows): at (statOffsetX, statOffsetY) = (x, y), the leader's name at +name, written '  Name  ' in white; then 'HP n', 'MP n' and 'AP n' at +value and '  / max' at +maximum, each row rowSpacing lower, in (255, 255 - r, 255, 255 - b) of the world light (r, g, b), so green by day. In team mode the other heroes follow at +teamSpacing each, their names in (255, 255 - r, 255, b).",
+    "_note": "Gui/StatusBox.vb renderStatus (status_box.png is loaded but its draw is commented out, so only the text shows): at (statOffsetX, statOffsetY) = (x, y), the leader's name at +name, written '  Name  ' in white; then 'HP n', 'MP n' and 'AP n' at +value and '  / max' at +maximum, each row rowSpacing lower, in (255, 255 - r, 255, 255 - b) of the world light (r, g, b), so green by day. In team mode the other heroes follow at +teamSpacing each, their names in (255, 255 - r, 255, b). A hero in battle mode has one more line at +battle in battleFont: below its maximum stamina, its share as a whole percent (VB's CInt, half to even) written 'NN %' for the leader and 'NN%' for the others, in (255 x percent / 100, 255 - r, 255, b), so it fades in as the gauge fills; full, 'Ready!' in (255, 255, 255, b) for the leader and (255, 255 - r, 255, b) for the others.",
     "x": 5, "y": 1, "font": "fontCalisto",
     "name": [12, 0],
     "value": [14, 15],
     "maximum": [45, 15],
     "rowSpacing": 15,
-    "teamSpacing": 80
+    "teamSpacing": 80,
+    "battle": [14, 67],
+    "battleFont": "fontArialNarrow14"
   },
   "bars": {
     "_note": "Gui/HealthBar.vb, ManaBar.vb and StaminaBar.vb: the leader's bars at the bottom left, width x height, the fill drawn first and the bar over it; the fill quad is width x value / max wide (rounded to a whole pixel, as VB's Integer assignment did, never below 0) with the whole fill picture on it. The mana bar reuses health_bar.png.",
