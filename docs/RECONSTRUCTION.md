@@ -555,7 +555,7 @@ The text files are ASCII with a few UTF-8 curly apostrophes (U+2019, in the Drag
 ### 12.1 Entering and leaving (`End` key, `actionBattleToggle`)
 
 Entering: the ring menu opens, the current hero's mode becomes Battle; if its stamina is full it begins Drawing, else it is Recharging. In team mode every other hero copies the mode and battle action, and each with full stamina draws, others recharge.
-Leaving: the ring closes and every hero returns to Adventure, Standing, Ready. Quick bar and range circles close. (`U` flips only the current hero.) The inventory cannot be opened by the key in battle (only via the Item ring entry).
+Leaving: the ring closes and the leader returns to Adventure, Standing, Ready (its `Kneeling` from a recharge is left set); in team mode every other hero copies the mode and action and then, as on entering, draws if full and is set Recharging if not (corrected in U.OVW-T22: the intent, every hero back to Adventure, Standing, Ready, is what the rebuild does; BIBLE). Quick bar and range circles close. (`U` flips only the current hero.) The inventory cannot be opened by the key in battle (only via the Item ring entry).
 
 ### 12.2 Turn order (`checkBattleSelect`, `NextHeroInBattle`)
 

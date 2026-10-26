@@ -45,6 +45,7 @@ namespace MindAttic.Overworld.Runtime
     /// <c>-overworld-script-after</c> (see <see cref="ApplyScriptedConsole"/>); the quests' <c>-overworld-objective</c> and
     /// <c>-overworld-quest-screen</c> (see <see cref="ApplyScriptedQuests"/>); the books' <c>-overworld-book</c> (see
     /// <see cref="ApplyScriptedBook"/>); the weather's <c>-overworld-weather</c> (see <see cref="ApplyScriptedWeather"/>);
+    /// battle mode's <c>-overworld-battle</c> (see <see cref="ApplyScriptedBattle"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -95,6 +96,7 @@ namespace MindAttic.Overworld.Runtime
 
         public const string BookArgument = "-overworld-book";
         public const string WeatherArgument = "-overworld-weather";
+        public const string BattleArgument = "-overworld-battle";
 
         public const string QuestScreenArgument = "-overworld-quest-screen";
         public const string ObjectiveArgument = "-overworld-objective";
@@ -213,7 +215,8 @@ namespace MindAttic.Overworld.Runtime
             var quested = ApplyScriptedQuests(args, game);
             var read = ApplyScriptedBook(args, game);
             var weathered = ApplyScriptedWeather(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || weathered || seeded || capture != null) Input.UseDevices = false;
+            var battled = ApplyScriptedBattle(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || weathered || battled || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -1105,6 +1108,55 @@ namespace MindAttic.Overworld.Runtime
             Debug.Log("Unity.Overworld: scripted weather " + Weather.Kind);
         }
 
+        /// <summary>
+        /// <c>-overworld-battle &lt;seconds[,seconds]&gt;</c>: End is pressed after that many seconds of play (0: at once),
+        /// entering battle mode with the team; a second number presses it again that many seconds later, leaving it. With
+        /// <c>-overworld-vitals</c> (e.g. <c>0:ap=30;2:ap=50</c>) captures show heroes recharging beside ones drawing.
+        /// </summary>
+        bool ApplyScriptedBattle(string[] args, Game game)
+        {
+            var text = ArgumentAfter(args, BattleArgument);
+            if (text == null) return false;
+            if (TryBattle(text, out var enter, out var leave)) StartCoroutine(BattleAfter(game, enter, leave));
+            else Debug.LogError("Unity.Overworld: " + BattleArgument + " wants the seconds to wait before End and optionally the seconds before End again, not '" + text + "'.");
+            return true;
+        }
+
+        /// <summary>Reads <c>seconds[,seconds]</c>.</summary>
+        public static bool TryBattle(string text, out float enter, out float? leave)
+        {
+            enter = 0f;
+            leave = null;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            if (!float.TryParse(parts[0].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out enter) || !(enter >= 0f)) return false;
+            if (parts.Length == 1) return true;
+            if (!float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var l) || !(l >= 0f)) return false;
+            leave = l;
+            return true;
+        }
+
+        IEnumerator BattleAfter(Game game, float enter, float? leave)
+        {
+            if (enter > 0f) yield return new WaitForSecondsRealtime(enter);
+            ToggleBattleOnce(game);
+            if (leave == null) yield break;
+            if (leave.Value > 0f) yield return new WaitForSecondsRealtime(leave.Value);
+            ToggleBattleOnce(game);
+        }
+
+        void ToggleBattleOnce(Game game)
+        {
+            var r = game.Submit(new ToggleBattle(PlayerId.One));
+            if (!r.Accepted) Debug.LogError("Unity.Overworld: " + BattleArgument + " was refused: " + r.Reason);
+            else Debug.Log("Unity.Overworld: scripted End; " + DescribeBattle());
+        }
+
+        string DescribeBattle() =>
+            (Party.RingMenuOpen(PlayerId.One) ? "ring menu open" : "ring menu shut") + "; " +
+            string.Join("; ", Party.Heroes.Select(h => h.Name + " " + h.Mode + " " + h.State + " " + h.BattleAction + " AP " + h.Stamina + "/" + h.MaxStamina +
+                                                      " frame " + h.Frame + " showing " + h.Sprite + " weapon " + (h.WeaponSprite ?? "blank")));
+
         string DescribeScenery() =>
             Weather.Kind + ", " + (World != null && World.WeatherQuads != null && World.WeatherRenderer.enabled ? World.WeatherQuads.LastShown : 0) + " of " + Weather.Count +
             " particles drawn; " + (World != null && World.CloudQuads != null && World.CloudsRenderer.enabled ? World.CloudQuads.LastShown : 0) + " of " + Clouds.Count +
@@ -1250,6 +1302,10 @@ namespace MindAttic.Overworld.Runtime
                                   ? ", prompt '" + Hud.ConsoleLabel.text + "'" : ""));
 
                 if (Weather != null && Clouds != null) Debug.Log("Unity.Overworld: weather " + DescribeScenery());
+
+                if (Party != null)
+                    Debug.Log("Unity.Overworld: battle " + DescribeBattle() +
+                              (Hud != null ? "; status box [" + string.Join(" | ", Hud.StatusLabels.Where(l => l.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex).Select(l => l.text)) + "]" : ""));
 
                 if (Books != null)
                     Debug.Log("Unity.Overworld: book " + DescribeBook() +
