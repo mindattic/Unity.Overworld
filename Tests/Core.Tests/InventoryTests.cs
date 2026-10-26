@@ -42,6 +42,7 @@ namespace MindAttic.Overworld.Tests
         SleepCycle sleep;
         WorldClock clock;
         ScriptInterpreter scripts;
+        BookReader books;
         List<IGameEvent> raised;
         PackView view;
 
@@ -60,6 +61,9 @@ namespace MindAttic.Overworld.Tests
             scripts = new ScriptInterpreter(Registry.Scripts, party, pickups.Inventory) { Sleep = sleep, Clock = clock, Pack = control, Messages = messages };
             control.Scripts = scripts;
             pickups.Scripts = scripts;
+            books = new BookReader(Registry.Books, Registry.Hud.Book, party).Install(game);
+            scripts.Books = books;
+            control.Books = books;
             Assert.IsTrue(game.Submit(new JoinGame(PlayerId.One)).Accepted);
             view = control.For(PlayerId.One);
             raised = new List<IGameEvent>();
@@ -394,9 +398,10 @@ namespace MindAttic.Overworld.Tests
             Press(Enter);
             Assert.AreEqual(2, Pack.Items.Count, "the book is Reusable: it is not used up");
             Assert.IsFalse(raised.OfType<ItemUsed>().Single().Consumed);
-            var book = scripts.For(PlayerId.One).Book;
-            Assert.AreEqual(("Grimoire de'Alchemiste", true, "BROWN", "CORSIVA8", BookNumbering.RomanNumeral), (book.Title, book.Show, book.Cover, book.Font, book.Numbering),
-                "its CHANGE BOOK commands are recorded for the book story (A16)");
+            var book = books.For(PlayerId.One);
+            Assert.AreEqual(("Grimoire de'Alchemiste", true, "BROWN", "CORSIVA8", BookNumbering.RomanNumeral), (books.Current(PlayerId.One).Title, book.Shown, book.Cover, book.Lettering, book.Numbering),
+                "its CHANGE BOOK commands open the book of its name (A16)");
+            Submit(new ToggleBook(PlayerId.One));
 
             // Solo, the sword is used on the leader at once: its CHANGE HERO WEAPON has no handler yet, so "Script failed to
             // execute." shows and the sword stays.

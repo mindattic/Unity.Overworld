@@ -318,6 +318,14 @@ namespace MindAttic.Overworld.Core
         /// <summary>Runs an item's script on its target when it is used.</summary>
         public IScriptRunner Scripts { get; set; }
 
+        /// <summary>
+        /// The players' books (null: none): while one is shown the panel's arrows wait, Delete hides it and leaves the
+        /// panel open, and the drop key hides it instead of dropping (Input.vb's bBook tests).
+        /// </summary>
+        public BookReader Books { get; set; }
+
+        bool BookShown(PlayerId player) => Books != null && Books.Shown(player);
+
         /// <summary>The party's limit (28.5): every hero's Strength + Agility / 2.</summary>
         public float WeightLimit => Party.Data.PartyWeightLimit;
 
@@ -359,11 +367,19 @@ namespace MindAttic.Overworld.Core
 
         // ---- commands ---------------------------------------------------------------------------------------------
 
-        /// <summary>actionInventory: the swap mark clears; out of battle the panel opens or closes.</summary>
+        /// <summary>actionInventory: the swap mark clears; with the book shown it is hidden and the panel opens, otherwise out of battle the panel opens or closes.</summary>
         CommandResult HandleToggle(Game game, ToggleInventory c)
         {
             var v = For(c.Player);
             v.Swapping = false;
+            if (BookShown(c.Player))
+            {
+                var events = new List<IGameEvent>();
+                Books.SetShown(c.Player, false, game.Tick, events);
+                SetOpen(c.Player, true, game.Tick, events);
+                return CommandResult.Accept(events.ToArray());
+            }
+
             if (Party.Leader(c.Player).Mode == HeroMode.Battle) return CommandResult.Reject("The pack does not open in battle mode (the ring's Item entry opens it).");
             v.Open = !v.Open;
             return CommandResult.Accept(new InventoryToggled(game.Tick, c.Player, v.Open));
@@ -474,6 +490,8 @@ namespace MindAttic.Overworld.Core
             var v = For(player);
             if (v.Open)
             {
+                // selectInventory*: not while the book is shown (its pages take left and right).
+                if (BookShown(player)) return;
                 var count = Inventory.Items.Count;
                 var last = Math.Max(0, count - 1);
                 var slot = v.Cursor;
@@ -574,6 +592,13 @@ namespace MindAttic.Overworld.Core
             }
 
             if (!v.Open) return events.ToArray();
+            // With the book shown the drop key hides it and drops nothing.
+            if (BookShown(player))
+            {
+                Books.SetShown(player, false, tick, events);
+                return events.ToArray();
+            }
+
             if (Inventory.Items.Count == 0)
             {
                 Close(player, tick, events);

@@ -17,8 +17,9 @@ namespace MindAttic.Overworld.Core
     /// / MONEY; CHANGE ENEMY / BADGUY HEALTH, AI (stubs until the battle stories); CHANGE LIGHT AMBIENT (r,g,b or +/-n),
     /// RED, GREEN, BLUE; CHANGE TIME HOUR / CLOCK (set, the next day when earlier, or +/-n hours, the period and light
     /// settled) and DAYPERIOD (to the period's hour, the light following on the minute); CHANGE SCRIPT COLOR, RUNNING;
-    /// CHANGE CAMERA / CAM X, Y, Z, POS HERO; CHANGE INVENTORY OPEN / CLOSE; CHANGE OPTIONS OPEN / CLOSE and CHANGE BOOK
-    /// (recorded in <see cref="ScriptState"/> for the screens of stories A20 and A16); CHANGE CURSOR POS CENTER; MOVE HERO
+    /// CHANGE CAMERA / CAM X, Y, Z, POS HERO; CHANGE INVENTORY OPEN / CLOSE; CHANGE OPTIONS OPEN / CLOSE (recorded in
+    /// <see cref="ScriptState"/> for the options screen of story A20); CHANGE BOOK (the player's book, <see cref="Books"/>);
+    /// CHANGE CURSOR POS CENTER; MOVE HERO
     /// TO x,y,z (walks the hero there and runs until it arrives); RUN NIGHT; MAKE (nothing, as in the original). An
     /// unknown item of a known type is an error ("Script failed to execute.", the other commands still run); a number that
     /// is not one stops the script ("Script failed to run."). Unknown commands and types do nothing, as before.
@@ -44,7 +45,7 @@ namespace MindAttic.Overworld.Core
         public ScriptData Data { get; }
         public Party Party { get; }
 
-        /// <summary>The party's purse (GOLD) and pack (CHANGE BOOK TO ITEM).</summary>
+        /// <summary>The party's purse (GOLD) and pack (CHANGE BOOK TO ITEM names the book by its selected stack).</summary>
         public Inventory Inventory { get; }
 
         /// <summary>The sleep AI LAYDOWN starts and the ambient CHANGE LIGHT AMBIENT sets (null: a laid hero only lies down).</summary>
@@ -61,6 +62,9 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>Where the failure messages go (null: none are shown).</summary>
         public MessageBoard Messages { get; set; }
+
+        /// <summary>The books CHANGE BOOK loads, shows and styles (null: CHANGE BOOK does nothing).</summary>
+        public BookReader Books { get; set; }
 
         public ScriptInterpreter Install(Game game)
         {
@@ -783,61 +787,55 @@ namespace MindAttic.Overworld.Core
             run.Events.Add(new ScriptSettingChanged(run.Tick, run.Player, "OPTIONS " + c.Item));
         }
 
-        /// <summary>cmdChangeBook: which book, shown or not, its numbering, cover and lettering (recorded until story A16 draws it).</summary>
+        /// <summary>
+        /// cmdChangeBook on the player's book (<see cref="Books"/>): TO / TITLE / CURRENT ITEM loads the book named like the
+        /// pack's selected stack, NUM / NUMBER n loads book n (one that is not a book stops the script: the original read
+        /// past its tables; BIBLE), SHOW ON / OFF, NUMSYS / NUMBERING, COLOR / COVER and FONT / LETTERING; an unknown word
+        /// for a known item does nothing, as before.
+        /// </summary>
         void ChangeBook(Command c, RunContext run)
         {
-            var book = run.State.Book;
             var p = c.Parameter;
             switch (c.Item)
             {
                 case "TO": case "TITLE": case "CURRENT":
-                    if (p != "ITEM") return;
+                    if (p != "ITEM" || Books == null) return;
                     // loadBook(items(currItem).Name): the selected stack's name.
                     var cursor = Pack != null ? Pack.For(run.Player).Cursor : 0;
-                    book.Title = cursor >= 0 && cursor < Inventory.Items.Count ? Inventory.Items[cursor].Name : string.Empty;
-                    book.Number = null;
+                    var title = cursor >= 0 && cursor < Inventory.Items.Count ? Inventory.Items[cursor].Name : string.Empty;
+                    Books.LoadTitle(run.Player, title, run.Tick, run.Events);
                     break;
                 case "NUM": case "NUMBER":
-                    book.Number = Integer(p);
-                    book.Title = null;
+                    var number = Integer(p);
+                    if (Books != null && !Books.LoadNumber(run.Player, number, run.Tick, run.Events)) throw new ScriptException("There is no book " + number + ".");
                     break;
                 case "SHOW":
                     var on = OnOff(p);
-                    if (!on.HasValue) return;
-                    book.Show = on.Value;
+                    if (on.HasValue) Books?.SetShown(run.Player, on.Value, run.Tick, run.Events);
                     break;
                 case "NUMSYS": case "NUMBERING":
+                    BookNumbering numbering;
                     switch (p)
                     {
-                        case "STANDARD": book.Numbering = BookNumbering.Standard; break;
-                        case "ROMAN": case "ROMANNUMERAL": case "ROMANUMERAL": book.Numbering = BookNumbering.RomanNumeral; break;
-                        case "ANCHIENT": book.Numbering = BookNumbering.Ancient; break;
-                        case "NONE": book.Numbering = BookNumbering.None; break;
+                        case "STANDARD": numbering = BookNumbering.Standard; break;
+                        case "ROMAN": case "ROMANNUMERAL": case "ROMANUMERAL": numbering = BookNumbering.RomanNumeral; break;
+                        case "ANCHIENT": numbering = BookNumbering.Ancient; break;
+                        case "NONE": numbering = BookNumbering.None; break;
                         default: return;
                     }
 
+                    Books?.SetNumbering(run.Player, numbering, run.Tick, run.Events);
                     break;
                 case "COLOR": case "COVER":
-                    if (p != "BROWN" && p != "BLUE") return;
-                    book.Cover = p;
+                    Books?.SetCover(run.Player, p, run.Tick, run.Events);
                     break;
                 case "FONT": case "LETTERING":
-                    switch (p)
-                    {
-                        case "ARIAL": case "CALISTO": case "ARIALNARROW": case "AMOUNT": case "CORSIVA": case "CORSIVA8":
-                            book.Font = p;
-                            break;
-                        default:
-                            return; // SYMBOL did nothing
-                    }
-
+                    Books?.SetLettering(run.Player, p, run.Tick, run.Events); // SYMBOL, or any other word, does nothing
                     break;
                 default:
                     run.Error = true;
                     return;
             }
-
-            run.Events.Add(new ScriptSettingChanged(run.Tick, run.Player, "BOOK " + c.Item));
         }
 
         /// <summary>

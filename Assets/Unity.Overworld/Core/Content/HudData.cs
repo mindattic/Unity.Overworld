@@ -13,13 +13,14 @@ namespace MindAttic.Overworld.Core
         public byte B { get; }
     }
 
-    /// <summary>One of the original's D3DX fonts (Fonts.vb): the faces to try in order, its size in points and weight.</summary>
+    /// <summary>One of the original's D3DX fonts (Fonts.vb): the faces to try in order, its size in points, weight and slant.</summary>
     public sealed class HudFont
     {
         public string Name { get; internal set; }
         public IReadOnlyList<string> Families { get; internal set; }
         public float Points { get; internal set; }
         public bool Bold { get; internal set; }
+        public bool Italic { get; internal set; }
     }
 
     /// <summary>A line of text written at a point of the 640 x 480 screen, left and top aligned, in a font and colour.</summary>
@@ -417,6 +418,89 @@ namespace MindAttic.Overworld.Core
     }
 
     /// <summary>
+    /// The book (Book.vb renderBook and loadBooks, Script.cmdChangeBook, RECONSTRUCTION 11): the cover's picture over (X, Y)
+    /// of Width x Height, the two pages written from the book's corner in its lettering and the two page numbers in
+    /// <see cref="NumberFont"/>, all in <see cref="Colour"/>; the covers and letterings a script names by word; and how a
+    /// player's book starts (<see cref="StartTitle"/> in <see cref="StartLettering"/>), how every load numbers it, and the
+    /// N key's lettering.
+    /// </summary>
+    public sealed class BookScreenDefinition
+    {
+        public float X { get; internal set; }
+        public float Y { get; internal set; }
+        public float Width { get; internal set; }
+        public float Height { get; internal set; }
+
+        /// <summary>The plain cover (book.png), the one shown until a script names another.</summary>
+        public string Picture { get; internal set; }
+
+        /// <summary>The pages' and numbers' colour (opaque black).</summary>
+        public TextColour Colour { get; internal set; }
+
+        /// <summary>The left and right pages' text, from the book's corner (+30, +30) and (+320, +30).</summary>
+        public DataPoint LeftPage { get; internal set; }
+
+        public DataPoint RightPage { get; internal set; }
+
+        /// <summary>The left and right page numbers, from the book's corner (+150, +405) and (+440, +405).</summary>
+        public DataPoint LeftNumber { get; internal set; }
+
+        public DataPoint RightNumber { get; internal set; }
+
+        public HudFont NumberFont { get; internal set; }
+
+        /// <summary>The numbering every load gives a book (loadBook's numSystem: Roman from every caller).</summary>
+        public BookNumbering Numbering { get; internal set; }
+
+        /// <summary>The book loaded at start-up (loadBooks: Grimoire de'Alchemiste) and its lettering (CORSIVA8).</summary>
+        public string StartTitle { get; internal set; }
+
+        public string StartLettering { get; internal set; }
+
+        /// <summary>The lettering the N key loads a book in (fontCorsiva).</summary>
+        public string NextLettering { get; internal set; }
+
+        /// <summary>The covers by script word (BROWN, BLUE) and their pictures.</summary>
+        public IReadOnlyList<(string Word, string Picture)> Covers { get; internal set; }
+
+        /// <summary>The letterings by script word (ARIAL, CALISTO, ARIALNARROW, AMOUNT, CORSIVA, CORSIVA8) and their fonts.</summary>
+        public IReadOnlyList<(string Word, HudFont Font)> Letterings { get; internal set; }
+
+        /// <summary>The picture of cover <paramref name="word"/>, the plain one for null, or null for a word that is no cover.</summary>
+        public string CoverPicture(string word)
+        {
+            if (word == null) return Picture;
+            foreach (var (w, picture) in Covers) if (w == word) return picture;
+            return null;
+        }
+
+        /// <summary>The font of lettering <paramref name="word"/>, or null for a word that is no lettering.</summary>
+        public HudFont Lettering(string word)
+        {
+            foreach (var (w, font) in Letterings) if (w == word) return font;
+            return null;
+        }
+
+        /// <summary>
+        /// renderBook's text for <paramref name="view"/> of <paramref name="book"/>: the left page, the right page (empty past
+        /// the last), and the two numbers, each with its point on the 640 x 480 screen and font, in draw order.
+        /// </summary>
+        public List<(string Text, DataPoint At, HudFont Font)> Lines(BookDefinition book, BookView view)
+        {
+            var pages = book.Pages;
+            string Page(int n) => n >= 0 && n < pages.Count ? pages[n] : string.Empty;
+            var lettering = Lettering(view.Lettering);
+            return new List<(string, DataPoint, HudFont)>
+            {
+                (Page(view.Page), new DataPoint(X + LeftPage.X, Y + LeftPage.Y), lettering),
+                (Page(view.Page + 1), new DataPoint(X + RightPage.X, Y + RightPage.Y), lettering),
+                (BookReader.PageNumber(view.Numbering, view.Page + 1), new DataPoint(X + LeftNumber.X, Y + LeftNumber.Y), NumberFont),
+                (BookReader.PageNumber(view.Numbering, view.Page + 2), new DataPoint(X + RightNumber.X, Y + RightNumber.Y), NumberFont),
+            };
+        }
+    }
+
+    /// <summary>
     /// The heads-up text (hud.json): the virtual screen the original drew on, its fonts, where the clock's lines go on the
     /// HUD and the hero screen, and how messages show.
     /// </summary>
@@ -472,6 +556,9 @@ namespace MindAttic.Overworld.Core
         /// <summary>The quest screen (Page Down) and the objectives' markers.</summary>
         public QuestScreenDefinition QuestScreen { get; internal set; }
 
+        /// <summary>The book (B, N, a book item) and how each player's starts.</summary>
+        public BookScreenDefinition Book { get; internal set; }
+
         /// <summary>The rest prompt for one hour ("Rest for {0} hour?").</summary>
         public string RestOne { get; internal set; }
 
@@ -502,7 +589,7 @@ namespace MindAttic.Overworld.Core
             var fonts = new List<HudFont>();
             foreach (var r in root.Objects("fonts"))
             {
-                var f = new HudFont { Name = r.Text("name"), Families = r.Texts("families"), Points = r.Positive("points"), Bold = r.Flag("bold") };
+                var f = new HudFont { Name = r.Text("name"), Families = r.Texts("families"), Points = r.Positive("points"), Bold = r.Flag("bold"), Italic = r.Flag("italic", false) };
                 r.Check(f.Families.Count > 0, "families", "must name at least one face");
                 if (fonts.Exists(o => o.Name == f.Name)) r.Fail("name", "\"" + f.Name + "\" is listed twice");
                 r.Done();
@@ -610,6 +697,7 @@ namespace MindAttic.Overworld.Core
             target.Check(data.Target.Picture.StartsWith("gfx/", StringComparison.Ordinal), "picture", "must be a path under gfx/");
             target.Done();
             data.QuestScreen = ReadQuestScreen(root.Section("questScreen"), data, fonts);
+            data.Book = ReadBook(root.Section("book"), data, fonts);
 
             var m = root.Section("messages");
             var tuning = new MessageTuning
@@ -755,6 +843,55 @@ namespace MindAttic.Overworld.Core
             return screen;
         }
 
+        static BookScreenDefinition ReadBook(ContentReader r, HudData data, List<HudFont> fonts)
+        {
+            var book = new BookScreenDefinition
+            {
+                X = r.Number("x", 0f, data.ScreenWidth),
+                Y = r.Number("y", 0f, data.ScreenHeight),
+                Width = r.Positive("width"),
+                Height = r.Positive("height"),
+                Picture = ReadPicture(r, "picture"),
+                Colour = ReadColour(r, "colour"),
+                LeftPage = r.Pair("leftPage", 0f, data.ScreenWidth),
+                RightPage = r.Pair("rightPage", 0f, data.ScreenWidth),
+                LeftNumber = r.Pair("leftNumber", 0f, data.ScreenWidth),
+                RightNumber = r.Pair("rightNumber", 0f, data.ScreenWidth),
+                Numbering = r.Choice<BookNumbering>("numbering"),
+                StartTitle = r.Text("startTitle"),
+                StartLettering = r.Text("startLettering"),
+                NextLettering = r.Text("nextLettering"),
+            };
+            book.NumberFont = ReadFont(r, fonts, "numberFont");
+            var covers = new List<(string, string)>();
+            foreach (var c in r.Objects("covers"))
+            {
+                var word = c.Text("word");
+                var picture = ReadPicture(c, "picture");
+                if (covers.Exists(o => o.Item1 == word)) c.Fail("word", "\"" + word + "\" is listed twice");
+                c.Done();
+                covers.Add((word, picture));
+            }
+
+            var letterings = new List<(string, HudFont)>();
+            foreach (var l in r.Objects("letterings"))
+            {
+                var word = l.Text("word");
+                var font = ReadFont(l, fonts);
+                if (letterings.Exists(o => o.Item1 == word)) l.Fail("word", "\"" + word + "\" is listed twice");
+                l.Done();
+                letterings.Add((word, font));
+            }
+
+            book.Covers = covers;
+            book.Letterings = letterings;
+            r.Check(book.Lettering(book.StartLettering) != null, "startLettering", "must be one of the letterings");
+            r.Check(book.Lettering(book.NextLettering) != null, "nextLettering", "must be one of the letterings");
+            r.Check(book.X + book.Width <= data.ScreenWidth && book.Y + book.Height <= data.ScreenHeight, "x", "must keep the book on the screen");
+            r.Done();
+            return book;
+        }
+
         static ScreenButtonDefinition ReadButton(ContentReader r, HudData data)
         {
             var position = r.Pair("position", 0f);
@@ -808,11 +945,11 @@ namespace MindAttic.Overworld.Core
             return text;
         }
 
-        static HudFont ReadFont(ContentReader r, List<HudFont> fonts)
+        static HudFont ReadFont(ContentReader r, List<HudFont> fonts, string key = "font")
         {
-            var name = r.Text("font");
+            var name = r.Text(key);
             var font = fonts.Find(f => f.Name == name);
-            if (font == null && name.Length > 0) r.Fail("font", "\"" + name + "\" is not one of the fonts");
+            if (font == null && name.Length > 0) r.Fail(key, "\"" + name + "\" is not one of the fonts");
             return font;
         }
     }

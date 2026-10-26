@@ -44,6 +44,7 @@ namespace MindAttic.Overworld.Tests
         SleepCycle sleep;
         MessageBoard messages;
         ScriptInterpreter scripts;
+        BookReader books;
         List<IGameEvent> raised;
         Hero chrono, belmont;
 
@@ -64,6 +65,9 @@ namespace MindAttic.Overworld.Tests
             }.Install(game);
             pickups.Scripts = scripts;
             pack.Scripts = scripts;
+            books = new BookReader(Registry.Books, Registry.Hud.Book, party).Install(game);
+            scripts.Books = books;
+            pack.Books = books;
             party.Install(game);
             view.Install(game);
             sleep.Install(game);
@@ -438,8 +442,12 @@ namespace MindAttic.Overworld.Tests
             Run("CHANGE OPTIONS CLOSE TRUE");
             Assert.IsFalse(State.OptionsOpen);
             Run("CHANGE BOOK NUM 2 | CHANGE BOOK NUMSYS ANCHIENT | CHANGE BOOK COLOR BLUE | CHANGE BOOK LETTERING CALISTO | CHANGE BOOK SHOW ON");
-            var book = State.Book;
-            Assert.AreEqual((2, (string)null, BookNumbering.Ancient, "BLUE", "CALISTO", true), (book.Number, book.Title, book.Numbering, book.Cover, book.Font, book.Show));
+            var book = books.For(PlayerId.One);
+            Assert.AreEqual(("Grimoire de'Alchemiste", BookNumbering.Ancient, "BLUE", "CALISTO", true), (books.Current(PlayerId.One).Title, book.Numbering, book.Cover, book.Lettering, book.Shown),
+                "book 2 in folder order");
+            Assert.AreEqual(ScriptOutcome.Crashed, Run("CHANGE BOOK NUM 5"), "there is no book 5");
+            Assert.AreEqual(ScriptOutcome.Ran, Run("CHANGE BOOK COVER GREEN | CHANGE BOOK FONT SYMBOL"), "an unknown cover or lettering does nothing");
+            Assert.AreEqual(("BLUE", "CALISTO"), (book.Cover, book.Lettering));
             Assert.AreEqual(ScriptOutcome.Failed, Run("CHANGE BOOK PAGE 3"));
             Assert.AreEqual(ScriptOutcome.Failed, Run("CHANGE INVENTORY SWAP ON"));
 

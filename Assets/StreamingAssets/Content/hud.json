@@ -5,7 +5,9 @@
     {"name": "fontCalisto", "families": ["Calisto MT", "Georgia", "Times New Roman"], "points": 8, "bold": true},
     {"name": "fontArial", "families": ["Arial"], "points": 10, "bold": true},
     {"name": "fontArialNarrow24", "families": ["Arial Narrow", "Arial"], "points": 24, "bold": false},
-    {"name": "fontAmount", "families": ["Small Fonts", "Arial"], "points": 7, "bold": false}
+    {"name": "fontAmount", "families": ["Small Fonts", "Arial"], "points": 7, "bold": false},
+    {"name": "fontCorsiva8", "families": ["Monotype Corsiva", "Palatino Linotype", "Georgia"], "points": 8, "bold": false, "italic": true},
+    {"name": "fontCorsiva", "families": ["Monotype Corsiva", "Palatino Linotype", "Georgia"], "points": 12, "bold": false, "italic": true}
   ],
   "clock": {
     "_note": "renderStatus writes the day period's name at (5, iHeight - 70) and the time at (5, iHeight - 57) in fontCalisto, (128, 255, 255, 0).",
@@ -124,6 +126,33 @@
     "finishedText": "o {0}",
     "marker": "*",
     "markerScale": 0.02
+  },
+  "book": {
+    "_note": "Book.vb renderBook while bBook is on: texBook (book.png, or book_brown / book_blue once CHANGE BOOK COVER names them; loaded at 550 x 392) on the BookWidth x BookHeight (600 x 450) quad at bookOffset (20, 20) (its top edge's v was 2 / 600 and 2 / 450 rather than 0, which crops under a pixel row of the picture; not reproduced), then the pages currPage and currPage + 1 at +(30, 30) and +(320, 30) in the book's font, and their numbers at +(150, 405) and +(440, 405) in fontAmount, all (255, 0, 0, 0). The page files are hand-wrapped and drawn as they are. loadBooks loads 'Grimoire de'Alchemiste' in fontCorsiva8 with Roman numerals; every loadBook call numbers Roman; frmMain's N loads the next book in fontCorsiva. The letterings are cmdChangeBook's FONT words; SYMBOL did nothing.",
+    "x": 20, "y": 20, "width": 600, "height": 450,
+    "picture": "gfx/gui/book.PNG",
+    "covers": [
+      {"word": "BROWN", "picture": "gfx/gui/book_brown.PNG"},
+      {"word": "BLUE", "picture": "gfx/gui/book_blue.PNG"}
+    ],
+    "letterings": [
+      {"word": "ARIAL", "font": "fontArial"},
+      {"word": "CALISTO", "font": "fontCalisto"},
+      {"word": "ARIALNARROW", "font": "fontArialNarrow24"},
+      {"word": "AMOUNT", "font": "fontAmount"},
+      {"word": "CORSIVA", "font": "fontCorsiva"},
+      {"word": "CORSIVA8", "font": "fontCorsiva8"}
+    ],
+    "colour": [255, 0, 0, 0],
+    "leftPage": [30, 30],
+    "rightPage": [320, 30],
+    "numberFont": "fontAmount",
+    "leftNumber": [150, 405],
+    "rightNumber": [440, 405],
+    "numbering": "RomanNumeral",
+    "startTitle": "Grimoire de'Alchemiste",
+    "startLettering": "CORSIVA8",
+    "nextLettering": "CORSIVA"
   },
   "messages": {
     "_note": "Messages.vb: up to maxMessages waiting (a message added to a full queue replaces the last); the next is shown at the screen centre, x less 6 / 2 per character, once the last shown is more than 'spacing' pixels below the centre or gone; each shown message loses 'fade' alpha and drops 'drift' pixels a tick, starting at alpha 255, and is gone at 0. The period announcements use fontArialNarrow24 in white.",

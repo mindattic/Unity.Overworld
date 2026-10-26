@@ -309,7 +309,7 @@ namespace MindAttic.Overworld.Core
                 var hero = Leader(player);
                 var focus = Focus != null ? Focus(player) : InputFocus.World;
                 var questScreen = QuestScreenOpenFor(player);
-                ApplyInput(hero, input, focus, questScreen);
+                ApplyInput(hero, input, focus, questScreen, BookShownFor(player));
                 if (input.Move && focus != InputFocus.Inventory && !questScreen) moveHeld[hero.Index] = true;
             }
 
@@ -510,6 +510,15 @@ namespace MindAttic.Overworld.Core
 
         bool QuestScreenOpenFor(PlayerId player) => QuestScreenOpen != null && QuestScreenOpen(player);
 
+        /// <summary>
+        /// True while a player's book is shown (bBook): left and right only mark the direction held (they turn its pages);
+        /// up, down and the move button still move the leader, as they did (the move button also hides the book). Null:
+        /// never shown.
+        /// </summary>
+        public Func<PlayerId, bool> BookShown { get; set; }
+
+        bool BookShownFor(PlayerId player) => BookShown != null && BookShown(player);
+
         /// <summary>The party's experience (Root.Experience): the quests' rewards add to it; nothing in the original spent it.</summary>
         public int Experience { get; internal set; }
 
@@ -611,10 +620,11 @@ namespace MindAttic.Overworld.Core
 
         // ---- input (Input.getKeyboard, getMouse, KeysUp) ----------------------------------------------------------
 
-        void ApplyInput(Hero hero, MoveInput input, InputFocus focus, bool questScreen)
+        void ApplyInput(Hero hero, MoveInput input, InputFocus focus, bool questScreen, bool book)
         {
             var packOpen = focus == InputFocus.Inventory;
-            var choosing = focus == InputFocus.Target;
+            // Left and right only mark their direction while a target is chosen or the book is shown.
+            var choosing = focus == InputFocus.Target || book;
 
             // actionRun: running needs stamina (with the pack open the run key swaps instead).
             if (input.Run && !packOpen) hero.Running = hero.Stamina > 0;

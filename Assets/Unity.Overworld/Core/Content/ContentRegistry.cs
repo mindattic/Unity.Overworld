@@ -145,7 +145,8 @@ namespace MindAttic.Overworld.Core
             registry.Books = BookData.Read(source, manifest.Text("books"), errors);
             registry.View = ViewData.Read(source, manifest.Text("view"), registry.Props, errors);
             registry.Time = TimeData.Read(source, manifest.Text("time"), errors);
-            registry.Hud = HudData.Read(source, manifest.Text("hud"), errors);
+            var hudFile = manifest.Text("hud");
+            registry.Hud = HudData.Read(source, hudFile, errors);
             registry.Scripts = ScriptData.Read(source, manifest.Text("scripts"), registry.Hud, errors);
             manifest.Done();
 
@@ -156,6 +157,10 @@ namespace MindAttic.Overworld.Core
                     if (p.Script.Contains("CHANGE BOOK TO ITEM") && registry.Books.Find(p.Name) == null)
                         errors.Add(pickupsFile + ": pickup " + p.Index + " (" + p.Name + ") opens a book of its own name, and there is no such book");
             }
+
+            // The book every player starts with must be one of the books.
+            if (registry.Hud?.Book != null && registry.Books != null && registry.Books.Find(registry.Hud.Book.StartTitle) == null)
+                errors.Add(hudFile + ": book.startTitle \"" + registry.Hud.Book.StartTitle + "\" is not one of the books");
 
             // The playable world is the same export read a second time; a problem in a row no fix touches would otherwise be named twice.
             var unique = new HashSet<string>();

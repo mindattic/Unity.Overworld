@@ -92,50 +92,15 @@ namespace MindAttic.Overworld.Core
         public bool Running { get; }
     }
 
-    /// <summary>A script changed a book or options setting (recorded for the book and options screens, stories A16 and A20).</summary>
+    /// <summary>A script changed an options setting (recorded for the options screen, story A20).</summary>
     public sealed class ScriptSettingChanged : IGameEvent
     {
         public ScriptSettingChanged(long tick, PlayerId player, string setting) { Tick = tick; Player = player; Setting = setting; }
         public long Tick { get; }
         public PlayerId Player { get; }
 
-        /// <summary>The command's type and item ("BOOK SHOW", "OPTIONS OPEN").</summary>
+        /// <summary>The command's type and item ("OPTIONS OPEN").</summary>
         public string Setting { get; }
-    }
-
-    /// <summary>The page numbering of a book (theBook.numSys).</summary>
-    public enum BookNumbering
-    {
-        Standard,
-        RomanNumeral,
-        Ancient,
-        None,
-    }
-
-    /// <summary>
-    /// What CHANGE BOOK set (cmdChangeBook): shown or not, which book (by the title of the item it was opened from, or its
-    /// number), the numbering, cover and lettering. Recorded here; the book story (A16) opens and draws it.
-    /// </summary>
-    public sealed class BookSettings
-    {
-        internal BookSettings() { }
-
-        /// <summary>bBook: the book is shown.</summary>
-        public bool Show { get; internal set; }
-
-        /// <summary>The book to open, by title (CHANGE BOOK TO ITEM: the selected item's name), or null.</summary>
-        public string Title { get; internal set; }
-
-        /// <summary>The book to open, by number (CHANGE BOOK NUM n), or null.</summary>
-        public int? Number { get; internal set; }
-
-        public BookNumbering Numbering { get; internal set; } = BookNumbering.RomanNumeral;
-
-        /// <summary>The cover (BROWN or BLUE), or null for the default.</summary>
-        public string Cover { get; internal set; }
-
-        /// <summary>The lettering (ARIAL, CALISTO, ARIALNARROW, AMOUNT, CORSIVA, CORSIVA8), or null for the default.</summary>
-        public string Font { get; internal set; }
     }
 
     /// <summary>A hero a MOVE HERO TO script walks, and the point it walks to.</summary>
@@ -179,8 +144,5 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>bOptions as CHANGE OPTIONS set it (the options screen is story A20's).</summary>
         public bool OptionsOpen { get; internal set; }
-
-        /// <summary>What CHANGE BOOK set (the book is story A16's).</summary>
-        public BookSettings Book { get; } = new BookSettings();
     }
 }
