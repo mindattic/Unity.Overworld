@@ -44,7 +44,7 @@ namespace MindAttic.Overworld.Runtime
     /// <see cref="ApplyScriptedInventory"/>); the console's <c>-overworld-script</c>, <c>-overworld-console</c> and
     /// <c>-overworld-script-after</c> (see <see cref="ApplyScriptedConsole"/>); the quests' <c>-overworld-objective</c> and
     /// <c>-overworld-quest-screen</c> (see <see cref="ApplyScriptedQuests"/>); the books' <c>-overworld-book</c> (see
-    /// <see cref="ApplyScriptedBook"/>);
+    /// <see cref="ApplyScriptedBook"/>); the weather's <c>-overworld-weather</c> (see <see cref="ApplyScriptedWeather"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -90,8 +90,11 @@ namespace MindAttic.Overworld.Runtime
         public ScriptInterpreter Scripts { get; private set; }
         public QuestLog Quests { get; private set; }
         public BookReader Books { get; private set; }
+        public Weather Weather { get; private set; }
+        public Clouds Clouds { get; private set; }
 
         public const string BookArgument = "-overworld-book";
+        public const string WeatherArgument = "-overworld-weather";
 
         public const string QuestScreenArgument = "-overworld-quest-screen";
         public const string ObjectiveArgument = "-overworld-objective";
@@ -124,6 +127,10 @@ namespace MindAttic.Overworld.Runtime
             var seed = 0;
             var seeded = seedText != null && int.TryParse(seedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out seed);
             if (seedText != null && !seeded) Debug.LogError("Unity.Overworld: " + SeedArgument + " wants a whole number, not '" + seedText + "'.");
+            // updateCloud and updateRain ran first after getInput: the clouds, then the weather, step before everything else.
+            // Their scatter was the clock's random too; -overworld-seed fixes it with the pickups'.
+            Clouds = new Clouds(Content.Scenery, seeded ? new System.Random(seed) : null).Install(game);
+            Weather = new Weather(Content.Scenery, seeded ? new System.Random(seed + 1) : null).Install(game);
             Pickups = new Pickups(Content.Pickups, Party, null, seeded ? new System.Random(seed) : null).Install(game);
             // getInput's inventory keys acted before the heroes: the pack steps after the pickups and before the party.
             Control = new CameraControl(Content.View, Party);
@@ -168,6 +175,8 @@ namespace MindAttic.Overworld.Runtime
             World.LightBy(Clock);
             World.DimBy(Sleep);
             World.ShowPickups(Pickups);
+            World.ShowWeather(Weather, game);
+            World.ShowClouds(Clouds, game);
             Hud = HudPresenter.Create(Content.Hud, Clock, Messages);
             Hud.transform.SetParent(transform, false);
             Hud.ShowVitals(Party, PlayerId.One);
@@ -203,7 +212,8 @@ namespace MindAttic.Overworld.Runtime
             var typed = ApplyScriptedConsole(args, game);
             var quested = ApplyScriptedQuests(args, game);
             var read = ApplyScriptedBook(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || seeded || capture != null) Input.UseDevices = false;
+            var weathered = ApplyScriptedWeather(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || weathered || seeded || capture != null) Input.UseDevices = false;
 
             if (capture != null)
             {
@@ -1054,6 +1064,53 @@ namespace MindAttic.Overworld.Runtime
             Debug.Log("Unity.Overworld: scripted book " + DescribeBook());
         }
 
+        /// <summary>
+        /// <c>-overworld-weather &lt;snowing|raining|clear|leaves|dust[,seconds]&gt;</c>: the weather set to that mode (the
+        /// original's names, FallingLeaves and DustStorm, also do), at once or after that many seconds, as W would cycle to it.
+        /// </summary>
+        bool ApplyScriptedWeather(string[] args, Game game)
+        {
+            var text = ArgumentAfter(args, WeatherArgument);
+            if (text == null) return false;
+            if (TryWeather(text, out var kind, out var seconds)) StartCoroutine(WeatherAfter(game, kind, seconds));
+            else Debug.LogError("Unity.Overworld: " + WeatherArgument + " wants snowing, raining, clear, leaves or dust and optionally the seconds to wait, not '" + text + "'.");
+            return true;
+        }
+
+        /// <summary>Reads <c>kind[,seconds]</c>.</summary>
+        public static bool TryWeather(string text, out WeatherKind kind, out float seconds)
+        {
+            kind = WeatherKind.Snowing;
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 2) return false;
+            switch (parts[0].Trim().ToLowerInvariant())
+            {
+                case "snowing": case "snow": kind = WeatherKind.Snowing; break;
+                case "raining": case "rain": kind = WeatherKind.Raining; break;
+                case "clear": kind = WeatherKind.Clear; break;
+                case "fallingleaves": case "leaves": kind = WeatherKind.FallingLeaves; break;
+                case "duststorm": case "dust": kind = WeatherKind.DustStorm; break;
+                default: return false;
+            }
+
+            return parts.Length < 2 || (float.TryParse(parts[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f);
+        }
+
+        IEnumerator WeatherAfter(Game game, WeatherKind kind, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var r = game.Submit(new SetWeather(PlayerId.One, kind));
+            if (!r.Accepted) Debug.LogError("Unity.Overworld: " + WeatherArgument + " was refused: " + r.Reason);
+            Debug.Log("Unity.Overworld: scripted weather " + Weather.Kind);
+        }
+
+        string DescribeScenery() =>
+            Weather.Kind + ", " + (World != null && World.WeatherQuads != null && World.WeatherRenderer.enabled ? World.WeatherQuads.LastShown : 0) + " of " + Weather.Count +
+            " particles drawn; " + (World != null && World.CloudQuads != null && World.CloudsRenderer.enabled ? World.CloudQuads.LastShown : 0) + " of " + Clouds.Count +
+            " clouds drawn; tent " + (World != null && World.TentRenderer.enabled ? "drawn" : "culled") +
+            (World != null ? ", light " + World.Tint : "");
+
         string DescribeScripts()
         {
             var s = Scripts.For(PlayerId.One);
@@ -1191,6 +1248,8 @@ namespace MindAttic.Overworld.Runtime
                     Debug.Log("Unity.Overworld: scripts " + DescribeScripts() +
                               (Hud != null && Hud.ConsoleLabel != null && Hud.ConsoleLabel.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex
                                   ? ", prompt '" + Hud.ConsoleLabel.text + "'" : ""));
+
+                if (Weather != null && Clouds != null) Debug.Log("Unity.Overworld: weather " + DescribeScenery());
 
                 if (Books != null)
                     Debug.Log("Unity.Overworld: book " + DescribeBook() +

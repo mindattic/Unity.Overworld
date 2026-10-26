@@ -14,6 +14,17 @@ namespace MindAttic.Overworld.Editor
 
         static bool IsOriginalArt(string path) => path.Replace('\\', '/').StartsWith(ArtFolder, System.StringComparison.Ordinal);
 
+        /// <summary>The pictures packed into the clouds' atlas (<c>WorldViewPresenter.ShowClouds</c>).</summary>
+        public static readonly string[] PackedArt = { ArtFolder + "Resources/gfx/clouds/", ArtFolder + "Resources/gfx/balloon." };
+
+        public static bool IsPacked(string path)
+        {
+            var p = path.Replace('\\', '/');
+            foreach (var prefix in PackedArt)
+                if (p.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
+        }
+
         /// <summary>Bump when the import changes, so every original picture is imported again.</summary>
         public override uint GetVersion() => 2;
 
@@ -30,7 +41,9 @@ namespace MindAttic.Overworld.Editor
             importer.alphaSource = TextureImporterAlphaSource.FromInput;
             importer.alphaIsTransparency = false;
             importer.sRGBTexture = true;
-            importer.isReadable = false;
+            // The clouds and the balloon are packed into one picture at run time (one mesh draws all 401 in the original's
+            // order), which needs their pixels on the CPU; nothing else is read back.
+            importer.isReadable = IsPacked(assetPath);
             importer.maxTextureSize = 2048;
 
             // The originals are 24-bit; keep an alpha channel so the colour key survives import on every platform.

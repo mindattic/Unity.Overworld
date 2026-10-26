@@ -28,6 +28,14 @@ namespace MindAttic.Overworld.Runtime
         /// <summary>The status icons are drawn in front of the heroes and every object (renderIcon, layer 4), under the cursor and team button.</summary>
         public const int StatusIconOrder = CursorOrder - 10;
 
+        /// <summary>The tent is drawn after the tiles and before the pickups (renderTent, first of layer 1).</summary>
+        public const int TentOrder = TilesOrder + 50;
+
+        /// <summary>The weather, then the clouds, are layer 4's last draws (renderRain, renderCloud): after the status icons, under the HUD's quads and the cursor.</summary>
+        public const int WeatherOrder = StatusIconOrder + 1;
+
+        public const int CloudsOrder = StatusIconOrder + 2;
+
         static readonly int MainTex = Shader.PropertyToID("_MainTex");
 
         readonly List<KeyValuePair<AreaTileDefinition, MeshRenderer>> tiles = new List<KeyValuePair<AreaTileDefinition, MeshRenderer>>();
@@ -225,6 +233,135 @@ namespace MindAttic.Overworld.Runtime
             TargetRenderer.enabled = View.Camera.InRange(x, y) && HasTexture(TargetRenderer);
         }
 
+        /// <summary>The tent's quad (renderTent), culled by the render range on x and y.</summary>
+        public MeshRenderer TentRenderer { get; private set; }
+
+        /// <summary>The weather drawn (null: none).</summary>
+        public Weather Weather { get; private set; }
+
+        /// <summary>The weather's one renderer: every particle a quad of one mesh, in index order.</summary>
+        public MeshRenderer WeatherRenderer { get; private set; }
+
+        /// <summary>The weather's quads (how many the last frame showed: <see cref="QuadBatch.LastShown"/>).</summary>
+        public QuadBatch WeatherQuads { get; private set; }
+
+        /// <summary>
+        /// Draws <paramref name="weather"/> from now on (renderRain): every particle within the render range on x, y and z
+        /// as a 0.04 quad of the mode's picture at its place, eased between its last two ticks, in the world's light; none
+        /// while the weather is Clear. One mesh, drawn after the status icons and before the clouds.
+        /// </summary>
+        public void ShowWeather(Weather weather, Game source = null)
+        {
+            Weather = weather;
+            if (source != null && game == null) game = source;
+            if (weather != null && WeatherRenderer == null)
+            {
+                WeatherQuads = new QuadBatch("Weather particles", weather.Count);
+                WeatherRenderer = NewRenderer("Weather", WeatherQuads.Mesh, weather.Current.Texture, WeatherOrder);
+            }
+
+            Refresh();
+        }
+
+        void RefreshWeather(float alpha)
+        {
+            if (Weather == null || WeatherRenderer == null) return;
+            var kind = Weather.Current;
+            if (!kind.Drawn)
+            {
+                WeatherRenderer.enabled = false;
+                return;
+            }
+
+            SetTexture(WeatherRenderer, kind.Texture);
+            var w = Weather.Data.Weather;
+            for (var i = 0; i < Weather.Count; i++)
+            {
+                var p = Weather[i];
+                var x = Mathf.LerpUnclamped(p.PreviousX, p.X, alpha);
+                var y = Mathf.LerpUnclamped(p.PreviousY, p.Y, alpha);
+                var z = Mathf.LerpUnclamped(p.PreviousZ, p.Z, alpha);
+                if (View.IsVisible(p.X, p.Y, p.Z)) WeatherQuads.Set(i, x, y, z, w.Width, w.HalfHeight);
+                else WeatherQuads.Hide(i);
+            }
+
+            WeatherQuads.Apply();
+            WeatherRenderer.enabled = HasTexture(WeatherRenderer);
+        }
+
+        /// <summary>The clouds drawn (null: none).</summary>
+        public Clouds Clouds { get; private set; }
+
+        /// <summary>The clouds' one renderer: every cloud a quad of one mesh over one picture of the cloud and balloon art, in index order.</summary>
+        public MeshRenderer CloudsRenderer { get; private set; }
+
+        public QuadBatch CloudQuads { get; private set; }
+
+        /// <summary>The cloud1, cloud2 and balloon pictures packed into one, so one mesh keeps the original's draw order (the first, farthest, first).</summary>
+        public Texture2D CloudAtlas { get; private set; }
+
+        /// <summary>
+        /// Draws <paramref name="clouds"/> from now on (renderCloud): every cloud within the render range on x, y and z as a
+        /// quad as wide and high as its width, of its picture, eased between its last two ticks, in the world's light, in
+        /// index order. One mesh, drawn after the weather and under the HUD's quads and the cursor.
+        /// </summary>
+        public void ShowClouds(Clouds clouds, Game source = null)
+        {
+            Clouds = clouds;
+            if (source != null && game == null) game = source;
+            if (clouds != null && CloudsRenderer == null)
+            {
+                var files = new List<string>();
+                for (var i = 0; i < clouds.Count; i++)
+                    if (!files.Contains(clouds.File(i))) files.Add(clouds.File(i));
+                var pictures = new Texture2D[files.Count];
+                for (var i = 0; i < files.Count; i++) pictures[i] = textures.Load(files[i]);
+
+                var rects = new Rect[files.Count];
+                if (System.Array.TrueForAll(pictures, p => p != null && p.isReadable))
+                {
+                    CloudAtlas = new Texture2D(2, 2, TextureFormat.RGBA32, false) { name = "Overworld cloud atlas" };
+                    rects = CloudAtlas.PackTextures(pictures, 2, 1024, false);
+                    CloudAtlas.filterMode = FilterMode.Bilinear;
+                    CloudAtlas.wrapMode = TextureWrapMode.Clamp;
+                }
+                else
+                {
+                    Debug.LogError("Unity.Overworld: the cloud pictures (" + string.Join(", ", files) + ") must be imported and readable to be packed; the clouds are not drawn.");
+                }
+
+                var uvs = new Rect[clouds.Count];
+                for (var i = 0; i < clouds.Count; i++) uvs[i] = rects[files.IndexOf(clouds.File(i))];
+                CloudQuads = new QuadBatch("Cloud quads", clouds.Count, uvs);
+                CloudsRenderer = NewRenderer("Clouds", CloudQuads.Mesh, null, CloudsOrder);
+                if (CloudAtlas != null)
+                {
+                    CloudsRenderer.GetPropertyBlock(block);
+                    block.SetTexture(MainTex, CloudAtlas);
+                    CloudsRenderer.SetPropertyBlock(block);
+                }
+            }
+
+            Refresh();
+        }
+
+        void RefreshClouds(float alpha)
+        {
+            if (Clouds == null || CloudsRenderer == null) return;
+            for (var i = 0; i < Clouds.Count; i++)
+            {
+                var c = Clouds[i];
+                var x = Mathf.LerpUnclamped(c.PreviousX, c.X, alpha);
+                var y = Mathf.LerpUnclamped(c.PreviousY, c.Y, alpha);
+                var width = Clouds.Width(i);
+                if (View.IsVisible(c.X, c.Y, c.Z)) CloudQuads.Set(i, x, y, c.Z, width, width / 2f);
+                else CloudQuads.Hide(i);
+            }
+
+            CloudQuads.Apply();
+            CloudsRenderer.enabled = CloudAtlas != null;
+        }
+
         /// <summary>Draws <paramref name="cursor"/> from now on: its picture, at its position plus the draw offset, over everything.</summary>
         public void ShowCursor(WorldCursor cursor)
         {
@@ -287,6 +424,10 @@ namespace MindAttic.Overworld.Runtime
                 tiles.Add(new KeyValuePair<AreaTileDefinition, MeshRenderer>(tile, r));
             }
 
+            var tent = view.Tent;
+            TentRenderer = NewRenderer("Tent", Quad(tent.Width, tent.HalfHeight), tent.File, TentOrder);
+            TentRenderer.transform.localPosition = new Vector3(tent.X, tent.Y, tent.Z);
+
             var objectRoot = new GameObject("Objects").transform;
             objectRoot.SetParent(transform, false);
             foreach (var d in view.Objects(Poses))
@@ -315,6 +456,7 @@ namespace MindAttic.Overworld.Runtime
             }
 
             foreach (var t in tiles) t.Value.enabled = View.IsVisible(t.Key) && HasTexture(t.Value);
+            TentRenderer.enabled = View.IsVisible(View.Tent) && HasTexture(TentRenderer);
 
             if (Pickups != null)
                 for (var i = 0; i < pickupRenderers.Count; i++)
@@ -340,6 +482,8 @@ namespace MindAttic.Overworld.Runtime
 
             RefreshStatusIcons(alpha);
             RefreshTarget(alpha);
+            RefreshWeather(alpha);
+            RefreshClouds(alpha);
 
             if (Cursor != null && CursorRenderer != null)
             {
@@ -422,6 +566,9 @@ namespace MindAttic.Overworld.Runtime
             if (Backdrop != null) Release(Backdrop.GetComponent<MeshFilter>().sharedMesh);
             Release(material);
             foreach (var m in iconMaterials) Release(m);
+            if (WeatherQuads != null) Release(WeatherQuads.Mesh);
+            if (CloudQuads != null) Release(CloudQuads.Mesh);
+            Release(CloudAtlas);
         }
 
         static void Release(Object o)
