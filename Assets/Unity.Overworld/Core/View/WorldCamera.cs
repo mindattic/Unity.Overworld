@@ -16,6 +16,7 @@ namespace MindAttic.Overworld.Core
             X = definition.StartX;
             Y = definition.StartY;
             Z = definition.StartZ;
+            Settle();
         }
 
         public CameraDefinition Definition { get; }
@@ -24,19 +25,52 @@ namespace MindAttic.Overworld.Core
         public float Y { get; private set; }
         public float Z { get; private set; }
 
+        /// <summary>Where the camera was at the start of the last tick (presentation eases between the two).</summary>
+        public float PreviousX { get; private set; }
+
+        public float PreviousY { get; private set; }
+        public float PreviousZ { get; private set; }
+
         /// <summary>When on (the F key), Z is not clamped.</summary>
         public bool FreeCamera { get; set; }
 
         /// <summary>renderRange = 1 + |Z|: how far from the camera, on each axis, a thing is still drawn.</summary>
         public float RenderRange => Definition.RenderRangeBase + Math.Abs(Z);
 
-        /// <summary>Moves the camera to (x, y, z), then applies the zoom limits as initCamera did every frame.</summary>
+        /// <summary>
+        /// Puts the camera at (x, y, z) at once (a jump, so there is nothing to ease from), then applies the zoom limits as
+        /// initCamera did every frame.
+        /// </summary>
         public void MoveTo(float x, float y, float z)
         {
             X = x;
             Y = y;
             Z = z;
             Clamp();
+            Settle();
+        }
+
+        /// <summary>Moves the camera by (dx, dy, dz) without the zoom limits (they apply once a tick, as initCamera did).</summary>
+        public void Move(float dx, float dy, float dz = 0f)
+        {
+            X += dx;
+            Y += dy;
+            Z += dz;
+        }
+
+        /// <summary>Puts the camera at (x, y), keeping its zoom, without the limits.</summary>
+        public void Place(float x, float y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        /// <summary>Marks where the camera is now as where the next tick starts from.</summary>
+        public void Settle()
+        {
+            PreviousX = X;
+            PreviousY = Y;
+            PreviousZ = Z;
         }
 
         /// <summary>Holds Z within [farthest, nearest] (-3.5 to -1) unless the free camera is on.</summary>

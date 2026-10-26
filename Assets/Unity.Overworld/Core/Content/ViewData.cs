@@ -94,6 +94,107 @@ namespace MindAttic.Overworld.Core
         public float RenderRangeBase { get; internal set; }
     }
 
+    /// <summary>The pictures the world cursor shows (Textures.vb's cursor_*; RECONSTRUCTION 5.3).</summary>
+    public enum CursorSprite
+    {
+        Arrow,
+        ScrollLeft,
+        ScrollRight,
+        ScrollUp,
+        ScrollDown,
+        Zoom,
+        Eye,
+    }
+
+    /// <summary>
+    /// The world cursor (Cursor/Cursor.vb, Input.getMouse; RECONSTRUCTION 5.3): a quad on the ground moved by the mouse's
+    /// relative motion, the virtual screen mouse that decides the edges, and its pictures.
+    /// </summary>
+    public sealed class CursorDefinition
+    {
+        /// <summary>The quad's width (cursorSize, 0.05); it spans y +/- half that.</summary>
+        public float Size { get; internal set; }
+
+        /// <summary>Where the quad is drawn from the cursor's position (+0.02, -0.042).</summary>
+        public DataPoint DrawOffset { get; internal set; }
+
+        /// <summary>World units the cursor moves per pixel of mouse motion (0.00172: one pixel at zoom -1).</summary>
+        public float WorldPerPixel { get; internal set; }
+
+        /// <summary>The virtual mouse's screen (the original's 640 x 480 window).</summary>
+        public float ScreenWidth { get; internal set; }
+
+        public float ScreenHeight { get; internal set; }
+
+        /// <summary>The virtual mouse is held this many pixels in from every edge, and scrolls when it is there (32).</summary>
+        public float EdgeMargin { get; internal set; }
+
+        /// <summary>Where checkCursorEdge puts the cursor, from the camera, at each edge.</summary>
+        public float EdgeLeft { get; internal set; }
+
+        public float EdgeRight { get; internal set; }
+        public float EdgeUp { get; internal set; }
+        public float EdgeDown { get; internal set; }
+
+        /// <summary>The picture file of each cursor sprite.</summary>
+        public IReadOnlyDictionary<CursorSprite, string> Sprites { get; internal set; }
+
+        public string File(CursorSprite sprite) => Sprites.TryGetValue(sprite, out var f) ? f : null;
+    }
+
+    /// <summary>
+    /// How the camera is moved (Camera.vb, Cursor.vb checkScroll/checkHeroEdge, Input.getKeyboard/getMouse/mouseZoom;
+    /// RECONSTRUCTION 3.2 and 5.3). Offsets are from the leader's position.
+    /// </summary>
+    public sealed class CameraControlDefinition
+    {
+        /// <summary>camSPD (0.02): the edge-scroll step, and the base of the centring and drag-zoom rates.</summary>
+        public float Speed { get; internal set; }
+
+        /// <summary>Edge scrolling with Shift held is this many times as fast (3).</summary>
+        public float FastFactor { get; internal set; }
+
+        /// <summary>One wheel step zooms this far (0.15).</summary>
+        public float WheelStep { get; internal set; }
+
+        /// <summary>Drag zoom: Z changes by rate x (centre y - mouse y) per tick (camSPD / 10).</summary>
+        public float DragRate { get; internal set; }
+
+        /// <summary>Drag zoom ignores the mouse within this many pixels of the centre line (5).</summary>
+        public float DragDeadZone { get; internal set; }
+
+        /// <summary>Centring moves Speed x this x the remaining distance each tick (8).</summary>
+        public float CentreRate { get; internal set; }
+
+        /// <summary>The point centring heads for, from the leader: heroSize x (1/2, -1/2) plus this (0, +0.03).</summary>
+        public DataPoint CentreOffset { get; internal set; }
+
+        /// <summary>Centring ends within <see cref="CentreArriveRange"/> of the centre point plus this (+0.02, 0).</summary>
+        public DataPoint CentreArriveOffset { get; internal set; }
+
+        public float CentreArriveRange { get; internal set; }
+
+        /// <summary>Edge scrolling stops, and the camera is held, this far from the leader (-0.45, +0.6, -0.4, +0.35).</summary>
+        public float ScrollLeft { get; internal set; }
+
+        public float ScrollRight { get; internal set; }
+        public float ScrollDown { get; internal set; }
+        public float ScrollUp { get; internal set; }
+
+        /// <summary>Beyond these offsets the camera is carried by the leader's velocity (-0.3, +0.45, -0.3, +0.25).</summary>
+        public float CarryLeft { get; internal set; }
+
+        public float CarryRight { get; internal set; }
+        public float CarryDown { get; internal set; }
+        public float CarryUp { get; internal set; }
+
+        /// <summary>Numpad 4/6 and 8/2 move the camera this far per tick (0.05, 0.02).</summary>
+        public DataPoint Strafe { get; internal set; }
+
+        /// <summary>X and Z move the camera this far on both axes per tick (0.25).</summary>
+        public float Isometric { get; internal set; }
+    }
+
     /// <summary>The box drawn behind everything and the colour each frame is cleared to (Cube.vb, Engine.oneFrameRender).</summary>
     public sealed class BackdropDefinition
     {
@@ -119,6 +220,8 @@ namespace MindAttic.Overworld.Core
         public AreaGridDefinition Grid { get; private set; }
         public CameraDefinition Camera { get; private set; }
         public BackdropDefinition Backdrop { get; private set; }
+        public CursorDefinition Cursor { get; private set; }
+        public CameraControlDefinition Control { get; private set; }
 
         /// <summary>A standing hero facing Right (every hero's start pose).</summary>
         public string HeroStandRight { get; private set; }
@@ -143,6 +246,7 @@ namespace MindAttic.Overworld.Core
                 list.Add(HeroStandRight);
                 list.Add(WeaponIdle);
                 foreach (var f in Textures.Values) if (!list.Contains(f)) list.Add(f);
+                foreach (var f in Cursor.Sprites.Values) if (!list.Contains(f)) list.Add(f);
                 return list;
             }
         }
@@ -156,6 +260,8 @@ namespace MindAttic.Overworld.Core
             view.Grid = ReadGrid(root.Section("grid"));
             view.Camera = ReadCamera(root.Section("camera"));
             view.Backdrop = ReadBackdrop(root.Section("backdrop"));
+            view.Cursor = ReadCursor(root.Section("cursor"));
+            view.Control = ReadControl(root.Section("cameraControl"));
 
             var objects = root.Section("objects");
             view.HeroStandRight = PicturePath(objects, "heroStandRight");
@@ -249,6 +355,77 @@ namespace MindAttic.Overworld.Core
             r.Check(camera.StartZ <= camera.NearestZ && camera.StartZ >= camera.FarthestZ, "startZ", "must lie between 'farthestZ' and 'nearestZ'");
             r.Done();
             return camera;
+        }
+
+        static CursorDefinition ReadCursor(ContentReader r)
+        {
+            var screen = r.Pair("screen", 1f);
+            var cursor = new CursorDefinition
+            {
+                Size = r.Positive("size"),
+                DrawOffset = r.Pair("drawOffset"),
+                WorldPerPixel = r.Positive("worldPerPixel"),
+                ScreenWidth = screen.X,
+                ScreenHeight = screen.Y,
+                EdgeMargin = r.Number("edgeMargin", 0f),
+            };
+            r.Check(cursor.EdgeMargin * 2 < cursor.ScreenWidth && cursor.EdgeMargin * 2 < cursor.ScreenHeight, "edgeMargin", "must leave room on the screen");
+
+            var edges = r.Section("edgeSnap");
+            cursor.EdgeLeft = edges.Number("left", max: 0f);
+            cursor.EdgeRight = edges.Number("right", 0f);
+            cursor.EdgeUp = edges.Number("up", 0f);
+            cursor.EdgeDown = edges.Number("down", max: 0f);
+            edges.Done();
+
+            var sprites = new Dictionary<CursorSprite, string>();
+            var section = r.Section("sprites");
+            foreach (CursorSprite sprite in Enum.GetValues(typeof(CursorSprite)))
+            {
+                var key = char.ToLowerInvariant(sprite.ToString()[0]) + sprite.ToString().Substring(1);
+                sprites[sprite] = PicturePath(section, key);
+            }
+
+            section.Done();
+            cursor.Sprites = sprites;
+            r.Done();
+            return cursor;
+        }
+
+        static CameraControlDefinition ReadControl(ContentReader r)
+        {
+            var c = new CameraControlDefinition
+            {
+                Speed = r.Positive("speed"),
+                FastFactor = r.Positive("fastFactor"),
+                WheelStep = r.Positive("wheelStep"),
+                DragRate = r.Positive("dragRate"),
+                DragDeadZone = r.Number("dragDeadZone", 0f),
+                CentreRate = r.Positive("centreRate"),
+                CentreOffset = r.Pair("centreOffset"),
+                CentreArriveOffset = r.Pair("centreArriveOffset"),
+                CentreArriveRange = r.Positive("centreArriveRange"),
+                Strafe = r.Pair("strafe", 0f),
+                Isometric = r.Number("isometric", 0f),
+            };
+            r.Check(c.Speed * c.CentreRate < 1f, "centreRate", "times 'speed' must be below 1, or centring overshoots");
+
+            var scroll = r.Section("scrollLimits");
+            c.ScrollLeft = scroll.Number("left", max: 0f);
+            c.ScrollRight = scroll.Number("right", 0f);
+            c.ScrollDown = scroll.Number("down", max: 0f);
+            c.ScrollUp = scroll.Number("up", 0f);
+            scroll.Done();
+
+            var carry = r.Section("carryBeyond");
+            c.CarryLeft = carry.Number("left", max: 0f);
+            c.CarryRight = carry.Number("right", 0f);
+            c.CarryDown = carry.Number("down", max: 0f);
+            c.CarryUp = carry.Number("up", 0f);
+            carry.Done();
+
+            r.Done();
+            return c;
         }
 
         static BackdropDefinition ReadBackdrop(ContentReader r)

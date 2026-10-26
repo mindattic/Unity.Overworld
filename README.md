@@ -9,10 +9,16 @@ and a stamina-gauge battle mode run from a ring menu around the active hero.
 The rebuild is in progress: the world draws as the original drew it (the 11 x 11 grid of area tiles under the 45-degree camera,
 the backdrop box, and the heroes and props back to front), and Chrono moves as the original moved him: hold the right mouse
 button to head for the cursor (walking near it, running when it is far or the run key, Right Ctrl or Space, is held), or use the
-arrow keys. The stories that make the rest play follow in build order.
+arrow keys. The mouse is the world cursor (the system pointer is hidden and held while the window has focus): push it to a
+screen edge to scroll (Shift for three times as fast), the camera eases back onto Chrono while he moves, the wheel or the middle
+button zooms between -1 and -3.5, E shows the examine eye, and F (free camera), X / Z and the numpad are the original's debug
+camera moves. The stories that make the rest play follow in build order.
 `.\play.ps1` builds the Windows player (headless) when needed and launches it muted; `-Sound` opts back in to audio and
 `-Capture <file.png>` saves a screenshot and quits (`-overworld-capture-after <seconds>` plays that long first). Scripted runs
-hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point).
+hold keys with `-overworld-hold right,run` or the move button with `-overworld-move-to <x>,<y>[,run]` (a world point), and drive
+the view with `-overworld-pointer <x>,<y>` (the virtual 640 x 480 mouse; 608 or 32 and 448 or 32 are the scrolling edges),
+`-overworld-wheel <steps>`, `-overworld-view-hold zoom,shift,x,z,num4,num6,num8,num2`, `-overworld-examine` and
+`-overworld-free-camera`; a scripted run never takes the real mouse.
 
 ## Why
 
@@ -35,7 +41,8 @@ of the original relate), [`docs/BIBLE.md`](docs/BIBLE.md) for the rebuild's brie
 
 ## Status
 
-Reconstruction-complete; the engine-free foundations (U.OVW-US-A1) are in: `Assets/Unity.Overworld/Core` (pure C#, `noEngineReferences`: players, commands, events, the fixed 60 Hz `Game` step and general world types), `Runtime`, `Editor` and `Tests/EditMode`, one-way references into Core. Run Core's tests outside Unity with `.un-core-tests.ps1` (`Tests/Core.Tests`). Every story is planned, in dependency order (`tickets story list --repo
+Reconstruction-complete; the engine-free foundations (U.OVW-US-A1) are in: `Assets/Unity.Overworld/Core` (pure C#, `noEngineReferences`: players, commands, events, the fixed 60 Hz `Game` step and general world types), `Runtime`, `Editor` and `Tests/EditMode`, one-way references into Core. Run Core's tests outside Unity with `.
+un-core-tests.ps1` (`Tests/Core.Tests`). Every story is planned, in dependency order (`tickets story list --repo
 Unity.Overworld`):
 
 - Engine-free Core, data files, asset catalogue

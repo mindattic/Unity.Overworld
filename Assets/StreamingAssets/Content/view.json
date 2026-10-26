@@ -73,6 +73,40 @@
     "texture": "gfx/gui/menu.PNG",
     "clearColor": [255, 0, 255, 255]
   },
+  "cursor": {
+    "_note": "Cursor/Cursor.vb loadCursor, renderCursor, checkCursorEdge and Input.getMouse: a 0.05 quad drawn at the cursor + (0.02, -0.042), moved by the mouse's relative motion x 0.00172 (one pixel at zoom -1); a virtual 640 x 480 mouse held 32 px in from every edge decides the edges, where the cursor is put at the camera + edgeSnap and shows a scroll arrow; zoom while the middle button is held, the eye in examine mode, the arrow otherwise.",
+    "size": 0.05,
+    "drawOffset": [0.02, -0.042],
+    "worldPerPixel": 0.00172,
+    "screen": [640, 480],
+    "edgeMargin": 32,
+    "edgeSnap": {"left": -0.531, "right": 0.46, "up": 0.37, "down": -0.348},
+    "sprites": {
+      "arrow": "gfx/cursor/arrow.PNG",
+      "scrollLeft": "gfx/cursor/scroll_left.PNG",
+      "scrollRight": "gfx/cursor/scroll_right.PNG",
+      "scrollUp": "gfx/cursor/scroll_up.PNG",
+      "scrollDown": "gfx/cursor/scroll_down.PNG",
+      "zoom": "gfx/cursor/zoom.PNG",
+      "eye": "gfx/cursor/eye.PNG"
+    }
+  },
+  "cameraControl": {
+    "_note": "camSPD 0.02: edge scroll by camSPD (x3 with Shift) while the leader is within scrollLimits, the camera then held within them; carried by the leader's velocity beyond carryBeyond (checkHeroEdge); centring (CenterOnHero) adds camSPD x 8 x the distance to the leader + heroSize x (1/2, -1/2) + centreOffset each tick, moving the cursor with it, until within 0.05 of that point + centreArriveOffset; wheel zoom 0.15 per step; middle-button drag zoom camSPD / 10 x (centre y - mouse y) outside a 5 px dead zone; numpad strafe 0.05 / 0.02 and X / Z isometric 0.25 (RECONSTRUCTION 3.2, 5.3).",
+    "speed": 0.02,
+    "fastFactor": 3,
+    "wheelStep": 0.15,
+    "dragRate": 0.002,
+    "dragDeadZone": 5,
+    "centreRate": 8,
+    "centreOffset": [0, 0.03],
+    "centreArriveOffset": [0.02, 0],
+    "centreArriveRange": 0.05,
+    "scrollLimits": {"left": -0.45, "right": 0.6, "down": -0.4, "up": 0.35},
+    "carryBeyond": {"left": -0.3, "right": 0.45, "down": -0.3, "up": 0.25},
+    "strafe": [0.05, 0.02],
+    "isometric": 0.25
+  },
   "objects": {
     "_note": "checkDrawOrder: the heroes, the prop bottoms and the heroes' weapons. A hero stands facing Right on its stand sprite; a weapon shows texBlank (all colour key) unless its hero is drawing or in battle.",
     "heroStandRight": "gfx/hero/Chrono/stand/face_right.PNG",

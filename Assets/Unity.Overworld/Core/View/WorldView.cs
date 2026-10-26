@@ -67,12 +67,16 @@ namespace MindAttic.Overworld.Core
     /// </summary>
     public sealed class WorldView
     {
-        public WorldView(ViewData view, PropData props, HeroData heroes)
+        /// <summary>
+        /// The view of the world through <paramref name="camera"/> (a player's <see cref="Viewpoint"/> camera), or through
+        /// a camera of its own at the start position when none is given.
+        /// </summary>
+        public WorldView(ViewData view, PropData props, HeroData heroes, WorldCamera camera = null)
         {
             View = view ?? throw new ArgumentNullException(nameof(view));
             Props = props ?? throw new ArgumentNullException(nameof(props));
             Heroes = heroes ?? throw new ArgumentNullException(nameof(heroes));
-            Camera = new WorldCamera(view.Camera);
+            Camera = camera ?? new WorldCamera(view.Camera);
         }
 
         public ViewData View { get; }

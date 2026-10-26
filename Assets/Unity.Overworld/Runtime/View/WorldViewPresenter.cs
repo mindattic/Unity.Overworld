@@ -18,6 +18,9 @@ namespace MindAttic.Overworld.Runtime
         public const int TilesOrder = 0;
         public const int ObjectsOrder = 300;
 
+        /// <summary>The world cursor is drawn after everything (renderCursor is the frame's last 3D draw; sorting orders stop at 32767).</summary>
+        public const int CursorOrder = 30000;
+
         static readonly int MainTex = Shader.PropertyToID("_MainTex");
 
         readonly List<KeyValuePair<AreaTileDefinition, MeshRenderer>> tiles = new List<KeyValuePair<AreaTileDefinition, MeshRenderer>>();
@@ -30,6 +33,12 @@ namespace MindAttic.Overworld.Runtime
         public WorldView View { get; private set; }
         public Camera Camera { get; private set; }
         public MeshRenderer Backdrop { get; private set; }
+
+        /// <summary>The world cursor's quad, once <see cref="ShowCursor"/> is called.</summary>
+        public MeshRenderer CursorRenderer { get; private set; }
+
+        /// <summary>The world cursor drawn (null: none).</summary>
+        public WorldCursor Cursor { get; private set; }
 
         /// <summary>Where each hero stands and what it shows: the start poses, or the party's each frame once <see cref="Follow"/> is called.</summary>
         public HeroPose[] Poses { get; set; }
@@ -44,6 +53,19 @@ namespace MindAttic.Overworld.Runtime
         {
             Party = party;
             game = source;
+            Refresh();
+        }
+
+        /// <summary>Draws <paramref name="cursor"/> from now on: its picture, at its position plus the draw offset, over everything.</summary>
+        public void ShowCursor(WorldCursor cursor)
+        {
+            Cursor = cursor;
+            if (cursor != null && CursorRenderer == null)
+            {
+                var def = cursor.Definition;
+                CursorRenderer = NewRenderer("Cursor", Quad(def.Size, def.Size / 2f), cursor.File, CursorOrder);
+            }
+
             Refresh();
         }
 
@@ -111,7 +133,9 @@ namespace MindAttic.Overworld.Runtime
         {
             if (View == null) return;
             var cam = View.Camera;
-            Camera.transform.localPosition = new Vector3(cam.X, cam.Y, cam.Z);
+            var alpha = game != null ? Mathf.Clamp01(game.Alpha) : 1f;
+            Camera.transform.localPosition = Vector3.LerpUnclamped(
+                new Vector3(cam.PreviousX, cam.PreviousY, cam.PreviousZ), new Vector3(cam.X, cam.Y, cam.Z), alpha);
             Camera.transform.localRotation = Quaternion.identity;
 
             foreach (var t in tiles) t.Value.enabled = View.IsVisible(t.Key) && HasTexture(t.Value);
@@ -127,6 +151,16 @@ namespace MindAttic.Overworld.Runtime
                 r.sortingOrder = ObjectsOrder + i;
                 SetTexture(r, d.File);
                 r.enabled = View.IsVisible(d) && HasTexture(r);
+            }
+
+            if (Cursor != null && CursorRenderer != null)
+            {
+                var offset = Cursor.Definition.DrawOffset;
+                var x = Mathf.LerpUnclamped(Cursor.PreviousX, Cursor.X, alpha);
+                var y = Mathf.LerpUnclamped(Cursor.PreviousY, Cursor.Y, alpha);
+                CursorRenderer.transform.localPosition = new Vector3(x + offset.X, y + offset.Y, Cursor.Z);
+                SetTexture(CursorRenderer, Cursor.File);
+                CursorRenderer.enabled = HasTexture(CursorRenderer);
             }
         }
 

@@ -5,34 +5,58 @@ using UnityEngine.InputSystem;
 namespace MindAttic.Overworld.Runtime
 {
     /// <summary>
-    /// The original's move controls (RECONSTRUCTION 5.1 and 5.4) as Input System actions built in code: the arrow keys,
-    /// the run key (Right Ctrl or Space) and the move button (the right mouse button), with the pointer turned into a
-    /// world cursor on the ground plane. Every frame, before the game advances, it sends what the player holds as a
-    /// <see cref="SetMoveInput"/> command; it never touches game state itself. A <see cref="Scripted"/> input replaces the
-    /// devices for scripted runs.
+    /// The player's controls (RECONSTRUCTION 5.1 to 5.4) as Input System actions built in code. The move controls: the
+    /// arrow keys, the run key (Right Ctrl or Space) and the move button (the right mouse button) heading for the world
+    /// cursor. The view controls: the mouse's motion (the system pointer is hidden and held, as the original's
+    /// DirectInput mouse was, and its motion drives the world cursor), the wheel and the middle button (zoom), Shift (fast
+    /// edge scroll), E (examine), F (free camera), X / Z (isometric) and numpad 4 / 6 / 8 / 2 (strafe). Every frame, before
+    /// the game advances, it sends what the player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/>
+    /// commands and the key presses as toggles; it never touches game state itself. The <c>Scripted*</c> inputs replace
+    /// the devices for scripted runs.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public sealed class HeroInput : MonoBehaviour
     {
         InputAction left, right, up, down, run, move, point;
+        InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
+        Vector2? scriptedMouse;
+        int scriptedWheelSent;
 
         public Game Game { get; private set; }
         public PlayerId Player { get; private set; }
         public Camera Camera { get; private set; }
 
+        /// <summary>The player's view (its world cursor is where the move button heads); null aims through the camera.</summary>
+        public Viewpoint Viewpoint { get; private set; }
+
+        /// <summary>Read the keyboard and mouse (and hide and hold the system pointer). Off for scripted runs.</summary>
+        public bool UseDevices { get; set; } = true;
+
         /// <summary>When set, sent instead of what the devices hold (the scripted-run arguments).</summary>
         public MoveInput? Scripted { get; set; }
+
+        /// <summary>Scripted runs: the virtual mouse is moved to this point of the 640 x 480 screen (y down) and held there.</summary>
+        public Vector2? ScriptedPointer { get; set; }
+
+        /// <summary>Scripted runs: this many wheel steps, one a frame (positive zooms in, negative out).</summary>
+        public int ScriptedWheel { get; set; }
+
+        /// <summary>Scripted runs: the view keys held (its motion and wheel are ignored).</summary>
+        public ViewInput ScriptedKeys { get; set; }
 
         /// <summary>The last input sent.</summary>
         public MoveInput Last { get; private set; }
 
-        public static HeroInput Create(Game game, PlayerId player, Camera camera)
+        public ViewInput LastView { get; private set; }
+
+        public static HeroInput Create(Game game, PlayerId player, Camera camera, Viewpoint viewpoint = null)
         {
             var go = new GameObject("HeroInput");
             var input = go.AddComponent<HeroInput>();
             input.Game = game;
             input.Player = player;
             input.Camera = camera;
+            input.Viewpoint = viewpoint;
             return input;
         }
 
@@ -45,6 +69,19 @@ namespace MindAttic.Overworld.Runtime
             run = Button("Run", "<Keyboard>/rightCtrl", "<Keyboard>/space");
             move = Button("Move", "<Mouse>/rightButton");
             point = new InputAction("Point", InputActionType.Value, "<Pointer>/position");
+
+            motion = new InputAction("Motion", InputActionType.Value, "<Mouse>/delta");
+            wheel = new InputAction("Wheel", InputActionType.Value, "<Mouse>/scroll/y");
+            zoom = Button("Zoom", "<Mouse>/middleButton");
+            fast = Button("Fast", "<Keyboard>/leftShift", "<Keyboard>/rightShift");
+            examine = Button("Examine", "<Keyboard>/e");
+            freeCamera = Button("FreeCamera", "<Keyboard>/f");
+            isometric = Button("Isometric", "<Keyboard>/x");
+            deisometric = Button("Deisometric", "<Keyboard>/z");
+            strafeLeft = Button("StrafeLeft", "<Keyboard>/numpad4");
+            strafeRight = Button("StrafeRight", "<Keyboard>/numpad6");
+            strafeUp = Button("StrafeUp", "<Keyboard>/numpad8");
+            strafeDown = Button("StrafeDown", "<Keyboard>/numpad2");
         }
 
         static InputAction Button(string name, params string[] bindings)
@@ -62,6 +99,7 @@ namespace MindAttic.Overworld.Runtime
         void OnDisable()
         {
             foreach (var a in Actions()) a?.Disable();
+            ReleasePointer();
         }
 
         void OnDestroy()
@@ -69,22 +107,93 @@ namespace MindAttic.Overworld.Runtime
             foreach (var a in Actions()) a?.Dispose();
         }
 
-        InputAction[] Actions() => new[] { left, right, up, down, run, move, point };
+        InputAction[] Actions() => new[]
+        {
+            left, right, up, down, run, move, point,
+            motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown,
+        };
 
         void Update()
         {
             if (Game == null) return;
-            var input = Scripted ?? Read();
+            if (UseDevices) HoldPointer();
+
+            var input = Scripted ?? (UseDevices ? Read() : default);
             Last = input;
             Game.Submit(new SetMoveInput(Player, input));
+
+            if (Viewpoint == null) return;
+            var view = UseDevices ? ReadView() : ScriptedView();
+            LastView = view;
+            Game.Submit(new SetViewInput(Player, view));
+            if (UseDevices && examine.WasPressedThisFrame()) Game.Submit(new ToggleExamine(Player));
+            if (UseDevices && freeCamera.WasPressedThisFrame()) Game.Submit(new ToggleFreeCamera(Player));
         }
 
         MoveInput Read()
         {
             var cursor = Vector2.zero;
             var held = move.IsPressed();
-            if (held && Camera != null) cursor = GroundPoint(Camera, point.ReadValue<Vector2>());
+            if (held)
+            {
+                if (Viewpoint != null) cursor = new Vector2(Viewpoint.Cursor.X, Viewpoint.Cursor.Y);
+                else if (Camera != null) cursor = GroundPoint(Camera, point.ReadValue<Vector2>());
+            }
+
             return new MoveInput(left.IsPressed(), right.IsPressed(), up.IsPressed(), down.IsPressed(), run.IsPressed(), held, cursor.x, cursor.y);
+        }
+
+        ViewInput ReadView()
+        {
+            // The pointer's motion in this window's pixels, as virtual 640 x 480 pixels with y down.
+            var d = motion.ReadValue<Vector2>();
+            var def = Viewpoint.Cursor.Definition;
+            var dx = Screen.width > 0 ? d.x * def.ScreenWidth / Screen.width : 0f;
+            var dy = Screen.height > 0 ? -d.y * def.ScreenHeight / Screen.height : 0f;
+            if (!Application.isFocused) dx = dy = 0f;
+            var w = wheel.ReadValue<float>();
+            return new ViewInput(dx, dy, w > 0f ? 1 : w < 0f ? -1 : 0, zoom.IsPressed(), fast.IsPressed(),
+                strafeLeft.IsPressed(), strafeRight.IsPressed(), strafeUp.IsPressed(), strafeDown.IsPressed(),
+                isometric.IsPressed(), deisometric.IsPressed());
+        }
+
+        ViewInput ScriptedView()
+        {
+            float dx = 0f, dy = 0f;
+            if (ScriptedPointer.HasValue)
+            {
+                // Sent once: the motion that takes the virtual mouse from where it started to the point.
+                var from = scriptedMouse ?? new Vector2(Viewpoint.Cursor.MouseX, Viewpoint.Cursor.MouseY);
+                dx = ScriptedPointer.Value.x - from.x;
+                dy = ScriptedPointer.Value.y - from.y;
+                scriptedMouse = ScriptedPointer.Value;
+            }
+
+            var step = 0;
+            if (scriptedWheelSent < Mathf.Abs(ScriptedWheel))
+            {
+                step = ScriptedWheel > 0 ? 1 : -1;
+                scriptedWheelSent++;
+            }
+
+            var k = ScriptedKeys;
+            return new ViewInput(dx, dy, step, k.Zoom, k.Fast, k.StrafeLeft, k.StrafeRight, k.StrafeUp, k.StrafeDown, k.Isometric, k.Deisometric);
+        }
+
+        /// <summary>The original hid the system pointer and read the mouse's raw motion: the pointer is hidden and held while the window has focus.</summary>
+        void HoldPointer()
+        {
+            if (!Application.isPlaying || Application.isBatchMode) return;
+            var want = Application.isFocused ? CursorLockMode.Locked : CursorLockMode.None;
+            if (UnityEngine.Cursor.lockState != want) UnityEngine.Cursor.lockState = want;
+            UnityEngine.Cursor.visible = !Application.isFocused;
+        }
+
+        void ReleasePointer()
+        {
+            if (!Application.isPlaying || !UseDevices) return;
+            UnityEngine.Cursor.lockState = CursorLockMode.None;
+            UnityEngine.Cursor.visible = true;
         }
 
         /// <summary>Where the ray through <paramref name="screen"/> meets the world's plane (z 0), in world units.</summary>
