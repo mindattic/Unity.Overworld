@@ -20,13 +20,38 @@ namespace MindAttic.Overworld.Editor
         [MenuItem("Overworld/Build Main Scene")]
         public static void BuildMainScene()
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(MainScene));
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            new GameObject("Overworld").AddComponent<OverworldBootstrap>();
-            EditorSceneManager.SaveScene(scene, MainScene);
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(MainScene, true) };
+            if (MainSceneIsCurrent())
+            {
+                Debug.Log("Unity.Overworld: " + MainScene + " is current");
+            }
+            else
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(MainScene));
+                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                new GameObject("Overworld").AddComponent<OverworldBootstrap>();
+                EditorSceneManager.SaveScene(scene, MainScene);
+                Debug.Log("Unity.Overworld: built " + MainScene);
+            }
+
+            // Assigned only when it differs, so a build leaves EditorBuildSettings.asset as committed.
+            var listed = EditorBuildSettings.scenes;
+            if (listed.Length != 1 || listed[0].path != MainScene || !listed[0].enabled)
+                EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(MainScene, true) };
             AssetDatabase.SaveAssets();
-            Debug.Log("Unity.Overworld: built " + MainScene);
+        }
+
+        /// <summary>
+        /// True when the saved main scene is already what <see cref="BuildMainScene"/> makes: one root object, "Overworld",
+        /// holding the bootstrap and nothing else. Saving it again would only give its objects new file ids (U.OVW-T49).
+        /// </summary>
+        static bool MainSceneIsCurrent()
+        {
+            if (!File.Exists(MainScene)) return false;
+            var scene = EditorSceneManager.OpenScene(MainScene, OpenSceneMode.Single);
+            var roots = scene.GetRootGameObjects();
+            if (roots.Length != 1 || roots[0].name != "Overworld" || roots[0].transform.childCount != 0) return false;
+            var components = roots[0].GetComponents<Component>();
+            return components.Length == 2 && roots[0].GetComponent<OverworldBootstrap>() != null;
         }
 
         [MenuItem("Overworld/Build Windows Player")]
