@@ -332,7 +332,7 @@ hero select, else cycles items in reach, else zooms the camera by 0.15 per step.
 Edge scrolling (`checkScroll`): when the virtual mouse is at an edge (32 px from it), and not zooming, not centring, and the hero not kneeling, the camera moves by 0.02 (x3 with Shift), allowed
 while the hero is within the limits, and is clamped to the hero +0.6 / -0.45 in x and +0.35 / -0.4 in y. `checkHeroEdge` drags the camera and cursor along when the hero leaves the box
 (cam x beyond hero + 0.45 or -0.3, y beyond +0.25 or -0.3). The cursor texture changes at edges (scroll arrows), to the zoom cursor while zooming, and to the eye in examine mode; it is the arrow otherwise.
-The 3D cursor quad is 0.05 wide; a second, screen-space cursor (`cursor2D`, 28 px) is drawn instead whenever the pointer is over the inventory panel, the team button or the inventory button.
+The 3D cursor quad is 0.05 wide; a second, screen-space cursor (`cursor2D`, 28 px) is drawn instead whenever the pointer is over the inventory panel, the team button or the inventory button, and the left edge does not scroll while the pointer is on one of the two buttons (section 13).
 
 ### 5.4 Move-by-mouse (`actionMove`)
 
@@ -595,18 +595,20 @@ All HUD quads are screen-space (640 x 480 reference). `Write` uses D3DX fonts: A
 | Status box | text at (5,1); `status_box.png` is loaded and sized 96 x 48 but never drawn, so only text shows | Current hero: name (yellow brackets while in hero-select), "HP n / max", "MP", "AP"; in team mode the other two heroes at x offsets +80, +160; in battle, "NN %" recharge or "Ready!" |
 | Day period and time | (5,410) and (5,423) | yellow Calisto |
 | Bars | bottom left at x 2: health (y 480-14*3-2), mana (y 480-14*2-2), stamina (y 480-14-2), 75 x 14; the fill (drawn first, the bar over it) is a quad 75 x value / max wide (VB Integer rounding, floor 0) carrying the whole fill picture, so the picture is squeezed, not clipped | `health_bar` / `health_fill`, `mana_fill`, `stamina_*` (the mana bar reuses `health_bar.png`) |
-| Turn bars | 60 x 13 at (18,59), (96,59), (176,59), (300,59) | Stamina fill per hero; ready bar texture when full; current hero first, then the others if in team mode |
+| Turn bars | 60 x 13 at (18,59), (96,59), (176,59); a fourth slot at (300,59) is set up but never drawn (three heroes) | Drawn every frame (adventure mode too): a stamina_fill quad `CInt(60 x stamina / max)` wide (the whole picture squeezed) under ready_bar when the hero's stamina is full, stamina_bar otherwise; current hero first, then the others in party order if in team mode |
 | Team button | (18,75) 28 x 28 | `icon_solo` / `icon_team`; click toggles |
 | Inventory button | (18,104) 28 x 28 | `inventory_Open` / `inventory_Closed` |
-| FPS | (iWidth-50, 4), yellow | sampled every 100 ms, shown when `bDrawFPS` |
+| FPS | (iWidth-50, 4) in fontArial, (255, 255, 0, 25): red (corrected: not yellow) | F4 toggles it (`drawFrameRate` is `bDrawFPS`'s property; on at start and after `Reset`); while on, every 100 ms the frames counted become the rate (count x 10); the last rate is written every frame even while off |
 | Messages | spawn at screen centre | Queue of up to 100; each fades 2 alpha and moves down 1 px per frame (Y grows; gone at alpha 0, after 128 frames); the next spawns when the previous passed 14 px below centre; used for the tutorial and day-period announcements |
-| Hero screen (Page Up) | `menu.png` (256 x 256 stretched) | Date line and time line only |
-| Options (F11) | (50,50) | Main: Controls, Video, Audio, Exit (the cursor ">"; Exit quits); Controls lists Move Left/Right/Up/Down key names; Video and Audio have no content |
+| Hero screen (Page Up) | `menu.png` (loaded 256 x 256) stretched over 600 x 430 at (20, 20) (corrected) | Once a press (`bHeroOpen`): the date line at (390, 25) and the time line (time, two spaces, period) at (390, 45) in Calisto (128, 255, 255, 0) only; an icon quad at +(260, 10) is built and never drawn |
+| Options (F11) | `menu.png` stretched over 255 x 255 at (10,10) (corrected: `Options.Pos` (50,50) is never used) | "Options" at (28,20) in Arial Narrow 24 cyan (255, 0, 255, 255); ">" at (50, row y) and the rows at x 60 in fontArial white. Main: Controls, Video, Audio, Exit at y 60, 75, 90, 200 (Exit quits); Controls lists "Move Left = LeftArrow" ... "Move Down = DownArrow" at y 60 to 105; Up / Down step 0 to 3 wrapping on every page, Left goes back to Main, Enter or the left button picks (Main only). Video and Audio have no content and no positions: Video's cursor sits at y 0, and Audio's `optionPos(3, n)` is past the table, so it throws every frame and the frame is never presented (the screen freezes) until Left. While open, the arrows only mark, and `actionMove`, `actionRest` and `actionPickup`'s kneel and sleep do nothing; `CHANGE OPTIONS` sets it too |
 | Quest screen, Book, Inventory, Quick bar, Examine | sections 8 to 11 | |
 | Overburdened | centre | "You are overburdened" |
-| Pause | centre | "- PAUSE -" (unreachable) |
+| Pause | (iWidth / 2 - 64, iHeight / 2 - 30) = (256, 210), Arial Narrow 24 white, the frame's last write | "- PAUSE -" (unreachable: no key sets `bPause`); while on, `getInput` and the updates are skipped but everything drawn, including `renderTime`'s clock and the messages, goes on |
+| 2D cursor | arrow.png 28 x 28 at the mouse + (-9, +4) | `rendercursor2D`, the last draw: shown over the open inventory panel or a button's hit box (`overTeam`, `overInventoryBox`), when `renderCursor` leaves the world cursor out (it also does while `bHeroSelect`); `checkScroll` does not scroll left while `overTeam` or `overInventoryBox` |
+| Hero name | 3D text over the hero | `checkCursorOverHero`: the first hero the world cursor is on (`overHero`); unless it is the current hero, renderText's "." (0.02) and its name (0.007) at (x + heroSize / 2 + 0.005, y - heroSize / 2 + 0.1), + 0.08 while it kneels |
 
-Tutorial text (queued at start and after `Reset`, as fading messages, blank lines between): "hi!", "This is a tutorial.", "Move by holding Right Mouse", "Pickup items by pressing Left Mouse", "Zoom with scroll wheel", "INSERT - Toggle INVENTORY"
+Tutorial text (`sayTutorial`: 88 messages in fontArial white, queued at start and after `Reset`, as fading messages, blank lines between): "hi!", "This is a tutorial.", "Move by holding Right Mouse", "Pickup items by pressing Left Mouse", "Zoom with scroll wheel", "INSERT - Toggle INVENTORY"
 (the key is actually Delete), "W - Toggle WEATHER Mode", "END - Toggle BATTLE Mode", "B - Toggle BOOK Mode", "Q - Toggle QUICK Mode", "R - Reset", "PAGEDOWN - Toggle QUEST Menu", "PAGEUP - Toggle HERO Menu", "~ - Toggle Script Language Mode",
 "There's more so experiment!!!", "Have fun!!!", "...thanks again!".
 

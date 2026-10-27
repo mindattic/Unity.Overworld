@@ -12,13 +12,13 @@ namespace MindAttic.Overworld.Runtime
     /// original wrote on a 640 x 480 screen the window stretched, so every point is placed as that same fraction of the
     /// view and the fonts scale with its height. The HUD is not lit: it never takes the clock's light.
     /// Built in code (<see cref="Create"/>); reads <see cref="WorldClock"/> and <see cref="MessageBoard"/> and never changes
-    /// game state. The hero screen's date and time lines (hud.json "heroScreen") come with that screen (story A20).
+    /// game state. <see cref="ShowInterface"/> adds the interface's screens and widgets (story A20).
     /// Once <see cref="ShowVitals"/> is called it also writes the status box (the leader's name, HP, MP and AP, and the
     /// team's beside it, in the inverse of the clock's light as renderStatus did) and draws the health, mana and stamina
     /// bars at the bottom left (U.OVW-US-A10), and the rest prompt while that leader lies down (U.OVW-US-A11).
     /// </summary>
     [DefaultExecutionOrder(100)] // after the world presenter has placed the camera, so the pickup names sit on their pickups
-    public sealed class HudPresenter : MonoBehaviour
+    public sealed partial class HudPresenter : MonoBehaviour
     {
         /// <summary>Over the team button and the world: the panel draws after the cameras.</summary>
         public const int PanelOrder = 10;
@@ -147,6 +147,8 @@ namespace MindAttic.Overworld.Runtime
             root.pickingMode = PickingMode.Ignore;
             // The pickup names are 3D text in the world: under everything the HUD draws.
             labelLayer = NewLayer(root, "pickup labels");
+            // renderFPS came before renderteamBox and renderinventoryBox.
+            fpsLayer = NewLayer(root, "fps");
             // renderinventoryBox came before renderStatus.
             buttonLayer = NewLayer(root, "inventory button");
             // The status box and bars come before the clock's lines, as renderStatus wrote them before the bars and messages.
@@ -159,6 +161,8 @@ namespace MindAttic.Overworld.Runtime
             TimeLabel = NewLabel(root, "time", Hud.Time);
             RestLabel = Hud.Rest != null ? NewLabel(root, "rest", Hud.Rest) : null;
             if (RestLabel != null) RestLabel.style.display = DisplayStyle.None;
+            // renderTurnBar came after renderStatus.
+            turnLayer = NewLayer(root, "turn bars");
             // renderInventory, then renderquickIcon and renderquickBar, before the examine box.
             packLayer = NewLayer(root, "inventory");
             quickLayer = NewLayer(root, "quick bar");
@@ -171,9 +175,16 @@ namespace MindAttic.Overworld.Runtime
             // renderBook came after renderExamine and before the bars (renderHealthBar ...), so the bars draw over the book.
             bookLayer = NewLayer(root, "book");
             barLayer = NewLayer(root, "bars");
-            // renderQuestScreen came after the bars and before renderMessages.
+            // renderOptionMenu came after the bars, then renderQuestScreen and renderheroScreen, then renderMessages.
+            optionsLayer = NewLayer(root, "options");
             questLayer = NewLayer(root, "quest screen");
+            heroLayer = NewLayer(root, "hero screen");
             messageLayer.BringToFront();
+            // rendercursor2D was the frame's last draw but for the pause banner; the loading picture covers everything.
+            cursorLayer = NewLayer(root, "cursor 2D");
+            pauseLayer = NewLayer(root, "pause");
+            loadingLayer = NewLayer(root, "loading");
+            ClearInterface();
             questLabels.Clear();
             markerLabels.Clear();
             QuestPicture = null;
@@ -926,6 +937,7 @@ namespace MindAttic.Overworld.Runtime
             RefreshBook();
             RefreshQuests();
             RefreshConsole();
+            RefreshInterface();
 
             var shown = Messages != null ? Messages.Shown : (IReadOnlyList<ShownMessage>)Array.Empty<ShownMessage>();
             for (var i = 0; i < shown.Count; i++)
@@ -948,7 +960,9 @@ namespace MindAttic.Overworld.Runtime
             if (Party == null || statusLayer == null) return;
             var leader = Party.LeaderOf(Player);
             var light = Clock != null ? Clock.Light : new LightColour(255, 255, 255);
-            var lines = StatusBoxView.Lines(Hud.StatusBox, Party, leader, light);
+            // The hero-select brackets: the hero an item's target is being chosen on (bHeroSelect, selectedHero).
+            var pack = Inventory != null ? Inventory.For(Player) : null;
+            var lines = StatusBoxView.Lines(Hud.StatusBox, Party, leader, light, pack != null && pack.Choosing ? pack.Target : -1);
             for (var i = 0; i < lines.Count; i++)
             {
                 if (i == statusLabels.Count) statusLabels.Add(NewLabel(statusLayer, "status " + i, null));

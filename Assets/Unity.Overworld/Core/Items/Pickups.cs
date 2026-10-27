@@ -381,9 +381,10 @@ namespace MindAttic.Overworld.Core
                 r.Pressed = false;
                 if (held)
                 {
-                    // actionPickup kneels only with the pack shut, no item's target being chosen (Enter uses there) and
-                    // the battle's ring menu shut (Enter chooses from it there; the press that chose does not kneel).
-                    if ((Focus == null || Focus(player) == InputFocus.World) && !Party.RingMenuOpen(player) && !Party.RingChoiceHeld(player)) Press(hero, r);
+                    // actionPickup kneels only with the pack shut, no item's target being chosen (Enter uses there), the
+                    // battle's ring menu shut (Enter chooses from it there; the press that chose does not kneel) and the
+                    // options menu shut (Enter picks its row there).
+                    if ((Focus == null || Focus(player) == InputFocus.World) && !Party.RingMenuOpen(player) && !Party.RingChoiceHeld(player) && !Party.OptionsOpenFor(player)) Press(hero, r);
                 }
                 else
                 {

@@ -29,17 +29,18 @@ namespace MindAttic.Overworld.Core
     /// the hero that player leads, '  Name  ' in white, its "HP n  / max", "MP n  / max" and "AP n  / max" in the inverse
     /// of the world light's red and blue (green by day); in team mode each other hero in party order, a column further
     /// right, its name in (255 - r, 255, b). A hero in battle mode has a battle line under its column: its gauge as "NN %"
-    /// (the others' "NN%") fading in as it fills, or "Ready!" when full. The hero-select brackets are the interface
-    /// story's (A20).
+    /// (the others' "NN%") fading in as it fills, or "Ready!" when full. While an item's target is being chosen
+    /// (bHeroSelect), the chosen hero's name is written in the hero-select brackets, "|Name|" in yellow.
     /// </summary>
     public static class StatusBoxView
     {
-        public static IReadOnlyList<HudLine> Lines(StatusBoxDefinition box, Party party, int leader, LightColour light)
+        /// <param name="chosen">The hero an item's target is being chosen on (selectedHero while bHeroSelect), or -1.</param>
+        public static IReadOnlyList<HudLine> Lines(StatusBoxDefinition box, Party party, int leader, LightColour light, int chosen = -1)
         {
             var lines = new List<HudLine>();
             if (box == null || party == null || leader < 0 || leader >= party.Heroes.Count) return lines;
             var values = new TextColour(255, (byte)(255 - light.R), 255, (byte)(255 - light.B));
-            Column(lines, box, party.Heroes[leader], 0f, new TextColour(255, 255, 255, 255), values);
+            Column(lines, box, party.Heroes[leader], 0f, new TextColour(255, 255, 255, 255), values, chosen == leader);
             BattleLine(lines, box, party.Heroes[leader], 0f, true, light);
             if (!party.Team) return lines;
 
@@ -48,7 +49,7 @@ namespace MindAttic.Overworld.Core
             for (var h = 0; h < party.Heroes.Count; h++)
             {
                 if (h == leader) continue;
-                Column(lines, box, party.Heroes[h], offset, teamName, values);
+                Column(lines, box, party.Heroes[h], offset, teamName, values, chosen == h);
                 BattleLine(lines, box, party.Heroes[h], offset, false, light);
                 offset += box.TeamSpacing;
             }
@@ -56,10 +57,13 @@ namespace MindAttic.Overworld.Core
             return lines;
         }
 
-        static void Column(List<HudLine> lines, StatusBoxDefinition box, Hero hero, float offset, TextColour name, TextColour values)
+        static void Column(List<HudLine> lines, StatusBoxDefinition box, Hero hero, float offset, TextColour name, TextColour values, bool chosen)
         {
             var x = box.X + offset;
-            lines.Add(new HudLine("  " + hero.Name + "  ", x + box.Name.X, box.Y + box.Name.Y, box.Font, name));
+            var text = chosen && box.ChosenText != null
+                ? string.Format(System.Globalization.CultureInfo.InvariantCulture, box.ChosenText, hero.Name)
+                : "  " + hero.Name + "  ";
+            lines.Add(new HudLine(text, x + box.Name.X, box.Y + box.Name.Y, box.Font, chosen && box.ChosenText != null ? box.ChosenColour : name));
             Row(lines, box, x, 0, "HP " + hero.Health, hero.MaxHealth, values);
             Row(lines, box, x, 1, "MP " + hero.Mana, hero.MaxMana, values);
             Row(lines, box, x, 2, "AP " + hero.Stamina, hero.MaxStamina, values);

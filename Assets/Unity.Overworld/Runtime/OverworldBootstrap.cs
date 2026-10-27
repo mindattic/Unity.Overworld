@@ -46,7 +46,9 @@ namespace MindAttic.Overworld.Runtime
     /// <c>-overworld-quest-screen</c> (see <see cref="ApplyScriptedQuests"/>); the books' <c>-overworld-book</c> (see
     /// <see cref="ApplyScriptedBook"/>); the weather's <c>-overworld-weather</c> (see <see cref="ApplyScriptedWeather"/>);
     /// battle mode's <c>-overworld-battle</c> (see <see cref="ApplyScriptedBattle"/>) and <c>-overworld-ring</c> (see
-    /// <see cref="ApplyScriptedRing"/>);
+    /// <see cref="ApplyScriptedRing"/>); the interface's <c>-overworld-options</c>, <c>-overworld-hero-screen</c>,
+    /// <c>-overworld-pause</c>, <c>-overworld-fps-off</c>, <c>-overworld-hover</c> and <c>-overworld-loading</c> (see
+    /// <see cref="ApplyScriptedInterface"/>);
     /// <c>-overworld-capture &lt;file.png&gt;</c> saves a screenshot and quits, after a few frames or after
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
@@ -94,6 +96,14 @@ namespace MindAttic.Overworld.Runtime
         public BookReader Books { get; private set; }
         public Weather Weather { get; private set; }
         public Clouds Clouds { get; private set; }
+        public InterfaceControl Interface { get; private set; }
+
+        public const string OptionsArgument = "-overworld-options";
+        public const string HeroScreenArgument = "-overworld-hero-screen";
+        public const string PauseArgument = "-overworld-pause";
+        public const string FpsOffArgument = "-overworld-fps-off";
+        public const string HoverArgument = "-overworld-hover";
+        public const string LoadingArgument = "-overworld-loading";
 
         public const string BookArgument = "-overworld-book";
         public const string WeatherArgument = "-overworld-weather";
@@ -153,6 +163,11 @@ namespace MindAttic.Overworld.Runtime
             // their scripts (HERO the item target, selectedHero) through the interpreter.
             Quests = new QuestLog(Content.Quests, Party) { Scripts = Scripts, ScriptHero = Scripts.TargetOf }.Install(game);
             Party.Install(game);
+            // The options menu, hero screen, FPS counter and pause: commands only, no tick; the pause holds Game.Advance.
+            Interface = new InterfaceControl(Content.Hud, Party).Install(game);
+            Scripts.Interface = Interface;
+            // checkScroll's left edge waited while the mouse was on a button (rendercursor2D's overTeam, overInventoryBox).
+            Control.OverButton = (x, y) => Content.View.TeamButton.Contains(x, y) || Content.Hud.InventoryButton.Contains(x, y);
             Control.Install(game);
             // getMouse's wheel: the battle's ring menu, the book, the open pack or the target being chosen, then the items in
             // reach, then the zoom.
@@ -164,6 +179,8 @@ namespace MindAttic.Overworld.Runtime
             Sleep = new SleepCycle(Party, Clock).Install(game);
             Clock.Install(game);
             Messages.Install(game);
+            // Engine's start-up queued the tutorial last, once everything had loaded.
+            Messages.SayTutorial();
             Scripts.Sleep = Sleep;
             Scripts.Clock = Clock;
             Scripts.Messages = Messages;
@@ -190,6 +207,19 @@ namespace MindAttic.Overworld.Runtime
             Hud.ShowQuests(Quests, PlayerId.One);
             Hud.ShowBook(Books, PlayerId.One);
             Hud.ShowConsole(Scripts, PlayerId.One);
+            Hud.ShowInterface(Interface, PlayerId.One, Content.View.TeamButton);
+            // renderCursor left the world cursor out under the 2D arrow (the open panel, the buttons) and while a target was chosen.
+            World.CursorHidden = () =>
+            {
+                var pack = Inventory.For(PlayerId.One);
+                return pack.Choosing || Cursor2DDefinition.Shown(Content.Hud, Content.View.TeamButton, pack.Open, Viewpoint.Cursor.MouseX, Viewpoint.Cursor.MouseY);
+            };
+            game.EventRaised += e =>
+            {
+                if (!(e is QuitRequested)) return;
+                Debug.Log("Unity.Overworld: Exit chosen in the options menu; quitting.");
+                Application.Quit(0);
+            };
             World.ShowTarget(Inventory, PlayerId.One, Content.Hud.Target);
             World.ShowRing(Party, PlayerId.One);
             TeamButton = TeamButtonPresenter.Create(World.Camera, Content.View.TeamButton, Content.View.Cursor, Party);
@@ -197,6 +227,7 @@ namespace MindAttic.Overworld.Runtime
             Input.Inventory = Inventory;
             Input.InventoryButton = Content.Hud.InventoryButton;
             Input.Scripts = Scripts;
+            Input.Interface = Interface;
             Input.transform.SetParent(transform, false);
 
             var scripted = ScriptedInput(args);
@@ -221,7 +252,13 @@ namespace MindAttic.Overworld.Runtime
             var weathered = ApplyScriptedWeather(args, game);
             var battled = ApplyScriptedBattle(args, game);
             battled |= ApplyScriptedRing(args, game);
-            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || weathered || battled || seeded || capture != null) Input.UseDevices = false;
+            var shown = ApplyScriptedInterface(args, game);
+            if (scripted.HasValue || scriptedView || recalled || party || vitals || rested || picked || packed || typed || quested || read || weathered || battled || shown || seeded || capture != null) Input.UseDevices = false;
+
+            // frmMain showed a random loading picture while the engine loaded; real play holds it a moment, scripted runs
+            // skip it unless -overworld-loading asks for it.
+            var loading = ArgumentAfter(args, LoadingArgument);
+            if (Input.UseDevices || loading != null) StartCoroutine(LoadingScreen(loading));
 
             if (capture != null)
             {
@@ -1214,6 +1251,166 @@ namespace MindAttic.Overworld.Runtime
             Debug.Log("Unity.Overworld: scripted ring; " + DescribeBattle());
         }
 
+        /// <summary>
+        /// Applies the interface's scripted arguments; true when any was given (<c>-overworld-loading</c> is applied by the
+        /// loading screen): <c>-overworld-options &lt;main|controls|video|audio[,row][,seconds]&gt;</c> opens the options menu
+        /// (F11), picks that page from the main page with Down and Enter, and puts the cursor on that row (0 to 3) with Down;
+        /// <c>-overworld-hero-screen</c> opens the hero screen (Page Up); <c>-overworld-pause</c> pauses the game (the Pause
+        /// key); <c>-overworld-fps-off</c> hides the FPS counter (F4); <c>-overworld-hover &lt;hero[,seconds]&gt;</c> puts the
+        /// world cursor on that hero (0 Chrono, 1 Belmont, 2 Flagg), showing its name when it does not lead.
+        /// </summary>
+        bool ApplyScriptedInterface(string[] args, Game game)
+        {
+            var any = false;
+            void Do(ICommand c, string what)
+            {
+                var r = game.Submit(c);
+                if (!r.Accepted) Debug.LogError("Unity.Overworld: " + what + " was refused: " + r.Reason);
+            }
+
+            var options = ArgumentAfter(args, OptionsArgument);
+            if (options != null)
+            {
+                any = true;
+                if (TryOptions(options, Interface.Options, out var page, out var row, out var seconds)) StartCoroutine(OptionsAfter(game, page, row, seconds));
+                else Debug.LogError("Unity.Overworld: " + OptionsArgument + " wants a page (main, controls, video, audio), optionally the row (0 to " + (Interface.Options.Rows - 1) +
+                                    ") and the seconds to wait, not '" + options + "'.");
+            }
+
+            if (HasFlag(args, HeroScreenArgument))
+            {
+                any = true;
+                Do(new ToggleHeroScreen(PlayerId.One), HeroScreenArgument);
+            }
+
+            if (HasFlag(args, FpsOffArgument))
+            {
+                any = true;
+                Do(new ToggleFps(PlayerId.One), FpsOffArgument);
+            }
+
+            if (HasFlag(args, PauseArgument))
+            {
+                any = true;
+                Do(new TogglePause(PlayerId.One), PauseArgument);
+            }
+
+            var hover = ArgumentAfter(args, HoverArgument);
+            if (hover != null)
+            {
+                any = true;
+                if (TryRecall(hover, out var hero, out var wait) && hero >= 0 && hero < Party.Heroes.Count) StartCoroutine(HoverAfter(game, hero, wait));
+                else Debug.LogError("Unity.Overworld: " + HoverArgument + " wants a hero (0 to " + (Party.Heroes.Count - 1) + ") and optionally the seconds to wait, not '" + hover + "'.");
+            }
+
+            if (any) Debug.Log("Unity.Overworld: scripted interface; " + DescribeInterface());
+            return any;
+        }
+
+        /// <summary>Reads <c>page[,row][,seconds]</c>: the page's index in <paramref name="menu"/>, the row and the seconds.</summary>
+        public static bool TryOptions(string text, OptionsMenuDefinition menu, out int page, out int row, out float seconds)
+        {
+            page = -1;
+            row = 0;
+            seconds = 0f;
+            var parts = text.Split(',');
+            if (parts.Length > 3) return false;
+            var name = parts[0].Trim();
+            for (var i = 0; i < menu.Pages.Count; i++)
+                if (string.Equals(menu.Pages[i].Name, name, StringComparison.OrdinalIgnoreCase)) page = i;
+            if (page < 0) return false;
+            if (parts.Length > 1 && !(int.TryParse(parts[1].Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out row) && row >= 0 && row < menu.Rows)) return false;
+            return parts.Length < 3 || (float.TryParse(parts[2].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0f);
+        }
+
+        IEnumerator OptionsAfter(Game game, int page, int row, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var v = Interface.For(PlayerId.One);
+            var menu = Interface.Options;
+            void Key(OptionsKey key) => game.Submit(new PressOptionsKey(PlayerId.One, key));
+            void DownTo(int target)
+            {
+                for (var i = 0; i < menu.Rows && v.OptionsCursor != target; i++) Key(OptionsKey.Down);
+            }
+
+            if (!v.OptionsOpen) game.Submit(new ToggleOptions(PlayerId.One));
+            if (page > 0)
+            {
+                var main = menu.Pages[0].Rows;
+                for (var i = 0; i < main.Count; i++)
+                    if (main[i].Opens == menu.Pages[page].Name)
+                    {
+                        DownTo(i);
+                        Key(OptionsKey.Enter);
+                        break;
+                    }
+            }
+
+            DownTo(row);
+            Debug.Log("Unity.Overworld: scripted options; " + DescribeInterface());
+        }
+
+        /// <summary>Puts the world cursor where <see cref="Party.HeroAt"/> finds hero <paramref name="hero"/>.</summary>
+        IEnumerator HoverAfter(Game game, int hero, float seconds)
+        {
+            if (seconds > 0f) yield return new WaitForSecondsRealtime(seconds);
+            var h = Party.Heroes[hero];
+            var s = Party.Data.Selection;
+            var size = Party.Data.HeroSize;
+            var logged = false;
+            // Held on the hero every frame, as a hand would follow it while it walks after the leader.
+            while (true)
+            {
+                var x = h.X + size * s.HeroPoint.X + s.HeroOffset.X - s.CursorOffset.X;
+                var y = h.Y + size * s.HeroPoint.Y + s.HeroOffset.Y - s.CursorOffset.Y;
+                game.Submit(new PlaceCursor(PlayerId.One, x, y));
+                if (!logged) Debug.Log("Unity.Overworld: scripted hover over " + h.Name + ", under the cursor " + Party.HeroAt(Viewpoint.Cursor.X, Viewpoint.Cursor.Y));
+                logged = true;
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// frmMain.Startup's loading picture: <c>-overworld-loading &lt;1..12|random&gt;</c> picks one (else at random), shown
+        /// over everything while the game is held, then play begins.
+        /// </summary>
+        IEnumerator LoadingScreen(string which)
+        {
+            var pictures = Content.Hud.Loading.Pictures;
+            var file = Content.Hud.Loading.Pick(new System.Random());
+            if (which != null && int.TryParse(which, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n))
+            {
+                if (n >= 1 && n <= pictures.Count) file = pictures[n - 1];
+                else Debug.LogError("Unity.Overworld: " + LoadingArgument + " wants 1 to " + pictures.Count + " or random, not '" + which + "'.");
+            }
+
+            Hud.ShowLoading(file);
+            Host.enabled = false;
+            var devices = Input.enabled;
+            Input.enabled = false;
+            Debug.Log("Unity.Overworld: loading picture " + file);
+            yield return new WaitForSecondsRealtime(Content.Hud.Loading.Seconds);
+            Hud.HideLoading();
+            Host.enabled = true;
+            Input.enabled = devices;
+        }
+
+        string DescribeInterface()
+        {
+            var v = Interface.For(PlayerId.One);
+            var leader = Party.LeaderOf(PlayerId.One);
+            return "options " + (v.OptionsOpen ? "open on " + Interface.PageOf(PlayerId.One).Name + " row " + v.OptionsCursor : "shut") +
+                   ", hero screen " + (v.HeroScreenOpen ? "open" : "shut") + ", fps " + (v.FpsShown ? "shown" : "hidden") + (Interface.Paused ? ", paused" : "") +
+                   ", turn bars [" + string.Join(", ", TurnBarsView.Bars(Content.Hud.TurnBars, Party, leader).Select(b => Party.Heroes[b.Hero].Name + " " + b.FillWidth + " px " + b.Frame)) + "]" +
+                   (Hud != null ? (Hud.Cursor2DShown ? ", 2D cursor shown" : "") + (Hud.LoadingFile != null ? ", loading " + Hud.LoadingFile : "") +
+                                  (Hud.HeroHoverName != null && Hud.HeroHoverName.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex ? ", hover name '" + Hud.HeroHoverName.text + "'" : "") +
+                                  (Hud.FpsLabel != null && Hud.FpsLabel.resolvedStyle.display == UnityEngine.UIElements.DisplayStyle.Flex ? ", '" + Hud.FpsLabel.text + "'" : "") +
+                                  (v.HeroScreenOpen && Hud.HeroDateLabel != null ? ", hero screen [" + Hud.HeroDateLabel.text + " | " + Hud.HeroTimeLabel.text + " | " + Hud.HeroExperienceLabel.text + "]" : "")
+                       : "") +
+                   (World != null && World.CursorRenderer != null ? ", world cursor " + (World.CursorRenderer.enabled ? "drawn" : "hidden") : "");
+        }
+
         string DescribeBattle() =>
             "ring " + Party.RingOf(PlayerId.One) + ", leading " + Party.Leader(PlayerId.One).Name + " (move distance " +
             Party.Leader(PlayerId.One).MoveDistance.ToString("0.###", CultureInfo.InvariantCulture) + ")" +
@@ -1232,7 +1429,7 @@ namespace MindAttic.Overworld.Runtime
         {
             var s = Scripts.For(PlayerId.One);
             return "console " + (s.ConsoleOpen ? "open '" + s.Line + "'" : "shut") + ", last '" + s.Last + "'" + (s.Running ? ", script running" : "") +
-                   ", colour " + s.Colour + (s.OptionsOpen ? ", options open" : "") +
+                   ", colour " + s.Colour + (Interface != null && Interface.For(PlayerId.One).OptionsOpen ? ", options open" : "") +
                    (Viewpoint != null ? ", camera (" + Viewpoint.Camera.X.ToString(CultureInfo.InvariantCulture) + ", " + Viewpoint.Camera.Y.ToString(CultureInfo.InvariantCulture) + ", " +
                                         Viewpoint.Camera.Z.ToString(CultureInfo.InvariantCulture) + ")" : "") +
                    (Sleep != null ? ", ambient " + Sleep.Ambient : "") + (Clock != null ? ", clock " + Clock.TimeText + " light " + Clock.Light : "");
@@ -1367,6 +1564,7 @@ namespace MindAttic.Overworld.Runtime
                                   ? ", prompt '" + Hud.ConsoleLabel.text + "'" : ""));
 
                 if (Weather != null && Clouds != null) Debug.Log("Unity.Overworld: weather " + DescribeScenery());
+                if (Interface != null) Debug.Log("Unity.Overworld: interface " + DescribeInterface());
 
                 if (Party != null)
                     Debug.Log("Unity.Overworld: battle " + DescribeBattle() +

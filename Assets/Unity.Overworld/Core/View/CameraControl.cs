@@ -286,6 +286,12 @@ namespace MindAttic.Overworld.Core
             return CommandResult.Accept(new ExamineChanged(game.Tick, c.Player, v.Examine));
         }
 
+        /// <summary>
+        /// rendercursor2D's overTeam / overInventoryBox: the virtual mouse at (x, y) is on one of the HUD's buttons, where
+        /// checkScroll did not scroll left. Null: never.
+        /// </summary>
+        public Func<float, float, bool> OverButton { get; set; }
+
         CommandResult HandlePlaceCursor(Game game, PlaceCursor c)
         {
             if (float.IsNaN(c.X) || float.IsNaN(c.Y) || float.IsInfinity(c.X) || float.IsInfinity(c.Y))
@@ -393,7 +399,8 @@ namespace MindAttic.Overworld.Core
             var free = cam.FreeCamera;
             var step = fast ? c.Speed * c.FastFactor : c.Speed;
             if (cursor.AtRightEdge && (hero.X + c.ScrollRight > cam.X || free)) cam.Move(step, 0f);
-            if (cursor.AtLeftEdge && (hero.X + c.ScrollLeft < cam.X || free)) cam.Move(-step, 0f);
+            // The left edge does not scroll while the mouse is on the team or inventory button (overTeam, overInventoryBox).
+            if (cursor.AtLeftEdge && (hero.X + c.ScrollLeft < cam.X || free) && !(OverButton != null && OverButton(cursor.MouseX, cursor.MouseY))) cam.Move(-step, 0f);
             if (cursor.AtBottomEdge && (hero.Y + c.ScrollDown < cam.Y || free)) cam.Move(0f, -step);
             if (cursor.AtTopEdge && (hero.Y + c.ScrollUp > cam.Y || free)) cam.Move(0f, step);
         }

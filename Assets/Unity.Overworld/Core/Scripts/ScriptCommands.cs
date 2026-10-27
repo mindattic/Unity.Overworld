@@ -92,7 +92,7 @@ namespace MindAttic.Overworld.Core
         public bool Running { get; }
     }
 
-    /// <summary>A script changed an options setting (recorded for the options screen, story A20).</summary>
+    /// <summary>A script changed an options setting (CHANGE OPTIONS; the menu itself raises <see cref="OptionsChanged"/>).</summary>
     public sealed class ScriptSettingChanged : IGameEvent
     {
         public ScriptSettingChanged(long tick, PlayerId player, string setting) { Tick = tick; Player = player; Setting = setting; }
@@ -141,8 +141,5 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>The MOVE HERO TO targets the running script ends at.</summary>
         public IReadOnlyList<MoveTarget> Targets => targets;
-
-        /// <summary>bOptions as CHANGE OPTIONS set it (the options screen is story A20's).</summary>
-        public bool OptionsOpen { get; internal set; }
     }
 }

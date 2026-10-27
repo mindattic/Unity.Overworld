@@ -64,9 +64,16 @@ namespace MindAttic.Overworld.Core
             return result;
         }
 
-        /// <summary>Feeds real elapsed time; runs however many whole ticks it adds up to. Returns the ticks run.</summary>
+        /// <summary>
+        /// While this returns true the game is held (paused): <see cref="Advance"/> runs no ticks and the time passes
+        /// unused. Commands are still accepted. Null: never held.
+        /// </summary>
+        public Func<bool> Held { get; set; }
+
+        /// <summary>Feeds real elapsed time; runs however many whole ticks it adds up to. Returns the ticks run (none while <see cref="Held"/>).</summary>
         public int Advance(double elapsedSeconds)
         {
+            if (Held != null && Held()) return 0;
             int ticks = stepper.Advance(elapsedSeconds);
             for (int i = 0; i < ticks; i++) Step();
             return ticks;

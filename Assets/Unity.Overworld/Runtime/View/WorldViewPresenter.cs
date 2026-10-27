@@ -65,6 +65,12 @@ namespace MindAttic.Overworld.Runtime
         /// <summary>The world cursor drawn (null: none).</summary>
         public WorldCursor Cursor { get; private set; }
 
+        /// <summary>
+        /// While this returns true the world cursor is not drawn: renderCursor left it out while the 2D arrow was shown over
+        /// the HUD's panel and buttons (bShowCursor2D) and while an item's target was chosen (bHeroSelect). Null: always drawn.
+        /// </summary>
+        public System.Func<bool> CursorHidden { get; set; }
+
         /// <summary>Where each hero stands and what it shows: the start poses, or the party's each frame once <see cref="Follow"/> is called.</summary>
         public HeroPose[] Poses { get; set; }
 
@@ -573,7 +579,7 @@ namespace MindAttic.Overworld.Runtime
                 var y = Mathf.LerpUnclamped(Cursor.PreviousY, Cursor.Y, alpha);
                 CursorRenderer.transform.localPosition = new Vector3(x + offset.X, y + offset.Y, Cursor.Z);
                 SetTexture(CursorRenderer, Cursor.File);
-                CursorRenderer.enabled = HasTexture(CursorRenderer);
+                CursorRenderer.enabled = HasTexture(CursorRenderer) && !(CursorHidden != null && CursorHidden());
             }
         }
 

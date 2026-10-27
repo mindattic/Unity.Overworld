@@ -123,6 +123,7 @@ namespace MindAttic.Overworld.Core
             var hero = Leader(command.Player);
             if (hero.Mode == HeroMode.Battle) return CommandResult.Reject(hero.Name + " is in battle; a hero rests in adventure mode.");
             if (QuestScreenOpenFor(command.Player)) return CommandResult.Reject("The quest screen is open; the leader rests once it is shut.");
+            if (OptionsOpenFor(command.Player)) return CommandResult.Reject("The options menu is open; the leader rests once it is shut.");
             hero.Running = false;
             var events = new List<IGameEvent>();
             // actionRest shuts the pack.
@@ -316,7 +317,8 @@ namespace MindAttic.Overworld.Core
                 var input = InputOf(player);
                 var hero = Leader(player);
                 var focus = Focus != null ? Focus(player) : InputFocus.World;
-                var questScreen = QuestScreenOpenFor(player);
+                // The options menu holds the arrows and the move button as the quest screen does (actionLeft ... actionMove tested bOptions).
+                var questScreen = QuestScreenOpenFor(player) || OptionsOpenFor(player);
                 var ring = RingMenuOpen(player);
                 RingInput(player, input);
                 if (ApplyInput(hero, input, focus, questScreen, BookShownFor(player), ring))
@@ -549,6 +551,15 @@ namespace MindAttic.Overworld.Core
         public Func<PlayerId, bool> QuestScreenOpen { get; set; }
 
         bool QuestScreenOpenFor(PlayerId player) => QuestScreenOpen != null && QuestScreenOpen(player);
+
+        /// <summary>
+        /// True while a player's options menu is open (bOptions): its arrows only mark the direction held (the menu takes
+        /// them), and the move button, the rest key and the pick-up button do nothing, as actionLeft ... actionMove,
+        /// actionRest and actionPickup tested it. Null: never open.
+        /// </summary>
+        public Func<PlayerId, bool> OptionsOpen { get; set; }
+
+        internal bool OptionsOpenFor(PlayerId player) => OptionsOpen != null && OptionsOpen(player);
 
         /// <summary>
         /// True while a player's book is shown (bBook): left and right only mark the direction held (they turn its pages);

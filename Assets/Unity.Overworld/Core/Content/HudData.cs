@@ -77,6 +77,11 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>The battle line's font (fontArialNarrow14).</summary>
         public HudFont BattleFont { get; internal set; }
+
+        /// <summary>The chosen target's name while an item's target is chosen ("|{0}|") and its colour (yellow).</summary>
+        public string ChosenText { get; internal set; }
+
+        public TextColour ChosenColour { get; internal set; }
     }
 
     /// <summary>One of the bottom-left bars: where it is, its frame picture and its fill picture.</summary>
@@ -510,7 +515,7 @@ namespace MindAttic.Overworld.Core
     /// The heads-up text (hud.json): the virtual screen the original drew on, its fonts, where the clock's lines go on the
     /// HUD and the hero screen, and how messages show.
     /// </summary>
-    public sealed class HudData
+    public sealed partial class HudData
     {
         public int ScreenWidth { get; internal set; }
         public int ScreenHeight { get; internal set; }
@@ -609,11 +614,6 @@ namespace MindAttic.Overworld.Core
             data.Time = ReadText(clock, "time", data, fonts);
             clock.Done();
 
-            var hero = root.Section("heroScreen");
-            data.HeroScreenDate = ReadText(hero, "date", data, fonts);
-            data.HeroScreenTime = ReadText(hero, "time", data, fonts);
-            hero.Done();
-
             var box = root.Section("statusBox");
             data.StatusBox = new StatusBoxDefinition
             {
@@ -627,7 +627,10 @@ namespace MindAttic.Overworld.Core
                 TeamSpacing = box.Number("teamSpacing", 0f, data.ScreenWidth),
                 Battle = box.Pair("battle", 0f, data.ScreenWidth),
                 BattleFont = ReadFont(box, fonts, "battleFont"),
+                ChosenText = box.Text("chosenText"),
+                ChosenColour = ReadColour(box, "chosenColour"),
             };
+            box.Check(data.StatusBox.ChosenText.Contains("{0}"), "chosenText", "must hold {0} for the name");
             box.Done();
 
             var bars = root.Section("bars");
@@ -723,6 +726,8 @@ namespace MindAttic.Overworld.Core
             announcement.Done();
             m.Done();
             data.Messages = tuning;
+            ReadInterface(root, data, fonts);
+            root.Check(data.Tutorial == null || data.Tutorial.Lines.Count <= tuning.MaxMessages, "tutorial", "must fit the message queue (maxMessages)");
             root.Done();
             return data;
         }

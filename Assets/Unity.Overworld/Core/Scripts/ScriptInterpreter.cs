@@ -17,8 +17,8 @@ namespace MindAttic.Overworld.Core
     /// / MONEY; CHANGE ENEMY / BADGUY HEALTH, AI (stubs until the battle stories); CHANGE LIGHT AMBIENT (r,g,b or +/-n),
     /// RED, GREEN, BLUE; CHANGE TIME HOUR / CLOCK (set, the next day when earlier, or +/-n hours, the period and light
     /// settled) and DAYPERIOD (to the period's hour, the light following on the minute); CHANGE SCRIPT COLOR, RUNNING;
-    /// CHANGE CAMERA / CAM X, Y, Z, POS HERO; CHANGE INVENTORY OPEN / CLOSE; CHANGE OPTIONS OPEN / CLOSE (recorded in
-    /// <see cref="ScriptState"/> for the options screen of story A20); CHANGE BOOK (the player's book, <see cref="Books"/>);
+    /// CHANGE CAMERA / CAM X, Y, Z, POS HERO; CHANGE INVENTORY OPEN / CLOSE; CHANGE OPTIONS OPEN / CLOSE (the player's options
+    /// menu, <see cref="Interface"/>); CHANGE BOOK (the player's book, <see cref="Books"/>);
     /// CHANGE CURSOR POS CENTER; MOVE HERO
     /// TO x,y,z (walks the hero there and runs until it arrives); RUN NIGHT; MAKE (nothing, as in the original). An
     /// unknown item of a known type is an error ("Script failed to execute.", the other commands still run); a number that
@@ -62,6 +62,9 @@ namespace MindAttic.Overworld.Core
 
         /// <summary>Where the failure messages go (null: none are shown).</summary>
         public MessageBoard Messages { get; set; }
+
+        /// <summary>The options menu CHANGE OPTIONS opens and shuts (null: CHANGE OPTIONS does nothing).</summary>
+        public InterfaceControl Interface { get; set; }
 
         /// <summary>The books CHANGE BOOK loads, shows and styles (null: CHANGE BOOK does nothing).</summary>
         public BookReader Books { get; set; }
@@ -772,7 +775,7 @@ namespace MindAttic.Overworld.Core
             Pack.SetOpen(run.Player, c.Item == "OPEN" ? on.Value : !on.Value, run.Tick, run.Events);
         }
 
-        /// <summary>cmdChangeOptions: as INVENTORY, for the options screen (recorded until story A20 draws it).</summary>
+        /// <summary>cmdChangeOptions: as INVENTORY, for the player's options menu (bOptions).</summary>
         void ChangeOptions(Command c, RunContext run)
         {
             if (c.Item != "OPEN" && c.Item != "CLOSE")
@@ -783,7 +786,7 @@ namespace MindAttic.Overworld.Core
 
             var on = OnOff(c.Parameter);
             if (!on.HasValue) return;
-            run.State.OptionsOpen = c.Item == "OPEN" ? on.Value : !on.Value;
+            Interface?.SetOptions(run.Player, c.Item == "OPEN" ? on.Value : !on.Value, run.Tick, run.Events);
             run.Events.Add(new ScriptSettingChanged(run.Tick, run.Player, "OPTIONS " + c.Item));
         }
 

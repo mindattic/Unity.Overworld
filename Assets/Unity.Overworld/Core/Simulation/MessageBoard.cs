@@ -42,7 +42,7 @@ namespace MindAttic.Overworld.Core
     /// a character, once the last one shown has drifted more than the spacing below the centre or is gone; each shown
     /// message then loses the fade from 255 and drifts down each tick, and is gone at alpha 0 (the step that would take
     /// it below 0 sets it to 0 without drifting, as the original's byte overflow did). Used for the day period
-    /// announcements here; the tutorial and the other status messages (story A20) use the same board.
+    /// announcements, the script failures and the tutorial (<see cref="SayTutorial"/>).
     /// Presentation reads <see cref="Shown"/>.
     /// </summary>
     public sealed class MessageBoard : ITickSystem
@@ -83,6 +83,14 @@ namespace MindAttic.Overworld.Core
             var message = new ShownMessage(caption ?? string.Empty, font, r, g, b, 0, 0);
             if (waiting.Count < Tuning.MaxMessages) waiting.Add(message);
             else waiting[waiting.Count - 1] = message;
+        }
+
+        /// <summary>sayTutorial: queues the tutorial's lines (hud.json "tutorial"), the blank ones spacing them out.</summary>
+        public void SayTutorial()
+        {
+            var t = Hud.Tutorial;
+            if (t == null) return;
+            foreach (var line in t.Lines) Add(line, t.Font, t.Colour.R, t.Colour.G, t.Colour.B);
         }
 
         public void Step(Game game, long tick, ICollection<IGameEvent> events)

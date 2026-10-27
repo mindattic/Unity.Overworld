@@ -45,6 +45,7 @@ namespace MindAttic.Overworld.Tests
         MessageBoard messages;
         ScriptInterpreter scripts;
         BookReader books;
+        InterfaceControl ui;
         List<IGameEvent> raised;
         Hero chrono, belmont;
 
@@ -69,6 +70,8 @@ namespace MindAttic.Overworld.Tests
             scripts.Books = books;
             pack.Books = books;
             party.Install(game);
+            ui = new InterfaceControl(Registry.Hud, party).Install(game);
+            scripts.Interface = ui;
             view.Install(game);
             sleep.Install(game);
             clock.Install(game);
@@ -438,9 +441,9 @@ namespace MindAttic.Overworld.Tests
             Run("CHANGE INVENTORY CLOSE ON");
             Assert.IsFalse(pack.For(PlayerId.One).Open);
             Run("CHANGE OPTIONS OPEN ON");
-            Assert.IsTrue(State.OptionsOpen);
+            Assert.IsTrue(ui.For(PlayerId.One).OptionsOpen, "CHANGE OPTIONS opens the options menu");
             Run("CHANGE OPTIONS CLOSE TRUE");
-            Assert.IsFalse(State.OptionsOpen);
+            Assert.IsFalse(ui.For(PlayerId.One).OptionsOpen);
             Run("CHANGE BOOK NUM 2 | CHANGE BOOK NUMSYS ANCHIENT | CHANGE BOOK COLOR BLUE | CHANGE BOOK LETTERING CALISTO | CHANGE BOOK SHOW ON");
             var book = books.For(PlayerId.One);
             Assert.AreEqual(("Grimoire de'Alchemiste", BookNumbering.Ancient, "BLUE", "CALISTO", true), (books.Current(PlayerId.One).Title, book.Numbering, book.Cover, book.Lettering, book.Shown),

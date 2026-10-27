@@ -23,7 +23,10 @@ namespace MindAttic.Overworld.Runtime
     /// 12.1; the U key's lone flip is a debug key, <see cref="ToggleHeroMode"/>, for the developer tools). The script
     /// console (RECONSTRUCTION 9.3): ~ opens it and Insert opens it with the last script; while it is open every key goes to
     /// it (<see cref="PressConsoleKey"/>, by the WinForms name the original tested), and while it is open or a script runs
-    /// nothing else is read. Every frame, before the game advances, it sends what the
+    /// nothing else is read. The interface keys (U.OVW-US-A20, RECONSTRUCTION 5.1, 5.2, 13): F11 and Escape open and shut
+    /// the options menu (the arrows and Enter, or the left button, work it in Core), F4 the FPS counter, Pause the pause
+    /// (frmMain keys, read while a script runs but not while the console is open), Page Up the hero screen. While paused
+    /// nothing else is read but the options menu's keys, so its Exit can still quit (BIBLE). Every frame, before the game advances, it sends what the
     /// player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/> commands and the key presses and clicks as
     /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>
@@ -34,6 +37,7 @@ namespace MindAttic.Overworld.Runtime
         InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
         InputAction previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem;
         InputAction inventory, drop, quickBar, questScreen, book, nextBook, weather, battle;
+        InputAction options, fps, pause, heroScreen;
         readonly InputAction[] quickKeys = new InputAction[10];
         Vector2? scriptedMouse;
         int scriptedWheelSent;
@@ -127,6 +131,10 @@ namespace MindAttic.Overworld.Runtime
             nextBook = Button("NextBook", "<Keyboard>/n");
             weather = Button("Weather", "<Keyboard>/w");
             battle = Button("Battle", "<Keyboard>/end");
+            options = Button("Options", "<Keyboard>/f11", "<Keyboard>/escape");
+            fps = Button("Fps", "<Keyboard>/f4");
+            pause = Button("Pause", "<Keyboard>/pause");
+            heroScreen = Button("HeroScreen", "<Keyboard>/pageUp");
             // 1 to 9 then 0: quick slots 0 to 9.
             for (var i = 0; i < quickKeys.Length; i++) quickKeys[i] = Button("Quick" + (i + 1) % 10, "<Keyboard>/digit" + (i + 1) % 10);
         }
@@ -159,8 +167,25 @@ namespace MindAttic.Overworld.Runtime
             left, right, up, down, run, move, point,
             motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown,
             previousHero, nextHero, team, select, rest, confirm, previousItem, nextItem, inventory, drop, quickBar, questScreen, book, nextBook, weather, battle,
+            options, fps, pause, heroScreen,
             quickKeys[0], quickKeys[1], quickKeys[2], quickKeys[3], quickKeys[4], quickKeys[5], quickKeys[6], quickKeys[7], quickKeys[8], quickKeys[9],
         };
+
+        /// <summary>The options menu, hero screen, FPS counter and pause (null: none).</summary>
+        public InterfaceControl Interface { get; set; }
+
+        /// <summary>
+        /// With the options menu open: Enter or the left button (actionPickup), then Left, Up and Down (actionLeft, actionUp,
+        /// actionDown, each once a press) work it.
+        /// </summary>
+        void OptionsKeys()
+        {
+            if (Interface == null || !Interface.For(Player).OptionsOpen) return;
+            if (confirm.WasPressedThisFrame() || select.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Enter));
+            if (left.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Left));
+            if (up.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Up));
+            if (down.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Down));
+        }
 
         /// <summary>The script console and its input lock (null: no console).</summary>
         public ScriptInterpreter Scripts { get; set; }
@@ -180,7 +205,18 @@ namespace MindAttic.Overworld.Runtime
             var consoleWasOpen = Scripts != null && Scripts.For(Player).ConsoleOpen;
             if (UseDevices && Scripts != null) SendConsoleKeys();
             if (UseDevices && !consoleWasOpen && weather.WasPressedThisFrame()) Game.Submit(new CycleWeather(Player));
-            if (locked)
+            // F11 (and Escape), F4 and Pause were frmMain keys too.
+            if (UseDevices && !consoleWasOpen && Interface != null)
+            {
+                if (options.WasPressedThisFrame()) Game.Submit(new ToggleOptions(Player));
+                if (fps.WasPressedThisFrame()) Game.Submit(new ToggleFps(Player));
+                if (pause.WasPressedThisFrame()) Game.Submit(new TogglePause(Player));
+            }
+
+            // While paused getInput was not called; the options menu still answers, so Exit can quit from a pause.
+            var paused = Interface != null && Interface.Paused;
+            if (paused && !locked && UseDevices) OptionsKeys();
+            if (locked || paused)
             {
                 swallowConfirm = true;
                 Last = default;
@@ -215,6 +251,8 @@ namespace MindAttic.Overworld.Runtime
             if (quickBar.WasPressedThisFrame()) Game.Submit(new ToggleQuickBar(Player));
             if (questScreen.WasPressedThisFrame()) Game.Submit(new ToggleQuestScreen(Player));
             if (battle.WasPressedThisFrame()) Game.Submit(new ToggleBattle(Player));
+            if (heroScreen.WasPressedThisFrame() && Interface != null) Game.Submit(new ToggleHeroScreen(Player));
+            OptionsKeys();
             if (book.WasPressedThisFrame()) Game.Submit(new ToggleBook(Player));
             if (nextBook.WasPressedThisFrame()) Game.Submit(new NextBook(Player));
             for (var i = 0; i < quickKeys.Length; i++)
@@ -314,6 +352,8 @@ namespace MindAttic.Overworld.Runtime
             if (!pressed || Party == null) return;
             // With the pack open or an item's target being chosen, Enter uses (Core reads it from the held button).
             if (Inventory != null && Inventory.FocusOf(Player) != InputFocus.World) return;
+            // actionPickup's sleep was inside its "Not bOptions" test.
+            if (Interface != null && Interface.For(Player).OptionsOpen) return;
             if (Party.Heroes[Party.LeaderOf(Player)].Laying) Game.Submit(new Sleep(Player));
         }
 

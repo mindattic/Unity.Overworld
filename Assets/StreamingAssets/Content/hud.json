@@ -16,12 +16,90 @@
     "time": {"x": 5, "y": 423, "font": "fontCalisto", "colour": [128, 255, 255, 0]}
   },
   "heroScreen": {
-    "_note": "renderheroScreen writes the date line at (iWidth - 250, 25) and the time line (time, two spaces, period) at (iWidth - 250, 45) in fontCalisto, (128, 255, 255, 0). The screen itself (Page Up, menu.png) comes with the interface story (U.OVW-US-A20).",
+    "_note": "Gui/HeroScreen.vb renderheroScreen while bHeroScreen is on (Page Up, once a press): menu.png (loaded at 256 x 256) stretched over heroScreenWidth x heroScreenheight (600 x 430) at heroScreenOffset (20, 20) (its top edge's v was 2 / 600 and 2 / 430, under half a pixel row cropped; not reproduced), then the date line at (iWidth - 250, 25) and the time line (time, two spaces, period) at (iWidth - 250, 45) in fontCalisto, (128, 255, 255, 0). The icon quad it also built (itemIconSize at +(260, 10)) was never drawn. The experience line is the rebuild's (BIBLE 'Quest Exp use'): the party's experience on the next line, in the same font and colour.",
+    "x": 20, "y": 20, "width": 600, "height": 430,
+    "picture": "gfx/gui/menu.PNG",
     "date": {"x": 390, "y": 25, "font": "fontCalisto", "colour": [128, 255, 255, 0]},
-    "time": {"x": 390, "y": 45, "font": "fontCalisto", "colour": [128, 255, 255, 0]}
+    "time": {"x": 390, "y": 45, "font": "fontCalisto", "colour": [128, 255, 255, 0]},
+    "experience": {"x": 390, "y": 65, "font": "fontCalisto", "colour": [128, 255, 255, 0]},
+    "experienceText": "Experience: {0}"
+  },
+  "options": {
+    "_note": "Gui/Options.vb renderOptionMenu while bOptions is on (F11; Escape in the rebuild, BIBLE 'Pause'): menu.png (loaded at 256 x 256) stretched over menuWidth x menuHeight (255 x 255) at (10, 10) (its top edge's v was 2 / 255; not reproduced); 'Options' at (28, 20) in fontArialNarrow24, (255, 0, 255, 255); '>' at (50, the chosen row's y) and the page's rows at (60, y) in fontArial white. maxOptions is 3 on every page: Up and Down (once a press, optionUp / optionDown) step the cursor through rows 0 to 3, wrapping; Left goes back to the main page (the first); Enter (or the left button, actionPickup) on the main page opens the row's page, or quits on Exit. The Controls page lists keyLeft ... keyDown by their DirectInput names. The Video and Audio pages had no rows and no positions of their own (optionPos(2, n) was never set, so the cursor sat at y 0; optionPos(3, n) is past the table, so the Audio page threw every frame and froze the screen); they use the Controls page's rows here (BIBLE).",
+    "x": 10, "y": 10, "width": 255, "height": 255,
+    "picture": "gfx/gui/menu.PNG",
+    "title": {"x": 28, "y": 20, "font": "fontArialNarrow24", "colour": [255, 0, 255, 255]},
+    "titleText": "Options",
+    "font": "fontArial",
+    "colour": [255, 255, 255, 255],
+    "cursorText": ">",
+    "cursorX": 50,
+    "rowX": 60,
+    "rows": 4,
+    "pages": [
+      {"name": "Main", "rows": [
+        {"text": "Controls", "y": 60, "opens": "Controls"},
+        {"text": "Video", "y": 75, "opens": "Video"},
+        {"text": "Audio", "y": 90, "opens": "Audio"},
+        {"text": "Exit", "y": 200, "quits": true}
+      ]},
+      {"name": "Controls", "rows": [
+        {"text": "Move Left = LeftArrow", "y": 60},
+        {"text": "Move Right = RightArrow", "y": 75},
+        {"text": "Move Up = UpArrow", "y": 90},
+        {"text": "Move Down = DownArrow", "y": 105}
+      ]},
+      {"name": "Video", "rows": [{"text": "", "y": 60}, {"text": "", "y": 75}, {"text": "", "y": 90}, {"text": "", "y": 105}]},
+      {"name": "Audio", "rows": [{"text": "", "y": 60}, {"text": "", "y": 75}, {"text": "", "y": 90}, {"text": "", "y": 105}]}
+    ]
+  },
+  "fps": {
+    "_note": "Gui/Fps.vb renderFPS (F4, on at start): every iFPSProfileSpeed (100) ms the frames counted since become the rate (count x 1000 / 100), written as 'n fps' at (iWidth - 50, 4) in fontArial, (255, 255, 0, 25): red. The original counted only while on but wrote the stale number while off; the rebuild writes nothing while off (BIBLE).",
+    "text": {"x": 590, "y": 4, "font": "fontArial", "colour": [255, 255, 0, 25]},
+    "format": "{0} fps",
+    "sampleMilliseconds": 100
+  },
+  "pause": {
+    "_note": "Engine.oneFrameRender's last write while bPause is on: '- PAUSE -' at (iWidth / 2 - 64, iHeight / 2 - 30) in fontArialNarrow24 white. No key set it in the original (BIBLE 'Pause').",
+    "text": {"x": 256, "y": 210, "font": "fontArialNarrow24", "colour": [255, 255, 255, 255]},
+    "caption": "- PAUSE -"
+  },
+  "turnBars": {
+    "_note": "Gui/TurnBar.vb renderTurnBar, every frame after renderStatus: the leader's bar in the first slot and, in team mode, the other heroes' in party order in the next; each a TurnbarWidth x TurnbarHeight (60 x 13) fill quad TurnbarWidth x stamina / maxStamina wide (VB Integer, half to even; never below 0) carrying the whole stamina_fill picture, under ready_bar when the hero's stamina is full and stamina_bar otherwise (the pictures loaded at 87 x 13, stretched). A fourth slot at (300, 59) was never used (three heroes).",
+    "width": 60, "height": 13,
+    "slots": [{"x": 18, "y": 59}, {"x": 96, "y": 59}, {"x": 176, "y": 59}],
+    "frame": "gfx/gui/stamina_bar.PNG",
+    "ready": "gfx/gui/ready_bar.PNG",
+    "fill": "gfx/gui/stamina_fill.PNG"
+  },
+  "cursor2D": {
+    "_note": "Cursor/Cursor2D.vb rendercursor2D, the frame's last draw: while the virtual mouse is over the open inventory panel, the team button or the inventory button (the buttons' hit boxes), cursor_arrow (arrow.png) 28 x 28 at the mouse + (-9, +4), and renderCursor does not draw the world cursor; renderCursor also leaves it out while an item's target is being chosen (bHeroSelect).",
+    "picture": "gfx/cursor/arrow.PNG",
+    "size": 28,
+    "offset": [-9, 4]
+  },
+  "hoverName": {
+    "_note": "Cursor.checkCursorOverHero: with the world cursor over a hero other than the leader (the first hero it is over, Party.HeroAt), renderText's '.' (scale 0.02) and the hero's name (0.007) at (x + heroSize / 2 + 0.005, y - heroSize / 2 + 0.1), or + 0.08 while it kneels, in the world's light.",
+    "labelPoint": [0.5, -0.5],
+    "labelOffset": [0.005, 0.1],
+    "kneelingOffset": [0.005, 0.08],
+    "marker": ".",
+    "markerScale": 0.02,
+    "nameScale": 0.007
+  },
+  "tutorial": {
+    "_note": "Root.sayTutorial, at start and on Reset: these 88 lines queued as messages in fontArial white, the blanks spacing them out. The original's 'INSERT - Toggle INVENTORY' named the wrong key (Insert recalls the console's last script; Delete opens the pack): it says DELETE here (BIBLE).",
+    "font": "fontArial",
+    "colour": [255, 255, 255],
+    "lines": ["hi!", "", "", "", "", "This is a tutorial.", "", "", "", "", "", "Move by holding Right Mouse", "", "", "", "Pickup items by pressing Left Mouse", "", "", "", "", "", "Zoom with scroll wheel", "", "", "", "", "", "DELETE - Toggle INVENTORY", "", "", "", "", "", "W - Toggle WEATHER Mode", "", "", "", "", "", "END - Toggle BATTLE Mode", "", "", "", "", "", "B - Toggle BOOK Mode", "", "", "", "", "", "Q - Toggle QUICK Mode", "", "", "", "", "", "R - Reset", "", "", "", "", "", "PAGEDOWN - Toggle QUEST Menu", "", "", "", "", "", "PAGEUP - Toggle HERO Menu", "", "", "", "", "", "~ - Toggle Script Language Mode", "", "", "", "", "", "There's more so experiment!!!", "", "", "", "Have fun!!!", "", "...thanks again!"]
+  },
+  "loading": {
+    "_note": "frmMain.Startup: a random one of gfx/gui/load/load640_1 to 12 (getRndInt(1, 12)) as the form's background while the engine loaded, gone once the game ran. The rebuild loads in a moment, so it holds the picture 'seconds' before play starts (BIBLE).",
+    "pictures": ["gfx/gui/load/load640_1.jpg", "gfx/gui/load/load640_2.jpg", "gfx/gui/load/load640_3.jpg", "gfx/gui/load/load640_4.jpg", "gfx/gui/load/load640_5.jpg", "gfx/gui/load/load640_6.JPG", "gfx/gui/load/load640_7.JPG", "gfx/gui/load/load640_8.JPG", "gfx/gui/load/load640_9.JPG", "gfx/gui/load/load640_10.JPG", "gfx/gui/load/load640_11.JPG", "gfx/gui/load/load640_12.JPG"],
+    "seconds": 1.5
   },
   "statusBox": {
-    "_note": "Gui/StatusBox.vb renderStatus (status_box.png is loaded but its draw is commented out, so only the text shows): at (statOffsetX, statOffsetY) = (x, y), the leader's name at +name, written '  Name  ' in white; then 'HP n', 'MP n' and 'AP n' at +value and '  / max' at +maximum, each row rowSpacing lower, in (255, 255 - r, 255, 255 - b) of the world light (r, g, b), so green by day. In team mode the other heroes follow at +teamSpacing each, their names in (255, 255 - r, 255, b). A hero in battle mode has one more line at +battle in battleFont: below its maximum stamina, its share as a whole percent (VB's CInt, half to even) written 'NN %' for the leader and 'NN%' for the others, in (255 x percent / 100, 255 - r, 255, b), so it fades in as the gauge fills; full, 'Ready!' in (255, 255, 255, b) for the leader and (255, 255 - r, 255, b) for the others.",
+    "_note": "Gui/StatusBox.vb renderStatus (status_box.png is loaded but its draw is commented out, so only the text shows): at (statOffsetX, statOffsetY) = (x, y), the leader's name at +name, written '  Name  ' in white; then 'HP n', 'MP n' and 'AP n' at +value and '  / max' at +maximum, each row rowSpacing lower, in (255, 255 - r, 255, 255 - b) of the world light (r, g, b), so green by day. In team mode the other heroes follow at +teamSpacing each, their names in (255, 255 - r, 255, b). A hero in battle mode has one more line at +battle in battleFont: below its maximum stamina, its share as a whole percent (VB's CInt, half to even) written 'NN %' for the leader and 'NN%' for the others, in (255 x percent / 100, 255 - r, 255, b), so it fades in as the gauge fills; full, 'Ready!' in (255, 255, 255, b) for the leader and (255, 255 - r, 255, b) for the others. While an item's target is being chosen (bHeroSelect), the chosen hero's name is written chosenText ('|Name|') in chosenColour (yellow) instead.",
     "x": 5, "y": 1, "font": "fontCalisto",
     "name": [12, 0],
     "value": [14, 15],
@@ -29,7 +107,9 @@
     "rowSpacing": 15,
     "teamSpacing": 80,
     "battle": [14, 67],
-    "battleFont": "fontArialNarrow14"
+    "battleFont": "fontArialNarrow14",
+    "chosenText": "|{0}|",
+    "chosenColour": [255, 255, 255, 0]
   },
   "bars": {
     "_note": "Gui/HealthBar.vb, ManaBar.vb and StaminaBar.vb: the leader's bars at the bottom left, width x height, the fill drawn first and the bar over it; the fill quad is width x value / max wide (rounded to a whole pixel, as VB's Integer assignment did, never below 0) with the whole fill picture on it. The mana bar reuses health_bar.png.",
