@@ -474,7 +474,7 @@ namespace MindAttic.Overworld.Runtime
             View = view;
             textures = library;
             block = new MaterialPropertyBlock();
-            material = new Material(Shader.Find("Sprites/Default")) { name = "Overworld sprite" };
+            material = SpriteMaterials.Create("Overworld sprite");
             Poses = view.StartPoses();
 
             var def = view.Camera.Definition;

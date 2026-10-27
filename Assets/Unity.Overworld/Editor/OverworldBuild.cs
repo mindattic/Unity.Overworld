@@ -32,6 +32,7 @@ namespace MindAttic.Overworld.Editor
         [MenuItem("Overworld/Build Windows Player")]
         public static void BuildPlayer()
         {
+            RenderPipelineBuilder.Ensure();
             BuildMainScene();
             var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
             {

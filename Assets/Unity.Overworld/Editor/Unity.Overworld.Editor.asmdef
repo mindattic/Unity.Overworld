@@ -3,7 +3,9 @@
     "rootNamespace": "MindAttic.Overworld.Editor",
     "references": [
         "Unity.Overworld.Core",
-        "Unity.Overworld.Runtime"
+        "Unity.Overworld.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"

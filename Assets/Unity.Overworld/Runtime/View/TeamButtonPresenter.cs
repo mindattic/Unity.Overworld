@@ -53,7 +53,7 @@ namespace MindAttic.Overworld.Runtime
             Party = party;
             textures = library;
             block = new MaterialPropertyBlock();
-            material = new Material(Shader.Find("Sprites/Default")) { name = "Overworld team button" };
+            material = SpriteMaterials.Create("Overworld team button");
             mesh = QuadMeshes.Quad(1f, 0.5f);
             gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
             Renderer = gameObject.AddComponent<MeshRenderer>();
