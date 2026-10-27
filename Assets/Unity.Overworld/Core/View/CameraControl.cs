@@ -305,22 +305,35 @@ namespace MindAttic.Overworld.Core
 
         public void Step(Game game, long tick, ICollection<IGameEvent> events)
         {
-            foreach (var player in game.Players) Step(For(player), Party.Leader(player), Party.InputOf(player).Move);
+            var paused = game.IsHeld;
+            foreach (var player in game.Players) Step(For(player), Party.Leader(player), !paused && Party.InputOf(player).Move, paused);
         }
 
-        void Step(Viewpoint v, Hero hero, bool moveHeld)
+        /// <param name="paused">
+        /// The game is paused: getKeyboard and getMouse (getInput) were not called, so the keys, the wheel and the mouse's
+        /// motion do nothing (the motion and wheel wait, as DirectInput's relative axes added up until the next poll), while
+        /// renderCursor's following, scrolling, hold and centring and initCamera, done in the draw, go on.
+        /// </param>
+        void Step(Viewpoint v, Hero hero, bool moveHeld, bool paused = false)
         {
             var c = Control;
             var cam = v.Camera;
             var cursor = v.Cursor;
             var def = cursor.Definition;
-            var input = v.Held;
-            var dx = v.PendingX;
-            var dy = v.PendingY;
-            var wheel = v.PendingWheel;
-            v.PendingX = 0f;
-            v.PendingY = 0f;
-            v.PendingWheel = 0;
+            var input = paused ? default : v.Held;
+            var dx = 0f;
+            var dy = 0f;
+            var wheel = 0;
+            if (!paused)
+            {
+                dx = v.PendingX;
+                dy = v.PendingY;
+                wheel = v.PendingWheel;
+                v.PendingX = 0f;
+                v.PendingY = 0f;
+                v.PendingWheel = 0;
+            }
+
             cam.Settle();
             cursor.Settle();
 
@@ -348,7 +361,7 @@ namespace MindAttic.Overworld.Core
             }
 
             // KeysUp: the zoom button let go.
-            if (!input.Zoom)
+            if (!input.Zoom && !paused)
             {
                 cursor.Sprite = CursorSprite.Arrow;
                 v.Zooming = false;

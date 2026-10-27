@@ -163,7 +163,7 @@ namespace MindAttic.Overworld.Runtime
             // their scripts (HERO the item target, selectedHero) through the interpreter.
             Quests = new QuestLog(Content.Quests, Party) { Scripts = Scripts, ScriptHero = Scripts.TargetOf }.Install(game);
             Party.Install(game);
-            // The options menu, hero screen, FPS counter and pause: commands only, no tick; the pause holds Game.Advance.
+            // The options menu, hero screen, FPS counter and pause: commands only, no tick; while paused (Game.IsHeld) each system skips what the original's If Not bPause skipped.
             Interface = new InterfaceControl(Content.Hud, Party).Install(game);
             Scripts.Interface = Interface;
             // checkScroll's left edge waited while the mouse was on a button (rendercursor2D's overTeam, overInventoryBox).

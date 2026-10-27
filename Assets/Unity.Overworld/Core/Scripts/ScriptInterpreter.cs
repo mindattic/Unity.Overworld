@@ -255,7 +255,8 @@ namespace MindAttic.Overworld.Core
                     s.LastBeamTime = now;
                 }
 
-                if (s.Running && s.targets.Count > 0) Steer(pair.Key, s, tick, events);
+                // The walk is the hero's update (updateHero), which a pause skipped; the prompt's blink (checkScripter, in the draw) goes on.
+                if (s.Running && s.targets.Count > 0 && !game.IsHeld) Steer(pair.Key, s, tick, events);
             }
         }
 

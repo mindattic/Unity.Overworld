@@ -308,6 +308,14 @@ namespace MindAttic.Overworld.Core
                 heroes[i].PreviousZ = heroes[i].Z;
             }
 
+            // A pause skipped getInput, checkFlocking and updateHero ('If Not bPause'); the ring's turning, the range circles
+            // and the status animation, done in the draw, went on.
+            if (game.IsHeld)
+            {
+                StepPausedDraw(game, tick, events, now);
+                return;
+            }
+
             // getInput: the input of every player, on the hero each leads.
             var moveHeld = new bool[heroes.Count];
             foreach (var player in game.Players)
@@ -404,6 +412,17 @@ namespace MindAttic.Overworld.Core
                     events.Add(new HeroStateChanged(tick, i, hero.State, hero.Facing));
                 if (actionBefore[i] != hero.BattleAction) events.Add(new HeroBattleActionChanged(tick, i, hero.BattleAction));
             }
+        }
+
+        /// <summary>
+        /// The paused frame: what oneFrameRender's draw still did with bPause on. renderIcon animated the status icons,
+        /// renderRingIcon turned and pulsed the ring menus (checkRingRotate, with its effects) and renderCircle orbited the
+        /// range dots; the heroes themselves did not move, animate, regenerate or follow.
+        /// </summary>
+        void StepPausedDraw(Game game, long tick, ICollection<IGameEvent> events, double now)
+        {
+            foreach (var hero in heroes) AnimateStatus(hero, now);
+            StepRingsPaused(game, tick, events);
         }
 
         // ---- vitals (Heroes.checkStatus, checkRegen; StatusIcon.renderIcon) ----------------------------------------

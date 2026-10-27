@@ -65,15 +65,21 @@ namespace MindAttic.Overworld.Core
         }
 
         /// <summary>
-        /// While this returns true the game is held (paused): <see cref="Advance"/> runs no ticks and the time passes
-        /// unused. Commands are still accepted. Null: never held.
+        /// While this returns true the game is held (paused). The ticks still run, as oneFrameRender still ran while
+        /// bPause was on, but each system skips what the original skipped: everything inside its 'If Not bPause' block
+        /// (getInput, the clouds and rain, the pickups' reach and taking, flocking, the quests, checkCursorOverInventory and
+        /// updateHero), while what it did in the draw (the clock and light, the sleep's fade, the messages, regrowth, the
+        /// ring's turning, the range circles, the status animation, the cursor's scrolling and the camera) goes on.
+        /// Commands are still accepted. Null: never held.
         /// </summary>
         public Func<bool> Held { get; set; }
 
-        /// <summary>Feeds real elapsed time; runs however many whole ticks it adds up to. Returns the ticks run (none while <see cref="Held"/>).</summary>
+        /// <summary>True while <see cref="Held"/> says the game is paused; systems read it in their step.</summary>
+        public bool IsHeld => Held != null && Held();
+
+        /// <summary>Feeds real elapsed time; runs however many whole ticks it adds up to. Returns the ticks run.</summary>
         public int Advance(double elapsedSeconds)
         {
-            if (Held != null && Held()) return 0;
             int ticks = stepper.Advance(elapsedSeconds);
             for (int i = 0; i < ticks; i++) Step();
             return ticks;

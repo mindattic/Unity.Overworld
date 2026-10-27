@@ -215,19 +215,30 @@ namespace MindAttic.Overworld.Tests
         }
 
         [Test]
-        public void ThePauseHoldsTheWholeGame()
+        public void ThePauseHoldsWhatTheOriginalsPauseHeldAndTheDrawGoesOn()
         {
             Assert.Greater(game.Advance(1.0), 0);
-            messages.Add("hello", Hud.Font("fontArial"), 255, 255, 255);
             Submit(new TogglePause(PlayerId.One));
             Assert.IsTrue(ui.Paused);
+            Assert.IsTrue(game.IsHeld);
+
+            // updateHero sat inside 'If Not bPause': a hero under way does not move.
+            chrono.State = HeroState.Walking;
+            chrono.DX = 0.003f;
+            var x = chrono.X;
             var tick = game.Tick;
-            Assert.AreEqual(0, game.Advance(5.0), "oneFrameRender skipped every update while bPause was on");
-            Assert.AreEqual(tick, game.Tick);
-            Assert.AreEqual(1, messages.Waiting, "the messages wait too");
+            messages.Add("hello", Hud.Font("fontArial"), 255, 255, 255);
+            Assert.That(game.Advance(1.0), Is.InRange(59, 60), "the frame still ran");
+            Assert.Greater(game.Tick, tick);
+            Assert.AreEqual(x, chrono.X, "updateHero skipped while bPause was on");
+
+            // renderMessages was in the draw: the message showed and drifts on.
+            Assert.AreEqual(0, messages.Waiting, "the messages go on");
+
             Submit(new TogglePause(PlayerId.One));
-            Assert.That(game.Advance(1.0), Is.InRange(59, 60), "the paused time is not made up");
-            Assert.AreEqual(0, messages.Waiting);
+            Assert.IsFalse(game.IsHeld);
+            Steps(1);
+            Assert.AreNotEqual(x, chrono.X, "unpaused, the hero moves again");
         }
 
         [Test]

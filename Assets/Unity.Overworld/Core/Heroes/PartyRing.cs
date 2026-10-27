@@ -322,6 +322,17 @@ namespace MindAttic.Overworld.Core
             }
         }
 
+        /// <summary>The paused frame's part of the ring (renderRingIcon, renderCircle); checkBattleSelect was in updateHero and waits.</summary>
+        void StepRingsPaused(Game game, long tick, ICollection<IGameEvent> events)
+        {
+            foreach (var player in game.Players)
+            {
+                if (!rings.TryGetValue(player, out var ring)) continue;
+                StepRing(player, ring, tick, events);
+                StepCircle(player, ring);
+            }
+        }
+
         /// <summary>
         /// checkBattleSelect: while no one was ready, the first hero in party order whose gauge is full leads: it gets up,
         /// draws from the first frame, the ring opens reset and the camera centres on it. Only a hero in battle mode and led

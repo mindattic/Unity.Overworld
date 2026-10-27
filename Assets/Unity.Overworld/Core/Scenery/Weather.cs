@@ -126,7 +126,11 @@ namespace MindAttic.Overworld.Core
             return CommandResult.Accept(new WeatherChanged(game.Tick, by, previous, kind));
         }
 
-        public void Step(Game game, long tick, ICollection<IGameEvent> events) => Step();
+        public void Step(Game game, long tick, ICollection<IGameEvent> events)
+        {
+            // Inside oneFrameRender's 'If Not bPause': nothing moves while the game is paused.
+            if (!game.IsHeld) Step();
+        }
 
         /// <summary>updateRain: every particle moved by the mode's rule in index order, starting again once it reaches the ground.</summary>
         public void Step()
@@ -264,7 +268,11 @@ namespace MindAttic.Overworld.Core
             return this;
         }
 
-        public void Step(Game game, long tick, ICollection<IGameEvent> events) => Step();
+        public void Step(Game game, long tick, ICollection<IGameEvent> events)
+        {
+            // Inside oneFrameRender's 'If Not bPause': nothing moves while the game is paused.
+            if (!game.IsHeld) Step();
+        }
 
         /// <summary>updateCloud: each drifts right; past the right edge it is put at the left with a new y (and past the left, at the right).</summary>
         public void Step()

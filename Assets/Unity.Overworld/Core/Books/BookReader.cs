@@ -241,6 +241,8 @@ namespace MindAttic.Overworld.Core
 
         public void Step(Game game, long tick, ICollection<IGameEvent> events)
         {
+            // Inside oneFrameRender's 'If Not bPause' (getInput and the updates): nothing here while paused.
+            if (game.IsHeld) return;
             foreach (var player in game.Players)
             {
                 if (!views.TryGetValue(player, out var v)) continue;

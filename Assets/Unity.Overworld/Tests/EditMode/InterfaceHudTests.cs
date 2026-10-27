@@ -133,7 +133,7 @@ namespace MindAttic.Overworld.Tests
             Steps(0);
             Assert.IsTrue(Shown(hud.PauseLabel));
             Assert.AreEqual("- PAUSE -", hud.PauseLabel.text);
-            Assert.AreEqual(0, game.Advance(1.0));
+            Assert.IsTrue(game.IsHeld, "the frame still runs; the updates hold (BIBLE 'Pause')");
         }
 
         [Test]

@@ -373,6 +373,9 @@ namespace MindAttic.Overworld.Core
                 events.Add(new PickupGrew(tick, p.Index));
             }
 
+            // checkItemsInRange ... checkDroppedPickup were inside 'If Not bPause'; the regrowth above (renderItem) is not.
+            if (game.IsHeld) return;
+
             foreach (var player in game.Players)
             {
                 var r = For(player);
