@@ -128,9 +128,16 @@ namespace MindAttic.Overworld.Online
 
             // O opens the menu over local play. Closing is the menu's own Play alone, so typing an "o" into a field never
             // closes it; the console takes every key while it is open, so an "o" typed there never opens it.
-            if (_menuKey != null && _menuKey.WasPressedThisFrame() && !MenuOpen && !ConsoleOpen()) OpenMenu();
+            // With the developer tools on, O is the path clear (U.OVW-T47, the original's key), so the menu does not take it.
+            if (_menuKey != null && _menuKey.WasPressedThisFrame() && !MenuOpen && !ConsoleOpen() && !DeveloperToolsOn()) OpenMenu();
 
             Reconcile();
+        }
+
+        private bool DeveloperToolsOn()
+        {
+            var tools = game != null ? game.Developer : null;
+            return tools != null && tools.Enabled;
         }
 
         /// <summary>Gives the scene's controls the menus' hold and the session's Escape, once the bootstrap has made them.</summary>

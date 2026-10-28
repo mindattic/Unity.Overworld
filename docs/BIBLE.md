@@ -90,7 +90,7 @@ Tests/
   - *Local play is unchanged.* Main holds the bootstrap and the kit's networked root (`Editor/OnlineBuilder`, run by
     `OverworldBuild.BuildMainScene`); its `NetBootstrap` never starts a session by itself (`autoStart` and
     `serveWhenHeadless` off, so batch-mode captures play locally) and the kit's menus stay hidden.
-  - *The front end beside it.* O (`OverworldOnline`) opens the kit's `NetFrontEnd`; while one of its menus is open
+  - *The front end beside it.* O (`OverworldOnline`) opens the kit's `NetFrontEnd` (not with the developer tools on: O is then the original's path clear, U.OVW-T53); while one of its menus is open
     `HeroInput.Hold` holds every control (the held input let go), the pointer is freed, and outside a session the local
     game is held still (`GameHost.Suspended`). While a session runs `HeroInput.EscapeTaken` gives Escape to the kit's
     in-game menu.
@@ -199,7 +199,7 @@ Each is a place where the original is silent, broken or ambiguous. They are deci
 | NPC states (16.2) | "stand" and "pursue" as names | Stand idles facing the party; pursue follows the leader at the NPC's data speed without attacking |
 | Items in later areas | Only area 0 data existed for pickups | Pickups stay in the original world (the 45 loaded tiles); the Grasslands area (story A25) carries the 2007 props, NPCs and enemies |
 | The world played (owner 2026-10-23) | The engine loaded the 2006 `data\world.mdb` (and used none of it); the 2007 root `world.mdb` was never read by any code | The 2007 world is the world the game starts in and plays, with the fixes below; the 2006 database is a reference record only. A new game begins in the Grasslands (U.OVW-T38) |
-| Online play (AGENTS.md rule 9) | Single player only; O is unbound in play (the developer's path points use it) | Built on the shared Unity.Multiplayer kit beside unchanged local play (see Online, under Architecture). With the online menu never opened the game plays exactly as before. O opens the kit's menu (Host, Join by IP, Join by code with a lobby, Settings, Play alone, Quit) over a held local game; online, Escape opens the kit's in-game menu (F11 still opens the options), and only this screen's own player's Exit quits it (U.OVW-T46) |
+| Online play (AGENTS.md rule 9) | Single player only; O is unbound in play (the developer's path points use it) | Built on the shared Unity.Multiplayer kit beside unchanged local play (see Online, under Architecture). With the online menu never opened the game plays exactly as before. O opens the kit's menu (Host, Join by IP, Join by code with a lobby, Settings, Play alone, Quit) over a held local game, except with the developer tools on, where O stays the original's path clear and the menu key is skipped (U.OVW-T53); online, Escape opens the kit's in-game menu (F11 still opens the options), and only this screen's own player's Exit quits it (U.OVW-T46) |
 
 ## Fixed defects
 
