@@ -1,0 +1,18 @@
+{
+  "_source": "U.OVW-US-A21: the gamepad (RECONSTRUCTION 5.5; BIBLE 'Gamepad'). Input.vb's getJoystick: bJoystick starts True (False when initInput finds no game controller; frmMain's J flips it); the stick's X / Y past joyOutsideDeadZone call actionLeft / actionRight / actionUp / actionDown as the arrow keys do, and each pressed button calls its action as its key does (KeysUp clears each latch only when both the key and the button are up).",
+  "enabled": true,
+  "threshold": 0.25,
+  "_thresholdNote": "joyOutsideDeadZone 250, with every axis's range set to -1000..+1000 in initInput: 250 / 1000. Read from the unprocessed axis, as DirectInput gave it.",
+  "sticks": ["<Gamepad>/leftStick", "<Gamepad>/dpad"],
+  "_sticksNote": "joyState.X / Y: the controller's main axes, the left stick (and, on the original's pad with A B C X Y Z L1 R1 START L2 R2, its pad, which DirectInput reported on the same axes).",
+  "buttons": {
+    "_note": "Input.vb's btn* numbers on its pad's labels ('0 = A, 1 = B, 2 = C, 3 = X, 4 = y, 5 = Z, 6 = L1, 7 = R1, 8 = START, 9 = L2, 10 = R2'), placed on today's gamepad by those labels: A south, B east, X west, Y north, START start, L2 / R2 the triggers. btnExamine is 1 too, but getJoystick never handles it.",
+    "run": ["<Gamepad>/buttonSouth"],
+    "drop": ["<Gamepad>/buttonEast"],
+    "pickUp": ["<Gamepad>/buttonWest"],
+    "inventory": ["<Gamepad>/buttonNorth"],
+    "rest": ["<Gamepad>/start"],
+    "nextHero": ["<Gamepad>/leftTrigger"],
+    "lastHero": ["<Gamepad>/rightTrigger"]
+  }
+}

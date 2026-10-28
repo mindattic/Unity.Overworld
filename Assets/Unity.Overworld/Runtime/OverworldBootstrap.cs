@@ -232,6 +232,8 @@ namespace MindAttic.Overworld.Runtime
             Input.transform.SetParent(transform, false);
             // The developer tools (U.OVW-T47): off as shipped; -overworld-developer turns them on.
             InstallDeveloper(args, game);
+            // The gamepad (U.OVW-US-A21): on from the start, J turns it off and on; -overworld-gamepad scripts a virtual pad.
+            InstallGamepad(args);
 
             var scripted = ScriptedInput(args);
             if (scripted.HasValue)

@@ -26,7 +26,9 @@ namespace MindAttic.Overworld.Runtime
     /// nothing else is read. The interface keys (U.OVW-US-A20, RECONSTRUCTION 5.1, 5.2, 13): F11 and Escape open and shut
     /// the options menu (the arrows and Enter, or the left button, work it in Core), F4 the FPS counter, Pause the pause
     /// (frmMain keys, read while a script runs but not while the console is open), Page Up the hero screen. While paused
-    /// nothing else is read but the options menu's keys, so its Exit can still quit (BIBLE). Every frame, before the game advances, it sends what the
+    /// nothing else is read but the options menu's keys, so its Exit can still quit (BIBLE). The gamepad (U.OVW-US-A21,
+    /// RECONSTRUCTION 5.5, HeroInput.Gamepad.cs) adds its stick and buttons to the keys they stand for; J turns it off and
+    /// on. Every frame, before the game advances, it sends what the
     /// player holds as <see cref="SetMoveInput"/> and <see cref="SetViewInput"/> commands and the key presses and clicks as
     /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>
@@ -149,17 +151,21 @@ namespace MindAttic.Overworld.Runtime
         void OnEnable()
         {
             foreach (var a in Actions()) a?.Enable();
+            EnableGamepad();
         }
 
         void OnDisable()
         {
             foreach (var a in Actions()) a?.Disable();
+            DisableGamepad();
             ReleasePointer();
         }
 
         void OnDestroy()
         {
             foreach (var a in Actions()) a?.Dispose();
+            DisposeGamepad();
+            joystickKey?.Dispose();
         }
 
         InputAction[] Actions() => new[]
@@ -195,10 +201,11 @@ namespace MindAttic.Overworld.Runtime
         void OptionsKeys()
         {
             if (Interface == null || !Interface.For(Player).OptionsOpen) return;
-            if (confirm.WasPressedThisFrame() || select.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Enter));
-            if (left.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Left));
-            if (up.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Up));
-            if (down.WasPressedThisFrame()) Game.Submit(new PressOptionsKey(Player, OptionsKey.Down));
+            // The pad's X and stick called the same actionPickup, actionLeft, actionUp and actionDown (U.OVW-US-A21).
+            if (confirm.WasPressedThisFrame() || select.WasPressedThisFrame() || PadPressed(GamepadButton.PickUp)) Game.Submit(new PressOptionsKey(Player, OptionsKey.Enter));
+            if (left.WasPressedThisFrame() || PadLeftPressed) Game.Submit(new PressOptionsKey(Player, OptionsKey.Left));
+            if (up.WasPressedThisFrame() || PadUpPressed) Game.Submit(new PressOptionsKey(Player, OptionsKey.Up));
+            if (down.WasPressedThisFrame() || PadDownPressed) Game.Submit(new PressOptionsKey(Player, OptionsKey.Down));
         }
 
         /// <summary>The script console and its input lock (null: no console).</summary>
@@ -211,6 +218,8 @@ namespace MindAttic.Overworld.Runtime
         void Update()
         {
             if (Game == null) return;
+            // The pad is read first, every frame, so a press is a press once whatever holds the input (U.OVW-US-A21).
+            PollGamepad();
             // U.OVW-T46: while an online menu is open nothing is read (typing an address never walks the party) and the
             // pointer is the menu's; what was held is let go.
             if (Hold != null && Hold())
@@ -230,6 +239,8 @@ namespace MindAttic.Overworld.Runtime
             var consoleWasOpen = Scripts != null && Scripts.For(Player).ConsoleOpen;
             if (UseDevices && Scripts != null) SendConsoleKeys();
             if (UseDevices && !consoleWasOpen && weather.WasPressedThisFrame()) Game.Submit(new CycleWeather(Player));
+            // J was a frmMain key too: the gamepad off and on (U.OVW-US-A21).
+            if (UseDevices && !consoleWasOpen) JoystickKey();
             // The developer tools' frmMain keys (U.OVW-T47): with the console shut and the game not paused.
             if (UseDevices && !consoleWasOpen && !(Interface != null && Interface.Paused)) DeveloperKeys();
             // F11 (and Escape), F4 and Pause were frmMain keys too.
@@ -242,7 +253,7 @@ namespace MindAttic.Overworld.Runtime
 
             // While paused getInput was not called; the options menu still answers, so Exit can quit from a pause.
             var paused = Interface != null && Interface.Paused;
-            if (paused && !locked && UseDevices) OptionsKeys();
+            if (paused && !locked && (UseDevices || ScriptedGamepad)) OptionsKeys();
             if (locked || paused)
             {
                 swallowConfirm = true;
@@ -252,10 +263,11 @@ namespace MindAttic.Overworld.Runtime
                 return;
             }
 
-            if (swallowConfirm && UseDevices && !confirm.IsPressed() && !select.IsPressed()) swallowConfirm = false;
-            if (!UseDevices) swallowConfirm = false;
+            var live = UseDevices || ScriptedGamepad;
+            if (swallowConfirm && live && !confirm.IsPressed() && !select.IsPressed() && !PadHeld(GamepadButton.PickUp)) swallowConfirm = false;
+            if (!live) swallowConfirm = false;
 
-            var input = Scripted ?? (UseDevices ? Read() : default);
+            var input = Scripted ?? (UseDevices ? Read() : ScriptedGamepad ? ReadGamepadOnly() : default);
             Last = input;
             Game.Submit(new SetMoveInput(Player, input));
 
@@ -265,7 +277,17 @@ namespace MindAttic.Overworld.Runtime
             Game.Submit(new SetViewInput(Player, view));
             if (UseDevices && examine.WasPressedThisFrame()) Game.Submit(new ToggleExamine(Player));
             if (UseDevices && freeCamera.WasPressedThisFrame()) Game.Submit(new ToggleFreeCamera(Player));
-            if (!UseDevices) return;
+            if (!UseDevices)
+            {
+                // A scripted run's virtual pad: only the pad's buttons, as below.
+                if (!ScriptedGamepad) return;
+                GamepadButtons();
+                OptionsKeys();
+                if (swallowConfirm) return;
+                Confirm(PadPressed(GamepadButton.PickUp));
+                ChooseFromRing(PadPressed(GamepadButton.PickUp), false);
+                return;
+            }
 
             DeveloperSpeedKeys();
             if (previousHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, -1));
@@ -285,11 +307,13 @@ namespace MindAttic.Overworld.Runtime
             if (nextBook.WasPressedThisFrame()) Game.Submit(new NextBook(Player));
             for (var i = 0; i < quickKeys.Length; i++)
                 if (quickKeys[i].WasPressedThisFrame()) Game.Submit(new QuickUse(Player, i));
+            GamepadButtons();
             // getMouse's middle button in battle mode is actionDrop: the battle's cancel back to the ring.
             if (zoom.WasPressedThisFrame() && Party != null && Party.Leader(Player).Mode == HeroMode.Battle) Game.Submit(new DropItem(Player));
             if (swallowConfirm) return;
-            Confirm(confirm.WasPressedThisFrame() || select.WasPressedThisFrame());
-            ChooseFromRing(confirm.WasPressedThisFrame(), select.WasPressedThisFrame());
+            var padPickUp = PadPressed(GamepadButton.PickUp);
+            Confirm(confirm.WasPressedThisFrame() || select.WasPressedThisFrame() || padPickUp);
+            ChooseFromRing(confirm.WasPressedThisFrame() || padPickUp, select.WasPressedThisFrame());
             Click(select.IsPressed(), select.WasPressedThisFrame());
         }
 
@@ -447,9 +471,16 @@ namespace MindAttic.Overworld.Runtime
                 else if (Camera != null) cursor = GroundPoint(Camera, point.ReadValue<Vector2>());
             }
 
-            return new MoveInput(left.IsPressed(), right.IsPressed(), up.IsPressed(), down.IsPressed(), run.IsPressed(), held, cursor.x, cursor.y,
-                !swallowConfirm && PickUpHeld(confirm.IsPressed(), select.IsPressed()));
+            // The pad's stick and buttons held are the arrows, run and pick up held (getJoystick, U.OVW-US-A21).
+            return new MoveInput(left.IsPressed() || PadLeftHeld, right.IsPressed() || PadRightHeld, up.IsPressed() || PadUpHeld,
+                down.IsPressed() || PadDownHeld, run.IsPressed() || PadHeld(GamepadButton.Run), held, cursor.x, cursor.y,
+                !swallowConfirm && (PickUpHeld(confirm.IsPressed(), select.IsPressed()) || PadHeld(GamepadButton.PickUp)));
         }
+
+        /// <summary>A scripted run's virtual pad alone: its arrows, run and pick up held.</summary>
+        MoveInput ReadGamepadOnly() =>
+            new MoveInput(PadLeftHeld, PadRightHeld, PadUpHeld, PadDownHeld, PadHeld(GamepadButton.Run), false, 0f, 0f,
+                !swallowConfirm && PadHeld(GamepadButton.PickUp));
 
         /// <summary>
         /// actionPickup's buttons: Enter, or the left button unless it is over the team button (overTeam) or the inventory

@@ -19,5 +19,6 @@
   "time": "time.json",
   "hud": "hud.json",
   "scripts": "scripts.json",
-  "developer": "developer.json"
+  "developer": "developer.json",
+  "gamepad": "gamepad.json"
 }

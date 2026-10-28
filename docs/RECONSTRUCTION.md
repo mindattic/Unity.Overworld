@@ -345,6 +345,7 @@ In battle mode movement works only while `BattleAction = Moving`, and `checkHero
 
 `bJoystick` starts True, set False when no game controller is found. Axis threshold 250 of +/-1000. Buttons (0 to 10, A B C X Y Z L1 R1 START L2 R2): 0 run, 9 / 10 next / last hero,
 8 rest, 4 inventory, 3 pick up, 1 drop (examine is mapped to the same button but unhandled).
+Rebuilt by U.OVW-T25 (gamepad.json, `HeroInput.Gamepad.cs`; BIBLE "Gamepad"): the map placed on today's pads by its labels.
 
 ### 5.6 Held-key guards (`KeysUp`)
 
