@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace MindAttic.Overworld.Core
@@ -39,7 +40,10 @@ namespace MindAttic.Overworld.Core
         }
     }
 
-    /// <summary>The ring menu's entries (ringMove 0, ringEnd 1, ringSkill 2, ringItem 3, ringAttack 4).</summary>
+    /// <summary>
+    /// The ring menu's entries (ringMove 0, ringEnd 1, ringSkill 2, ringItem 3, ringAttack 4), and the fillers the G / H
+    /// developer keys add after them (ringIcon 5 to 7: the Coffee Bean, Book and Rune icons), which do nothing.
+    /// </summary>
     public enum RingEntry
     {
         Move,
@@ -47,6 +51,7 @@ namespace MindAttic.Overworld.Core
         Skill,
         Item,
         Attack,
+        Filler,
     }
 
     /// <summary>One entry of the ring: what it is and its icon.</summary>
@@ -63,6 +68,15 @@ namespace MindAttic.Overworld.Core
     public sealed class RingMenuTuning
     {
         public IReadOnlyList<RingEntryDefinition> Entries { get; internal set; }
+
+        /// <summary>
+        /// The filler icons after the entries (ringIcon 5, 6 and 7: coffee_bean, book2, rune1), shown only when the G / H
+        /// developer keys grow the ring past its entries (maxRings 7: at most eight icons).
+        /// </summary>
+        public IReadOnlyList<RingEntryDefinition> Fillers { get; internal set; }
+
+        /// <summary>The entries then the fillers: every icon the ring can show, in ring order.</summary>
+        public IReadOnlyList<RingEntryDefinition> All { get; internal set; }
 
         /// <summary>The ring's radius at rest (defaultRadius, 0.1).</summary>
         public float Radius { get; internal set; }
@@ -85,8 +99,17 @@ namespace MindAttic.Overworld.Core
         /// <summary>The first entry's angle, at the top (1.57).</summary>
         public float StartAngle { get; internal set; }
 
-        /// <summary>The angle between entries and of one turn (deltaAngle, 1.256 for five).</summary>
-        public float SpinStep { get; internal set; }
+        /// <summary>The angle between entries and of one turn with the ring's own entries (deltaAngle, 1.256 for five).</summary>
+        public float SpinStep => SpinStepFor(Entries.Count);
+
+        /// <summary>
+        /// checkRingRotate's deltaAngle for one to eight icons (6.28, 3.14, 2.093, 1.57, 1.256, 1.046, 0.897, 0.785):
+        /// resetRing placed icon n at the start angle plus n of these, and a turn moves every icon one of them.
+        /// </summary>
+        public IReadOnlyList<float> SpinSteps { get; internal set; }
+
+        /// <summary>The angle between icons, and of one turn, with <paramref name="count"/> icons shown.</summary>
+        public float SpinStepFor(int count) => SpinSteps[Math.Max(1, Math.Min(count, SpinSteps.Count)) - 1];
 
         /// <summary>A turn eases each angle by SpinBase + SpinEase x what is left, every tick (0.1, ringSPD 0.3).</summary>
         public float SpinBase { get; internal set; }
@@ -115,9 +138,31 @@ namespace MindAttic.Overworld.Core
                 e.Done();
             }
 
+            var fillers = new List<RingEntryDefinition>();
+            foreach (var picture in r.Texts("fillers")) fillers.Add(new RingEntryDefinition { Entry = RingEntry.Filler, Picture = picture });
+            var all = new List<RingEntryDefinition>(entries);
+            all.AddRange(fillers);
+
+            var steps = new List<float>();
+            var raw = r.Raw("spinSteps", JsonKind.Array, "an array of numbers");
+            if (raw != null)
+                foreach (var item in raw.Items)
+                {
+                    if (item.Kind != JsonKind.Number || !(item.Number > 0))
+                    {
+                        r.Fail("spinSteps", "must hold only numbers greater than 0");
+                        continue;
+                    }
+
+                    steps.Add((float)item.Number);
+                }
+
             var t = new RingMenuTuning
             {
                 Entries = entries,
+                Fillers = fillers,
+                All = all,
+                SpinSteps = steps,
                 Radius = r.Positive("radius"),
                 IconSize = r.Positive("iconSize"),
                 IconPoint = r.Pair("iconPoint"),
@@ -126,15 +171,16 @@ namespace MindAttic.Overworld.Core
                 SelectSize = r.Positive("selectSize"),
                 SelectOffset = r.Pair("selectOffset"),
                 StartAngle = r.Number("startAngle"),
-                SpinStep = r.Positive("spinStep"),
                 SpinBase = r.Positive("spinBase"),
                 SpinEase = r.Number("spinEase", 0f, 1f),
                 PulseRadius = r.Positive("pulseRadius"),
                 PulseStep = r.Positive("pulseStep"),
             };
             r.Check(entries.Count > 0, "entries", "must list at least one entry");
+            r.Check(steps.Count == all.Count, "spinSteps", "must give one step for each count of icons, 1 to the entries and fillers (" + all.Count + "; gives " + steps.Count + ")");
             foreach (RingEntry e in System.Enum.GetValues(typeof(RingEntry)))
             {
+                if (e == RingEntry.Filler) continue;
                 var count = 0;
                 foreach (var d in entries) if (d.Entry == e) count++;
                 r.Check(count == 1, "entries", "must list " + e + " exactly once (lists it " + count + " times)");

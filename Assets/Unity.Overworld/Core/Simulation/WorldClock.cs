@@ -107,8 +107,8 @@ namespace MindAttic.Overworld.Core
         /// <summary>timeRatio: real seconds per in-game minute, before the game speed.</summary>
         public float SecondsPerMinute { get; private set; }
 
-        /// <summary>gameSpeed: multiplies the seconds a minute takes.</summary>
-        public float GameSpeed { get; }
+        /// <summary>gameSpeed: multiplies the seconds a minute takes (the - and = developer keys change it, <see cref="DeveloperTools"/>).</summary>
+        public float GameSpeed { get; internal set; }
 
         /// <summary>The time as the HUD writes it (strTime): "9 : 05 AM".</summary>
         public string TimeText => FormatTime(Now);

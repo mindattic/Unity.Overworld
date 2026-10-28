@@ -42,6 +42,7 @@ namespace MindAttic.Overworld.Core
             Walls = walls;
             this.random = random ?? new Random();
             Team = data.Follow.TeamAtStart;
+            GameSpeed = data.Locomotion.GameSpeed;
             for (var i = 0; i < data.Heroes.Count; i++)
             {
                 var hero = new Hero(i, data.Heroes[i]);
@@ -60,6 +61,12 @@ namespace MindAttic.Overworld.Core
         public WallData Walls { get; }
         public IReadOnlyList<Hero> Heroes => heroes;
         LocomotionTuning Tuning => Data.Locomotion;
+
+        /// <summary>
+        /// The original's gameSpeed: position += velocity x this each tick. It starts at heroes.json's (1); the - and =
+        /// developer keys change it (<see cref="DeveloperTools"/>).
+        /// </summary>
+        public float GameSpeed { get; internal set; }
         HeroSprites Sprites => Data.Sprites;
 
         /// <summary>Team mode (bTeam): the followers follow; off (solo), they kneel.</summary>
@@ -390,8 +397,8 @@ namespace MindAttic.Overworld.Core
                 if (Walls != null) WallCollision.Apply(hero, Walls, Data.HeroSize);
                 if (Fall(hero)) events.Add(new HeroLanded(tick, i));
 
-                hero.X += hero.DX * Tuning.GameSpeed;
-                hero.Y += hero.DY * Tuning.GameSpeed;
+                hero.X += hero.DX * GameSpeed;
+                hero.Y += hero.DY * GameSpeed;
 
                 // renderIcon: the status animation above the hero.
                 AnimateStatus(hero, now);

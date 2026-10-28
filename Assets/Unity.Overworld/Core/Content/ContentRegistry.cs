@@ -62,6 +62,9 @@ namespace MindAttic.Overworld.Core
         /// <summary>The script language's console, messages and tables (scripts.json).</summary>
         public ScriptData Scripts { get; private set; }
 
+        /// <summary>The developer tools' switch (off as shipped) and figures (developer.json, U.OVW-T47).</summary>
+        public DeveloperData Developer { get; private set; }
+
         /// <summary>The original's own dangling references, kept faithfully (not errors): where and what.</summary>
         public IReadOnlyList<string> Warnings { get; private set; }
 
@@ -152,6 +155,7 @@ namespace MindAttic.Overworld.Core
             var hudFile = manifest.Text("hud");
             registry.Hud = HudData.Read(source, hudFile, errors);
             registry.Scripts = ScriptData.Read(source, manifest.Text("scripts"), registry.Hud, errors);
+            registry.Developer = DeveloperData.Read(source, manifest.Text("developer"), registry.Hud, errors);
             manifest.Done();
 
             // A pickup that opens a book by its own name ("CHANGE BOOK TO ITEM") must name a real book.

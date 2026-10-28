@@ -11,7 +11,7 @@ namespace MindAttic.Overworld.Runtime
     /// renderer here is a transparent sprite-shader quad ordered by <see cref="Renderer.sortingOrder"/>.
     /// Built in code (<see cref="Create"/>); reads the view and never changes game state.
     /// </summary>
-    public sealed class WorldViewPresenter : MonoBehaviour
+    public sealed partial class WorldViewPresenter : MonoBehaviour
     {
         /// <summary>
         /// Sorting orders of the layers: backdrop, then tiles, then the pickups in index order from <see cref="PickupsOrder"/>
@@ -257,7 +257,10 @@ namespace MindAttic.Overworld.Runtime
         /// <summary>The ring's select frame (ring_select.png).</summary>
         public MeshRenderer RingSelectRenderer { get; private set; }
 
-        /// <summary>The ring's icons, in ring order (Move, End, Skill, Item, Attack).</summary>
+        /// <summary>
+        /// The ring's icons, in ring order (Move, End, Skill, Item, Attack, then the Coffee Bean, Book and Rune fillers the
+        /// G / H developer keys show); those past the ring's <see cref="RingMenu.Count"/> are not drawn.
+        /// </summary>
         public IReadOnlyList<MeshRenderer> RingIcons => ringIcons;
 
         /// <summary>The range circle's dots, in dot order.</summary>
@@ -280,8 +283,12 @@ namespace MindAttic.Overworld.Runtime
                 root.SetParent(transform, false);
                 var t = Ring.Ring;
                 RingSelectRenderer = NewRenderer("Ring select", Quad(t.SelectSize, t.SelectSize / 2f), t.SelectPicture, RingSelectOrder, root);
-                foreach (var e in t.Entries)
-                    ringIcons.Add(NewRenderer("Ring " + e.Entry, Quad(t.IconSize, t.IconSize / 2f), e.Picture, RingIconsOrder, root));
+                // Every icon the ring can show: the entries, then the fillers (loadRingIcon built none for them; BIBLE).
+                for (var i = 0; i < t.All.Count; i++)
+                {
+                    var e = t.All[i];
+                    ringIcons.Add(NewRenderer("Ring " + i + " " + e.Entry, Quad(t.IconSize, t.IconSize / 2f), e.Picture, RingIconsOrder, root));
+                }
                 var c = Ring.Circle;
                 for (var i = 0; i < Ring.DotCount; i++)
                     circleDots.Add(NewRenderer("Circle dot " + i, Quad(c.DotSize, c.DotSize / 2f), c.GreenPicture, CircleOrder, root));
@@ -306,7 +313,7 @@ namespace MindAttic.Overworld.Runtime
                 Ring.IconOffset(i, size, out var ix, out var iy);
                 var r = ringIcons[i];
                 r.transform.localPosition = new Vector3(hx + ix, hy + iy, 0f);
-                r.enabled = Ring.Open && View.Camera.InRange(hx + ix, hy + iy) && HasTexture(r);
+                r.enabled = Ring.Open && i < Ring.Count && View.Camera.InRange(hx + ix, hy + iy) && HasTexture(r);
             }
 
             for (var i = 0; i < circleDots.Count; i++)
@@ -571,6 +578,7 @@ namespace MindAttic.Overworld.Runtime
             RefreshRing(alpha);
             RefreshWeather(alpha);
             RefreshClouds(alpha);
+            RefreshDeveloper();
 
             if (Cursor != null && CursorRenderer != null)
             {

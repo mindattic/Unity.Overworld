@@ -19,8 +19,28 @@ namespace MindAttic.Overworld.Runtime
             if (cache.TryGetValue(file, out var texture)) return texture;
             texture = Resources.Load<Texture2D>(ResourcePath(file));
             if (texture == null) Debug.LogError("Unity.Overworld: the picture " + file + " is not imported (Art/Resources/" + file + ").");
+            else if (filter.HasValue) texture.filterMode = filter.Value;
             cache[file] = texture;
             return texture;
+        }
+
+        FilterMode? filter;
+
+        /// <summary>
+        /// The F5 developer key's filter (worldFilter, U.OVW-T47) for every picture loaded, now and later; null leaves each
+        /// as it was imported (bilinear).
+        /// </summary>
+        public FilterMode? Filter
+        {
+            get => filter;
+            set
+            {
+                if (filter == value) return;
+                filter = value;
+                foreach (var t in cache.Values)
+                    if (t != null)
+                        t.filterMode = value ?? FilterMode.Bilinear;
+            }
         }
 
         /// <summary>The Resources path of an original file: the same path without its extension.</summary>

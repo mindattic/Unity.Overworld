@@ -31,7 +31,7 @@ namespace MindAttic.Overworld.Runtime
     /// commands; it never touches game state itself. The <c>Scripted*</c> inputs replace the devices for scripted runs.
     /// </summary>
     [DefaultExecutionOrder(-100)]
-    public sealed class HeroInput : MonoBehaviour
+    public sealed partial class HeroInput : MonoBehaviour
     {
         InputAction left, right, up, down, run, move, point;
         InputAction motion, wheel, zoom, fast, examine, freeCamera, isometric, deisometric, strafeLeft, strafeRight, strafeUp, strafeDown;
@@ -230,6 +230,8 @@ namespace MindAttic.Overworld.Runtime
             var consoleWasOpen = Scripts != null && Scripts.For(Player).ConsoleOpen;
             if (UseDevices && Scripts != null) SendConsoleKeys();
             if (UseDevices && !consoleWasOpen && weather.WasPressedThisFrame()) Game.Submit(new CycleWeather(Player));
+            // The developer tools' frmMain keys (U.OVW-T47): with the console shut and the game not paused.
+            if (UseDevices && !consoleWasOpen && !(Interface != null && Interface.Paused)) DeveloperKeys();
             // F11 (and Escape), F4 and Pause were frmMain keys too.
             if (UseDevices && !consoleWasOpen && Interface != null)
             {
@@ -265,6 +267,7 @@ namespace MindAttic.Overworld.Runtime
             if (UseDevices && freeCamera.WasPressedThisFrame()) Game.Submit(new ToggleFreeCamera(Player));
             if (!UseDevices) return;
 
+            DeveloperSpeedKeys();
             if (previousHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, -1));
             if (nextHero.WasPressedThisFrame()) Game.Submit(new CycleLeader(Player, 1));
             if (team.WasPressedThisFrame()) Game.Submit(new ToggleTeam(Player));

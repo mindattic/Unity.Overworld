@@ -1,0 +1,29 @@
+{
+  "_source": "U.OVW-T47: the developer tools (RECONSTRUCTION 5.1, 5.2, 14.3; BIBLE 'Debug keys'). frmMain's F1 wireframe, F2 textures, F3 back-face culling, F5 filter, G / H ring icons, U hero mode, L test message, P / O path dots, getInput's - / = game speed, and renderwall's wall lines. Off in the shipped build; the -overworld-developer argument turns them on for a run.",
+  "enabled": false,
+  "gameSpeed": {
+    "_note": "Input.getInput: If keyState(Key.Minus) Then gameSpeed -= 0.01 : If gameSpeed < 0 Then gameSpeed = 0; If keyState(Key.Equals) Then gameSpeed += 0.01. Every frame either is held, not while paused or a script runs.",
+    "step": 0.01,
+    "floor": 0
+  },
+  "path": {
+    "_note": "Path.vb: pathSize 0.02, pathRange 0.05, maxPaths 1000 (slots 0 to 1000), slot 0 at (-1000, -1000) never laid; a dot at the leader's x + heroSize / 2, y - heroSize / 2 + 0.01; O is clearpath(20).",
+    "picture": "gfx/gui/path.PNG",
+    "size": 0.02,
+    "range": 0.05,
+    "lift": 0.01,
+    "slots": 1001,
+    "clear": 20,
+    "start": [-1000, -1000]
+  },
+  "walls": {
+    "_note": "Walls.renderwall: each wall a one-pixel line list from its 'from' to its 'to' (walls.json) at z 0, with gfx/gui/terrain.png (one orange pixel).",
+    "picture": "gfx/gui/terrain.PNG"
+  },
+  "testMessage": {
+    "_note": "frmMain's L: addMessage(\"WHAt's up, this worked!!!!\", fontArial, 255, 255, 255).",
+    "text": "WHAt's up, this worked!!!!",
+    "font": "fontArial",
+    "colour": [255, 255, 255]
+  }
+}

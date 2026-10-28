@@ -310,7 +310,7 @@ one. `bHeroSelect` is the "choose target" mode used when using items in team mod
 | F12 | Windowed / full screen |
 | Tab | `showMenu` (sets a flag nothing draws) |
 | Q | Toggles `bQuickBar` (the later `Case Keys.Q` for enemies is unreachable) |
-| G / H | Remove / add a ring-menu entry (the second `Case Keys.H` below it is unreachable) |
+| G / H | `ringTotal` down to 0 / up to `maxRings` 7 (1 to 8 icons: the five entries, then the Coffee Bean, Book2 and Rune1 fillers, which had no vertex buffers), then `resetRing` (the second `Case Keys.H` below it is unreachable) |
 | F | Free camera |
 | J | Joystick on / off |
 | L | Message "WHAt's up, this worked!!!!" |
@@ -638,6 +638,8 @@ The random draws per particle, in order: Snowing x then y; FallingLeaves `getRnd
 ### 14.3 Path points (`Path.vb`, P / O keys)
 
 A debug aid: in "set" mode the hero drops a 0.02 `path.png` dot every 0.05 units of travel along its facing axis (up to 1001 dots); P cycles off / show / set / show2; O clears the last 20. Not part of play; kept as a developer tool.
+
+`pathPoint(0..1000)`, slot 0 at (-1000, -1000, -1000) and never laid; `pathNum` starts at 1. `checkPathPoints` (called by `renderPath` every frame, so even while paused, after `renderTent` and before `renderItem`), in `pathSet` only: facing left or right, unless `A_near_B(hero.X + heroSize / 2, pathPoint(pathNum - 1).X, 0.05)`; facing up or down, unless `A_near_B(hero.Y - heroSize / 2, pathPoint(pathNum - 1).Y, 0.05)`: slot `pathNum` is laid at (hero.X + heroSize / 2, hero.Y - heroSize / 2 + 0.01, 0) and `pathNum` goes up, capped at 1000 (the last slot is then laid again and again). `clearpath(20)`: with `pathNum - 20 >= 1`, slots `pathNum - 20` to `pathNum` are cleared and `pathNum -= 20`; otherwise slots 0 to `pathNum` are cleared and `pathNum = 1`. Every laid slot within the render range is drawn in every mode but `pathOff`. The enum's order is off, set, show, show2; P steps off, show, set, show2. Rebuilt behind the developer tools (BIBLE "Debug keys", U.OVW-T47).
 
 ## 15. Audio (`Sound.vb`)
 

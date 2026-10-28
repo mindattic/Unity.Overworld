@@ -53,7 +53,7 @@ namespace MindAttic.Overworld.Runtime
     /// <c>-overworld-capture-after &lt;seconds&gt;</c> of play. Any scripted argument (or a capture) leaves the real
     /// keyboard and mouse alone, so the system pointer is never taken.
     /// </summary>
-    public sealed class OverworldBootstrap : MonoBehaviour
+    public sealed partial class OverworldBootstrap : MonoBehaviour
     {
         public const string CaptureArgument = "-overworld-capture";
         public const string CaptureAfterArgument = "-overworld-capture-after";
@@ -230,6 +230,8 @@ namespace MindAttic.Overworld.Runtime
             Input.Scripts = Scripts;
             Input.Interface = Interface;
             Input.transform.SetParent(transform, false);
+            // The developer tools (U.OVW-T47): off as shipped; -overworld-developer turns them on.
+            InstallDeveloper(args, game);
 
             var scripted = ScriptedInput(args);
             if (scripted.HasValue)

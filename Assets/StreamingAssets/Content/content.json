@@ -18,5 +18,6 @@
   "weather": "weather.json",
   "time": "time.json",
   "hud": "hud.json",
-  "scripts": "scripts.json"
+  "scripts": "scripts.json",
+  "developer": "developer.json"
 }

@@ -169,6 +169,8 @@ namespace MindAttic.Overworld.Core
             if (!ring.Open) return;
             var hero = Leader(player);
             var entry = ring.SelectedEntry;
+            // checkRingEffect had no case for the fillers: at one, everything stays as it was.
+            if (entry == RingEntry.Filler) return;
             ring.ShowMove = entry == RingEntry.Move;
             ring.ShowAttack = entry == RingEntry.Attack;
             QuickBarShown?.Invoke(player, entry == RingEntry.Item, tick, events);
@@ -194,6 +196,18 @@ namespace MindAttic.Overworld.Core
 
             if (hero.State != HeroState.Drawing) hero.Frame = 0;
             hero.State = HeroState.Drawing;
+        }
+
+        /// <summary>
+        /// The G / H developer keys: ringTotal down to 0 or up to maxRings (one icon to every entry and filler), then
+        /// resetRing. Called by <see cref="DeveloperTools"/>, which refuses it unless the developer tools are on.
+        /// </summary>
+        internal void ResizeRing(PlayerId player, int step, long tick, ICollection<IGameEvent> events)
+        {
+            var ring = RingOf(player);
+            ring.Count = Math.Max(1, Math.Min(ring.Ring.All.Count, ring.Count + Math.Sign(step)));
+            ResetRing(player, ring, tick, events);
+            events.Add(new RingResized(tick, player, ring.Count));
         }
 
         // ---- the turn (checkHeroMove, NextHeroInBattle, checkBattleSelect, actionHeroSelect) --------------------------
@@ -377,7 +391,7 @@ namespace MindAttic.Overworld.Core
                 var right = ring.Mode == RingMode.Right;
                 for (var r = 0; r <= last; r++)
                 {
-                    var target = right ? ring.lastAngles[r] + t.SpinStep : ring.lastAngles[r] - t.SpinStep;
+                    var target = right ? ring.lastAngles[r] + ring.SpinStep : ring.lastAngles[r] - ring.SpinStep;
                     var a = ring.angles[r];
                     if (right ? a < target : a > target)
                     {

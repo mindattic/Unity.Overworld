@@ -23,8 +23,10 @@ namespace MindAttic.Overworld.Core
         {
             Ring = tuning.Ring;
             Circle = tuning.Circle;
-            angles = new float[Ring.Entries.Count];
-            lastAngles = new float[Ring.Entries.Count];
+            // Room for every icon the G / H developer keys can show (ringIcon(maxRings)); the ring shows its entries.
+            angles = new float[Ring.All.Count];
+            lastAngles = new float[Ring.All.Count];
+            Count = Ring.Entries.Count;
             dotAngles = new float[Circle.Dots];
             dotColours = new DotColour[Circle.Dots];
             // loadcircle: dot n starts at n x the spacing.
@@ -51,7 +53,10 @@ namespace MindAttic.Overworld.Core
         /// <summary>The index of the entry at the top (ringNum).</summary>
         public int Selected { get; internal set; }
 
-        public RingEntry SelectedEntry => Ring.Entries[Selected].Entry;
+        public RingEntry SelectedEntry => Ring.All[Selected].Entry;
+
+        /// <summary>Icon <paramref name="index"/>'s picture (an entry's, or a filler's past them).</summary>
+        public string Picture(int index) => Ring.All[index].Picture;
 
         public RingMode Mode { get; internal set; }
 
@@ -61,7 +66,14 @@ namespace MindAttic.Overworld.Core
         /// <summary>Entry <paramref name="index"/>'s angle now, in radians (the top is 1.57).</summary>
         public float Angle(int index) => angles[index];
 
-        public int Count => angles.Length;
+        /// <summary>
+        /// How many icons the ring shows (ringTotal + 1): its entries, or 1 to 8 as the G / H developer keys set it
+        /// (<see cref="ResizeRing"/>), the fillers after the entries.
+        /// </summary>
+        public int Count { get; internal set; }
+
+        /// <summary>The angle between icons and of one turn for <see cref="Count"/> icons (checkRingRotate's deltaAngle).</summary>
+        public float SpinStep => Ring.SpinStepFor(Count);
 
         /// <summary>The move circle is shown (bShowMove): radius the leader's move distance.</summary>
         public bool ShowMove { get; internal set; }
@@ -119,7 +131,7 @@ namespace MindAttic.Overworld.Core
             Selected = 0;
             for (var i = 0; i < angles.Length; i++)
             {
-                angles[i] = Ring.StartAngle + Ring.SpinStep * i;
+                angles[i] = Ring.StartAngle + SpinStep * i;
                 lastAngles[i] = angles[i];
             }
         }
@@ -138,6 +150,27 @@ namespace MindAttic.Overworld.Core
         public TurnRing(PlayerId player, int step) { Player = player; Step = step; }
         public PlayerId Player { get; }
         public int Step { get; }
+    }
+
+    /// <summary>
+    /// The G (-1) and H (+1) developer keys (frmMain's KeyDown, RECONSTRUCTION 5.2): the ring shows one icon fewer or more
+    /// (ringTotal 0 to maxRings 7: 1 to 8 icons, the Coffee Bean, Book and Rune fillers after the five entries) and is
+    /// reset (resetRing). Refused unless the developer tools are on.
+    /// </summary>
+    public sealed class ResizeRing : ICommand
+    {
+        public ResizeRing(PlayerId player, int step) { Player = player; Step = step; }
+        public PlayerId Player { get; }
+        public int Step { get; }
+    }
+
+    /// <summary>A ring now shows <see cref="Count"/> icons (the G / H developer keys).</summary>
+    public sealed class RingResized : IGameEvent
+    {
+        public RingResized(long tick, PlayerId player, int count) { Tick = tick; Player = player; Count = count; }
+        public long Tick { get; }
+        public PlayerId Player { get; }
+        public int Count { get; }
     }
 
     /// <summary>
