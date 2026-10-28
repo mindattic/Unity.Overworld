@@ -26,3 +26,6 @@ __pycache__/
 !Tests/**/*.csproj
 Tests/**/bin/
 Tests/**/obj/
+
+# Unity regenerates this URP editor setting on import; siblings do not commit it
+/ProjectSettings/URPProjectSettings.asset
