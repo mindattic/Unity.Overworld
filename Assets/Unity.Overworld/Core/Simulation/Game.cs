@@ -24,6 +24,7 @@ namespace MindAttic.Overworld.Core
         public Game()
         {
             Register<JoinGame>(HandleJoin);
+            Register<LeaveGame>(HandleLeave);
             Register<LoadWorld>(HandleLoadWorld);
         }
 
@@ -49,9 +50,25 @@ namespace MindAttic.Overworld.Core
             systems.Add(system);
         }
 
+        /// <summary>
+        /// Online as a client (U.OVW-T46, the family's online rule 9): where this screen's player commands go instead of
+        /// this game, the networked player that carries them to the one authority (the host or a dedicated server). Null,
+        /// as in local play, applies them here. While it is set only the commands a player's controls make
+        /// (<see cref="CommandCodec.IsSent"/>) are forwarded; the rest (joining, loading, the scripted runs') still apply
+        /// here. The host steps nothing while it is set (<see cref="IsRemote"/>): the authority's game is the game.
+        /// Returns whether the command was sent.
+        /// </summary>
+        public Func<ICommand, bool> Forward { get; set; }
+
+        /// <summary>Whether this game's player commands go to a remote authority (<see cref="Forward"/> is set).</summary>
+        public bool IsRemote => Forward != null;
+
         public CommandResult Submit(ICommand command)
         {
             if (command == null) return CommandResult.Reject("No command.");
+            var forward = Forward;
+            if (forward != null && CommandCodec.IsSent(command))
+                return forward(command) ? CommandResult.Accept() : CommandResult.Reject("Not sent to the authority.");
             if (command.Player.IsNone) return CommandResult.Reject("A command must name a player.");
             if (!(command is JoinGame) && !players.Contains(command.Player))
                 return CommandResult.Reject(command.Player + " is not in the game.");
@@ -100,6 +117,12 @@ namespace MindAttic.Overworld.Core
         {
             if (!g.players.Add(c.Player)) return CommandResult.Reject(c.Player + " is already in the game.");
             return CommandResult.Accept(new PlayerJoined(g.Tick, c.Player));
+        }
+
+        static CommandResult HandleLeave(Game g, LeaveGame c)
+        {
+            if (!g.players.Remove(c.Player)) return CommandResult.Reject(c.Player + " is not in the game.");
+            return CommandResult.Accept(new PlayerLeft(g.Tick, c.Player));
         }
 
         static CommandResult HandleLoadWorld(Game g, LoadWorld c)

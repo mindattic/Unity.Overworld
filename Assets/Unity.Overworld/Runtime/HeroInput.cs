@@ -175,6 +175,20 @@ namespace MindAttic.Overworld.Runtime
         public InterfaceControl Interface { get; set; }
 
         /// <summary>
+        /// U.OVW-T46: while this says so (an online menu is open) no control is read and the held input is let go. Null in
+        /// local play without the online menu, where every control is read exactly as before.
+        /// </summary>
+        public System.Func<bool> Hold { get; set; }
+
+        /// <summary>
+        /// U.OVW-T46: while this says so (an online session runs) Escape is the Unity.Multiplayer kit's in-game menu, not
+        /// the options menu; F11 still opens the options. Null: Escape opens the options, as the original's did.
+        /// </summary>
+        public System.Func<bool> EscapeTaken { get; set; }
+
+        bool EscapeIsOnline() => EscapeTaken != null && EscapeTaken() && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+
+        /// <summary>
         /// With the options menu open: Enter or the left button (actionPickup), then Left, Up and Down (actionLeft, actionUp,
         /// actionDown, each once a press) work it.
         /// </summary>
@@ -197,6 +211,17 @@ namespace MindAttic.Overworld.Runtime
         void Update()
         {
             if (Game == null) return;
+            // U.OVW-T46: while an online menu is open nothing is read (typing an address never walks the party) and the
+            // pointer is the menu's; what was held is let go.
+            if (Hold != null && Hold())
+            {
+                swallowConfirm = true;
+                Last = default;
+                Game.Submit(new SetMoveInput(Player, default));
+                if (Viewpoint != null) Game.Submit(new SetViewInput(Player, default));
+                return;
+            }
+
             if (UseDevices) HoldPointer();
 
             // frmMain took every key while the console was open, and getInput was not called while it was or a script ran.
@@ -208,7 +233,7 @@ namespace MindAttic.Overworld.Runtime
             // F11 (and Escape), F4 and Pause were frmMain keys too.
             if (UseDevices && !consoleWasOpen && Interface != null)
             {
-                if (options.WasPressedThisFrame()) Game.Submit(new ToggleOptions(Player));
+                if (options.WasPressedThisFrame() && !EscapeIsOnline()) Game.Submit(new ToggleOptions(Player));
                 if (fps.WasPressedThisFrame()) Game.Submit(new ToggleFps(Player));
                 if (pause.WasPressedThisFrame()) Game.Submit(new TogglePause(Player));
             }

@@ -28,7 +28,9 @@ namespace MindAttic.Overworld.Editor
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(MainScene));
                 var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                new GameObject("Overworld").AddComponent<OverworldBootstrap>();
+                var bootstrap = new GameObject("Overworld").AddComponent<OverworldBootstrap>();
+                // U.OVW-T46: the Unity.Multiplayer kit's NetworkManager, bootstrap and front end, beside local play.
+                OnlineBuilder.Create(scene, bootstrap);
                 EditorSceneManager.SaveScene(scene, MainScene);
                 Debug.Log("Unity.Overworld: built " + MainScene);
             }
@@ -41,17 +43,21 @@ namespace MindAttic.Overworld.Editor
         }
 
         /// <summary>
-        /// True when the saved main scene is already what <see cref="BuildMainScene"/> makes: one root object, "Overworld",
-        /// holding the bootstrap and nothing else. Saving it again would only give its objects new file ids (U.OVW-T49).
+        /// True when the saved main scene is already what <see cref="BuildMainScene"/> makes: a root object, "Overworld",
+        /// holding the bootstrap and nothing else, and the kit's networked root wired to it (U.OVW-T46,
+        /// <see cref="OnlineBuilder.IsCurrent"/>). Saving it again would only give its objects new file ids (U.OVW-T49).
         /// </summary>
         static bool MainSceneIsCurrent()
         {
             if (!File.Exists(MainScene)) return false;
             var scene = EditorSceneManager.OpenScene(MainScene, OpenSceneMode.Single);
             var roots = scene.GetRootGameObjects();
-            if (roots.Length != 1 || roots[0].name != "Overworld" || roots[0].transform.childCount != 0) return false;
-            var components = roots[0].GetComponents<Component>();
-            return components.Length == 2 && roots[0].GetComponent<OverworldBootstrap>() != null;
+            if (roots.Length != 2) return false;
+            var overworld = Array.Find(roots, r => r.name == "Overworld");
+            if (overworld == null || overworld.transform.childCount != 0) return false;
+            var bootstrap = overworld.GetComponent<OverworldBootstrap>();
+            if (bootstrap == null || overworld.GetComponents<Component>().Length != 2) return false;
+            return OnlineBuilder.IsCurrent(Array.Find(roots, r => r != overworld), bootstrap);
         }
 
         [MenuItem("Overworld/Build Windows Player")]

@@ -39,3 +39,6 @@ are the reference architectures: read their AGENTS.md, README and docs/BIBLE.md 
    working (screenshots or a scripted run) before a ticket closes.
 8. **Finite.** Once every story from the reconstruction is built, the repo is a complete, polished proof of concept
    of the original, and is done.
+9. **Online-ready.** This game is built on the shared Unity.Multiplayer kit so an online version can be set up: one
+   authority holds the state, players are NetEntities with seats, and local play goes through the same path. Read
+   Unity.Multiplayer's docs/articles before touching networking.

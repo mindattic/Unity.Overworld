@@ -7,6 +7,13 @@ namespace MindAttic.Overworld.Core
         public PlayerId Player { get; }
     }
 
+    public sealed class PlayerLeft : IGameEvent
+    {
+        public PlayerLeft(long tick, PlayerId player) { Tick = tick; Player = player; }
+        public long Tick { get; }
+        public PlayerId Player { get; }
+    }
+
     public sealed class WorldLoaded : IGameEvent
     {
         public WorldLoaded(long tick, PlayerId by, string worldName, int areaCount) { Tick = tick; By = by; WorldName = worldName; AreaCount = areaCount; }

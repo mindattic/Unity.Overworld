@@ -216,7 +216,8 @@ namespace MindAttic.Overworld.Runtime
             };
             game.EventRaised += e =>
             {
-                if (!(e is QuitRequested)) return;
+                // Only this screen's own player quits it (U.OVW-T46: an online player's Exit is raised in the host's game).
+                if (!(e is QuitRequested quit) || quit.By != PlayerId.One) return;
                 Debug.Log("Unity.Overworld: Exit chosen in the options menu; quitting.");
                 Application.Quit(0);
             };
