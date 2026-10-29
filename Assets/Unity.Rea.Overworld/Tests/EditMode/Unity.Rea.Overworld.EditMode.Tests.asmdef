@@ -1,0 +1,28 @@
+{
+    "name": "Unity.Rea.Overworld.EditMode.Tests",
+    "rootNamespace": "MindAttic.Overworld.Tests",
+    "references": [
+        "Unity.Rea.Overworld.Core",
+        "Unity.Rea.Overworld.Runtime",
+        "Unity.Rea.Overworld.Editor",
+        "Unity.Shared.Core",
+        "Unity.InputSystem",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

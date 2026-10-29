@@ -1,0 +1,30 @@
+{
+    "name": "Unity.Rea.Overworld.Online.Tests",
+    "rootNamespace": "MindAttic.Overworld.Online.Tests",
+    "references": [
+        "Unity.Rea.Overworld.Core",
+        "Unity.Rea.Overworld.Runtime",
+        "Unity.Rea.Overworld.Online",
+        "Unity.Multiplayer",
+        "Unity.Multiplayer.Core",
+        "Unity.Multiplayer.Testing",
+        "Unity.Netcode.Runtime",
+        "Unity.Netcode.Runtime.Tests",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS",
+        "MINDATTIC_NGO_TESTABLE"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

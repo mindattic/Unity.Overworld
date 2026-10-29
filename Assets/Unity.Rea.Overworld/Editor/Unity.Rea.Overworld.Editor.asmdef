@@ -1,0 +1,27 @@
+{
+    "name": "Unity.Rea.Overworld.Editor",
+    "rootNamespace": "MindAttic.Overworld.Editor",
+    "references": [
+        "Unity.Rea.Overworld.Core",
+        "Unity.Rea.Overworld.Runtime",
+        "Unity.Rea.Overworld.Online",
+        "Unity.Multiplayer",
+        "Unity.Multiplayer.Core",
+        "Unity.Multiplayer.Editor",
+        "Unity.Multiplayer.UI",
+        "Unity.Netcode.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,4 +1,4 @@
-# Unity.Overworld — agent entrypoint
+# Unity.Rea.Overworld — agent entrypoint
 
 Read the shared protocol at ..\mindattic-agent-standard\AGENTS.md, then this file, then
 docs/RECONSTRUCTION.md and docs/BIBLE.md.

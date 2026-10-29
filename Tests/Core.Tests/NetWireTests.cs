@@ -10,7 +10,7 @@ namespace MindAttic.Overworld.Tests
     /// <summary>
     /// U.OVW-T46: the online wire formats (CommandCodec, WorldSnapshot), the game's forwarding to a remote authority and
     /// a player leaving it, without Unity. The Unity side (the kit's sessions, seats and bots) is tested by the PlayMode
-    /// assembly Unity.Overworld.Online.Tests.
+    /// assembly Unity.Rea.Overworld.Online.Tests.
     /// </summary>
     public class NetWireTests
     {

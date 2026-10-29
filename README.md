@@ -1,4 +1,4 @@
-# Unity.Overworld
+# Unity.Rea.Overworld
 
 A Unity 6 rebuild of *Overworld*, a 2006 VB.NET / DirectX 9 top-down overworld prototype: a party of three led by the mouse across a
 grid of painted tiles, a clock that turns a real second into a game minute, a one-line script language behind every item and event,
@@ -92,9 +92,9 @@ of the original relate), [`docs/BIBLE.md`](docs/BIBLE.md) for the rebuild's brie
 
 ## Status
 
-Reconstruction-complete; the engine-free foundations (U.OVW-US-A1) are in: `Assets/Unity.Overworld/Core` (pure C#, `noEngineReferences`: players, commands, events, the fixed 60 Hz `Game` step and general world types), `Runtime`, `Editor` and `Tests/EditMode`, one-way references into Core. Run Core's tests outside Unity with `.
+Reconstruction-complete; the engine-free foundations (U.OVW-US-A1) are in: `Assets/Unity.Rea.Overworld/Core` (pure C#, `noEngineReferences`: players, commands, events, the fixed 60 Hz `Game` step and general world types), `Runtime`, `Editor` and `Tests/EditMode`, one-way references into Core. Run Core's tests outside Unity with `.
 un-core-tests.ps1` (`Tests/Core.Tests`). Every story is planned, in dependency order (`tickets story list --repo
-Unity.Overworld`):
+Unity.Rea.Overworld`):
 
 - Engine-free Core, data files, asset catalogue
 - World grid, camera, hero locomotion, cursor, walls, party
@@ -115,7 +115,7 @@ Read-only references, never edited by this project:
 This repo references `com.mindattic.unity.shared` (`Packages/manifest.json`) for its CLI/automation session
 mute: launched with `-muted` or `MINDATTIC_CLI_MUTED=1`, Unity.Shared's bootstrap turns on
 `Unity.Shared.Core.Profiles.SessionMuted` before the first scene loads, and
-`Assets/Unity.Overworld/Runtime/SessionAudio.cs` zeroes `AudioListener.volume` for that run. The flag is
+`Assets/Unity.Rea.Overworld/Runtime/SessionAudio.cs` zeroes `AudioListener.volume` for that run. The flag is
 session-only and read-only against the player's own settings: nothing is ever written to settings.json, and a
 normal launch afterwards has sound again.
 

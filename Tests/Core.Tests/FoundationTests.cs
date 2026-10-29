@@ -135,12 +135,12 @@ namespace MindAttic.Overworld.Tests
         [Test]
         public void CoreSourceHasNoEngineReference()
         {
-            var dir = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "../../../../../Assets/Unity.Overworld/Core"));
+            var dir = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.TestDirectory, "../../../../../Assets/Unity.Rea.Overworld/Core"));
             Assert.True(Directory.Exists(dir), dir);
             var files = Directory.GetFiles(dir, "*.cs", SearchOption.AllDirectories);
             Assert.That(files.Length, Is.GreaterThan(0));
             Assert.That(files.Where(f => File.ReadAllText(f).Contains("UnityEngine")), Is.Empty);
-            Assert.That(File.ReadAllText(Path.Combine(dir, "Unity.Overworld.Core.asmdef")), Does.Contain("\"noEngineReferences\": true"));
+            Assert.That(File.ReadAllText(Path.Combine(dir, "Unity.Rea.Overworld.Core.asmdef")), Does.Contain("\"noEngineReferences\": true"));
         }
     }
 }

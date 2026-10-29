@@ -1,6 +1,6 @@
 ---
 codex: 1
-project: Unity.Overworld
+project: Unity.Rea.Overworld
 layer: research
 status: living
 updated: 2026-10-23
@@ -799,7 +799,7 @@ The rebuild takes the union of the two copies and of the code's era and the data
 
 ## 20. Build order (the stories)
 
-Every story is in the ticket database under epic A (`tickets story list --repo Unity.Overworld`), generated into `docs/USER_STORIES.md`. Build them in this order; each depends on the ones before it.
+Every story is in the ticket database under epic A (`tickets story list --repo Unity.Rea.Overworld`), generated into `docs/USER_STORIES.md`. Build them in this order; each depends on the ones before it.
 
 | # | Story | Builds | Section |
 |---|---|---|---|

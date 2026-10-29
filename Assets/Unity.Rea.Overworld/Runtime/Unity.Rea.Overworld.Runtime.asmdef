@@ -1,0 +1,18 @@
+{
+    "name": "Unity.Rea.Overworld.Runtime",
+    "rootNamespace": "MindAttic.Overworld.Runtime",
+    "references": [
+        "Unity.Rea.Overworld.Core",
+        "Unity.InputSystem",
+        "Unity.Shared.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
